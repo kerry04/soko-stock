@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
-import { getAFQuote } from "@/lib/stocks/africanfinancials.server";
+import { getDBQuote } from "@/lib/stocks/boards-db.server";
 import { getQuote } from "@/lib/stocks/yahoo.server";
 
 const ALLOWED_RANGES = new Set(["1mo", "3mo", "6mo", "1y", "2y", "5y"]);
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/api/stocks/quote")({
         if (exchange.source === "africanfinancials") {
           let q;
           try {
-            q = await getAFQuote(ticker);
+            q = await getDBQuote(ticker);
           } catch {
             q = null;
           }
@@ -46,6 +46,7 @@ export const Route = createFileRoute("/api/stocks/quote")({
               headers: { "content-type": "application/json" },
             });
           }
+          const price = Number(q.price);
           return new Response(
             JSON.stringify({
               ok: true,
@@ -53,18 +54,20 @@ export const Route = createFileRoute("/api/stocks/quote")({
               name: q.name,
               exchange: exchange.id,
               currencySymbol: exchange.currencySymbol,
-              price: q.price,
+              price,
               previousClose: null,
               change: null,
-              changePercent: q.changePercent,
-              asOf: q.updated,
+              changePercent:
+                q.change_percent != null ? Number(q.change_percent) : null,
+              asOf: q.fetched_at,
               timeNote: exchange.timeNote,
               bars: [],
               extras: {
                 sector: q.sector,
-                ytdPercent: q.ytdPercent,
-                volume: q.volume,
-                value: q.value,
+                ytdPercent:
+                  q.ytd_percent != null ? Number(q.ytd_percent) : null,
+                volume: q.volume != null ? Number(q.volume) : null,
+                value: q.value_traded != null ? Number(q.value_traded) : null,
                 updated: q.updated,
               },
             }),

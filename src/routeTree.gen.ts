@@ -19,6 +19,7 @@ import { Route as ApiStocksQuoteRouteImport } from './routes/api/stocks/quote'
 import { Route as ApiStocksBoardRouteImport } from './routes/api/stocks/board'
 import { Route as ApiPublicHooksSignalsRouteImport } from './routes/api/public/hooks/signals'
 import { Route as ApiPublicHooksScrapeNewsRouteImport } from './routes/api/public/hooks/scrape-news'
+import { Route as ApiPublicHooksIngestBoardsRouteImport } from './routes/api/public/hooks/ingest-boards'
 import { Route as ApiPublicHooksComputeTrendsRouteImport } from './routes/api/public/hooks/compute-trends'
 import { Route as ApiPublicHooksAnalyzeSentimentRouteImport } from './routes/api/public/hooks/analyze-sentiment'
 
@@ -73,6 +74,12 @@ const ApiPublicHooksScrapeNewsRoute =
     path: '/api/public/hooks/scrape-news',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksIngestBoardsRoute =
+  ApiPublicHooksIngestBoardsRouteImport.update({
+    id: '/api/public/hooks/ingest-boards',
+    path: '/api/public/hooks/ingest-boards',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksComputeTrendsRoute =
   ApiPublicHooksComputeTrendsRouteImport.update({
     id: '/api/public/hooks/compute-trends',
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
+  '/api/public/hooks/ingest-boards': typeof ApiPublicHooksIngestBoardsRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
@@ -111,6 +119,7 @@ export interface FileRoutesByTo {
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
+  '/api/public/hooks/ingest-boards': typeof ApiPublicHooksIngestBoardsRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
@@ -126,6 +135,7 @@ export interface FileRoutesById {
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
+  '/api/public/hooks/ingest-boards': typeof ApiPublicHooksIngestBoardsRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
+    | '/api/public/hooks/ingest-boards'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
   fileRoutesByTo: FileRoutesByTo
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
+    | '/api/public/hooks/ingest-boards'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
   id:
@@ -170,6 +182,7 @@ export interface FileRouteTypes {
     | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
+    | '/api/public/hooks/ingest-boards'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
   fileRoutesById: FileRoutesById
@@ -185,6 +198,7 @@ export interface RootRouteChildren {
   ApiStocksQuoteRoute: typeof ApiStocksQuoteRoute
   ApiPublicHooksAnalyzeSentimentRoute: typeof ApiPublicHooksAnalyzeSentimentRoute
   ApiPublicHooksComputeTrendsRoute: typeof ApiPublicHooksComputeTrendsRoute
+  ApiPublicHooksIngestBoardsRoute: typeof ApiPublicHooksIngestBoardsRoute
   ApiPublicHooksScrapeNewsRoute: typeof ApiPublicHooksScrapeNewsRoute
   ApiPublicHooksSignalsRoute: typeof ApiPublicHooksSignalsRoute
 }
@@ -261,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksScrapeNewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/ingest-boards': {
+      id: '/api/public/hooks/ingest-boards'
+      path: '/api/public/hooks/ingest-boards'
+      fullPath: '/api/public/hooks/ingest-boards'
+      preLoaderRoute: typeof ApiPublicHooksIngestBoardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/compute-trends': {
       id: '/api/public/hooks/compute-trends'
       path: '/api/public/hooks/compute-trends'
@@ -289,6 +310,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiStocksQuoteRoute: ApiStocksQuoteRoute,
   ApiPublicHooksAnalyzeSentimentRoute: ApiPublicHooksAnalyzeSentimentRoute,
   ApiPublicHooksComputeTrendsRoute: ApiPublicHooksComputeTrendsRoute,
+  ApiPublicHooksIngestBoardsRoute: ApiPublicHooksIngestBoardsRoute,
   ApiPublicHooksScrapeNewsRoute: ApiPublicHooksScrapeNewsRoute,
   ApiPublicHooksSignalsRoute: ApiPublicHooksSignalsRoute,
 }

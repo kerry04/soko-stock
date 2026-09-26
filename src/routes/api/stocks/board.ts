@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
-import { getAFBoard } from "@/lib/stocks/africanfinancials.server";
+import { getDBBoard } from "@/lib/stocks/boards-db.server";
 import { getBoard } from "@/lib/stocks/yahoo.server";
 
 /**
  * GET /api/stocks/board?exchange=JSE
- * Live board rows for an exchange's constituents. Yahoo: server fans out
- * (≤6 concurrent) with a 5-min cache. African Financials: EOD tables with
- * a 6h cache. The client makes one call.
+ * Live board rows for an exchange's constituents. JSE: Yahoo (server fans
+ * out ≤6 concurrent, 5-min cache). NSE/NGX/GSE: daily EOD rows from the
+ * stock_boards table, refreshed by the VM cron. The client makes one call.
  */
 export const Route = createFileRoute("/api/stocks/board")({
   server: {
@@ -26,15 +26,16 @@ export const Route = createFileRoute("/api/stocks/board")({
         try {
           rows =
             exchange.source === "africanfinancials"
-              ? (await getAFBoard(exchange.id)).map((q) => ({
+              ? (await getDBBoard(exchange.id)).map((q) => ({
                   ticker: q.ticker,
                   name: q.name,
-                  price: q.price,
+                  price: Number(q.price),
                   previousClose: null,
                   change: null,
-                  changePercent: q.changePercent,
-                  volume: q.volume,
-                  asOf: q.updated,
+                  changePercent:
+                    q.change_percent != null ? Number(q.change_percent) : null,
+                  volume: q.volume != null ? Number(q.volume) : null,
+                  asOf: q.fetched_at,
                 }))
               : (
                   await getBoard(exchange.tickers)

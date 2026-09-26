@@ -60,6 +60,15 @@ function stripTags(s: string): string {
     .trim();
 }
 
+export function parseAFTable(
+  html: string,
+  exchangeCode: string,
+): AFRow[] {
+  const feed = FEEDS[exchangeCode];
+  if (!feed) return [];
+  return parseTable(html, feed);
+}
+
 async function fetchBoard(code: string): Promise<AFRow[]> {
   const feed = FEEDS[code];
   if (!feed) return [];
