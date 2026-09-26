@@ -53,7 +53,7 @@ const TOPICS = [
   {
     to: "/learn/about",
     icon: Info,
-    title: "About SokoResult",
+    title: "About Soko Stock",
     desc: "How it works, money in and out, trust & safety, and the $OKO token.",
   },
 ] as const;
@@ -63,7 +63,7 @@ function LearnIndex() {
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
       <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Trading education hub</h1>
       <p className="mt-3 text-muted-foreground max-w-2xl">
-        New to prediction markets? Start here. These guides explain how SokoResult works, how to
+        New to prediction markets? Start here. These guides explain how Soko Stock works, how to
         read prices, and how to trade without losing money you can't afford to lose.
       </p>
 

@@ -3,10 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/learn/how-to-trade")({
   head: () => ({
     meta: [
-      { title: "How to trade — SokoResult" },
-      { name: "description", content: "Step-by-step: how to place your first trade on SokoResult." },
+      { title: "How to trade — Soko Stock" },
+      { name: "description", content: "Step-by-step: how to place your first trade on Soko Stock." },
       { property: "og:title", content: "How to place your first trade" },
-      { property: "og:description", content: "A beginner-friendly walkthrough of trading on SokoResult." },
+      { property: "og:description", content: "A beginner-friendly walkthrough of trading on Soko Stock." },
     ],
   }),
   component: Page,
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/learn/how-to-trade")({
 
 const STEPS = [
   { n: 1, t: "Verify your account", d: "Submit your ID and a selfie. Trading is locked until you're verified — this protects your money and keeps the platform fraud-free." },
-  { n: 2, t: "Top up your wallet", d: "Use M-Pesa to deposit KES into your SokoResult wallet. Minimum KSh 100." },
+  { n: 2, t: "Top up your wallet", d: "Use M-Pesa to deposit KES into your Soko Stock wallet. Minimum KSh 100." },
   { n: 3, t: "Pick a market", d: "Browse open markets. Read the question, the resolution source, and the close date." },
   { n: 4, t: "Choose an outcome", d: "Decide which side you think will win. The current price tells you what the crowd thinks." },
   { n: 5, t: "Set your quantity", d: "Each share pays KSh 100 if you win. Start small (1–10 shares) until you're comfortable." },

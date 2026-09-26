@@ -1,4 +1,4 @@
-/* SokoResult service worker — deliberately conservative.
+/* Soko Stock service worker — deliberately conservative.
  *
  * - Same-origin static assets (JS/CSS/images/fonts): cache-first, versioned
  *   cache. Vite emits content-hashed filenames, so stale assets are safe.

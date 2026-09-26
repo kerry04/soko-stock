@@ -19,7 +19,7 @@ import { friendlyError } from "@/lib/errors";
 import { Plus, Inbox } from "lucide-react";
 
 export const Route = createFileRoute("/_authed/support")({
-  head: () => ({ meta: [{ title: "Support — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Support — Soko Stock" }] }),
   component: SupportPage,
 });
 

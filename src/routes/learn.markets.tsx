@@ -3,10 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/learn/markets")({
   head: () => ({
     meta: [
-      { title: "How prediction markets work — SokoResult" },
-      { name: "description", content: "Learn how shares, prices and probabilities work on SokoResult prediction markets." },
+      { title: "How prediction markets work — Soko Stock" },
+      { name: "description", content: "Learn how shares, prices and probabilities work on Soko Stock prediction markets." },
       { property: "og:title", content: "How prediction markets work" },
-      { property: "og:description", content: "A 5-minute guide to reading prediction market prices on SokoResult." },
+      { property: "og:description", content: "A 5-minute guide to reading prediction market prices on Soko Stock." },
     ],
   }),
   component: Page,

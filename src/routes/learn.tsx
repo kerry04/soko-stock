@@ -5,9 +5,9 @@ import { BackButton } from "@/components/common/BackButton";
 export const Route = createFileRoute("/learn")({
   head: () => ({
     meta: [
-      { title: "Learn — SokoResult" },
-      { name: "description", content: "Understand prediction markets, how to trade safely, manage risk, and read prices on SokoResult." },
-      { property: "og:title", content: "Learn prediction markets — SokoResult" },
+      { title: "Learn — Soko Stock" },
+      { name: "description", content: "Understand prediction markets, how to trade safely, manage risk, and read prices on Soko Stock." },
+      { property: "og:title", content: "Learn prediction markets — Soko Stock" },
       { property: "og:description", content: "Free beginner-friendly guides to trading prediction markets safely in Kenya." },
     ],
   }),

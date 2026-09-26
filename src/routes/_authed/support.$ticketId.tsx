@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { AttachmentUploader, AttachmentList, type AttachmentRow } from "@/components/support/Attachments";
 
 export const Route = createFileRoute("/_authed/support/$ticketId")({
-  head: () => ({ meta: [{ title: "Ticket — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Ticket — Soko Stock" }] }),
   component: TicketPage,
 });
 
@@ -165,7 +165,7 @@ function TicketPage() {
                 )}
               >
                 {m.is_admin && (
-                  <div className="text-[10px] uppercase tracking-wider text-success mb-1">SokoResult Support</div>
+                  <div className="text-[10px] uppercase tracking-wider text-success mb-1">Soko Stock Support</div>
                 )}
                 {m.body}
                 <div className="text-[10px] text-muted-foreground mt-1">

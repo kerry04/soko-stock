@@ -335,7 +335,7 @@ export function AuthForm({ mode, redirectTo }: Props) {
               </label>
             ) : (
               <p className="text-xs text-muted-foreground pt-1">
-                By continuing, you agree to SokoResult's{" "}
+                By continuing, you agree to Soko Stock's{" "}
                 <Link to="/terms" className="underline underline-offset-2 hover:text-foreground">Terms</Link>.
               </p>
             )}

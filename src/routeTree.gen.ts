@@ -9,17 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LearnRouteImport } from './routes/learn'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthedRouteImport } from './routes/_authed'
-import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MarketsIndexRouteImport } from './routes/markets.index'
 import { Route as LearnIndexRouteImport } from './routes/learn.index'
-import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as LearnSlippageRouteImport } from './routes/learn.slippage'
 import { Route as LearnRiskRouteImport } from './routes/learn.risk'
 import { Route as LearnMarketsRouteImport } from './routes/learn.markets'
@@ -28,18 +29,6 @@ import { Route as LearnExamplesRouteImport } from './routes/learn.examples'
 import { Route as LearnDisclaimerRouteImport } from './routes/learn.disclaimer'
 import { Route as LearnAboutRouteImport } from './routes/learn.about'
 import { Route as ApiAlertsRouteImport } from './routes/api/alerts'
-import { Route as AdminUsersRouteImport } from './routes/admin/users'
-import { Route as AdminTradesRouteImport } from './routes/admin/trades'
-import { Route as AdminSyndicatesRouteImport } from './routes/admin/syndicates'
-import { Route as AdminSupportRouteImport } from './routes/admin/support'
-import { Route as AdminSuggestionsRouteImport } from './routes/admin/suggestions'
-import { Route as AdminSignalsRouteImport } from './routes/admin/signals'
-import { Route as AdminNewsRouteImport } from './routes/admin/news'
-import { Route as AdminLoginRouteImport } from './routes/admin/login'
-import { Route as AdminKycRouteImport } from './routes/admin/kyc'
-import { Route as AdminHealthRouteImport } from './routes/admin/health'
-import { Route as AdminEdgeRouteImport } from './routes/admin/edge'
-import { Route as AdminAlertsRouteImport } from './routes/admin/alerts'
 import { Route as AuthedWalletRouteImport } from './routes/_authed/wallet'
 import { Route as AuthedSupportRouteImport } from './routes/_authed/support'
 import { Route as AuthedProfileRouteImport } from './routes/_authed/profile'
@@ -49,8 +38,6 @@ import { Route as AuthedNewsRouteImport } from './routes/_authed/news'
 import { Route as AuthedLeaderboardRouteImport } from './routes/_authed/leaderboard'
 import { Route as AuthedKycRouteImport } from './routes/_authed/kyc'
 import { Route as AuthedComingSoonRouteImport } from './routes/_authed/coming-soon'
-import { Route as AdminMarketsIndexRouteImport } from './routes/admin/markets.index'
-import { Route as AuthedMarketsIndexRouteImport } from './routes/_authed/markets.index'
 import { Route as ApiPaymentsWebhookRouteImport } from './routes/api/payments/webhook'
 import { Route as ApiPaymentsVerifyRouteImport } from './routes/api/payments/verify'
 import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/status'
@@ -59,8 +46,6 @@ import { Route as ApiNotificationsPreferencesRouteImport } from './routes/api/no
 import { Route as ApiLocalSplatRouteImport } from './routes/api/local/$'
 import { Route as ApiAlertsCheckRouteImport } from './routes/api/alerts/check'
 import { Route as ApiAlertsIdRouteImport } from './routes/api/alerts.$id'
-import { Route as AdminMarketsSuggestRouteImport } from './routes/admin/markets.suggest'
-import { Route as AdminMarketsCreateRouteImport } from './routes/admin/markets.create'
 import { Route as AuthedUUserIdRouteImport } from './routes/_authed/u.$userId'
 import { Route as AuthedSupportTicketIdRouteImport } from './routes/_authed/support.$ticketId'
 import { Route as AuthedMarketsSlugRouteImport } from './routes/_authed/markets.$slug'
@@ -71,9 +56,12 @@ import { Route as ApiPublicHooksComputeTrendsRouteImport } from './routes/api/pu
 import { Route as ApiPublicHooksAutoSuggestMarketsRouteImport } from './routes/api/public/hooks/auto-suggest-markets'
 import { Route as ApiPublicHooksAutoResolveRouteImport } from './routes/api/public/hooks/auto-resolve'
 import { Route as ApiPublicHooksAnalyzeSentimentRouteImport } from './routes/api/public/hooks/analyze-sentiment'
-import { Route as AdminMarketsIdResolveRouteImport } from './routes/admin/markets.$id.resolve'
-import { Route as AdminMarketsIdEditRouteImport } from './routes/admin/markets.$id.edit'
 
+const WatchlistRoute = WatchlistRouteImport.update({
+  id: '/watchlist',
+  path: '/watchlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -82,6 +70,11 @@ const TermsRoute = TermsRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PulseRoute = PulseRouteImport.update({
+  id: '/pulse',
+  path: '/pulse',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -108,25 +101,20 @@ const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRouteRoute = AdminRouteRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MarketsIndexRoute = MarketsIndexRouteImport.update({
+  id: '/markets/',
+  path: '/markets/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LearnIndexRoute = LearnIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LearnRoute,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRouteRoute,
 } as any)
 const LearnSlippageRoute = LearnSlippageRouteImport.update({
   id: '/slippage',
@@ -167,66 +155,6 @@ const ApiAlertsRoute = ApiAlertsRouteImport.update({
   id: '/api/alerts',
   path: '/api/alerts',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminTradesRoute = AdminTradesRouteImport.update({
-  id: '/trades',
-  path: '/trades',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminSyndicatesRoute = AdminSyndicatesRouteImport.update({
-  id: '/syndicates',
-  path: '/syndicates',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminSupportRoute = AdminSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminSuggestionsRoute = AdminSuggestionsRouteImport.update({
-  id: '/suggestions',
-  path: '/suggestions',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminSignalsRoute = AdminSignalsRouteImport.update({
-  id: '/signals',
-  path: '/signals',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminNewsRoute = AdminNewsRouteImport.update({
-  id: '/news',
-  path: '/news',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminKycRoute = AdminKycRouteImport.update({
-  id: '/kyc',
-  path: '/kyc',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminHealthRoute = AdminHealthRouteImport.update({
-  id: '/health',
-  path: '/health',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminEdgeRoute = AdminEdgeRouteImport.update({
-  id: '/edge',
-  path: '/edge',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminAlertsRoute = AdminAlertsRouteImport.update({
-  id: '/alerts',
-  path: '/alerts',
-  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AuthedWalletRoute = AuthedWalletRouteImport.update({
   id: '/wallet',
@@ -273,16 +201,6 @@ const AuthedComingSoonRoute = AuthedComingSoonRouteImport.update({
   path: '/coming-soon',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AdminMarketsIndexRoute = AdminMarketsIndexRouteImport.update({
-  id: '/markets/',
-  path: '/markets/',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AuthedMarketsIndexRoute = AuthedMarketsIndexRouteImport.update({
-  id: '/markets/',
-  path: '/markets/',
-  getParentRoute: () => AuthedRoute,
-} as any)
 const ApiPaymentsWebhookRoute = ApiPaymentsWebhookRouteImport.update({
   id: '/api/payments/webhook',
   path: '/api/payments/webhook',
@@ -323,16 +241,6 @@ const ApiAlertsIdRoute = ApiAlertsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => ApiAlertsRoute,
-} as any)
-const AdminMarketsSuggestRoute = AdminMarketsSuggestRouteImport.update({
-  id: '/markets/suggest',
-  path: '/markets/suggest',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminMarketsCreateRoute = AdminMarketsCreateRouteImport.update({
-  id: '/markets/create',
-  path: '/markets/create',
-  getParentRoute: () => AdminRouteRoute,
 } as any)
 const AuthedUUserIdRoute = AuthedUUserIdRouteImport.update({
   id: '/u/$userId',
@@ -390,26 +298,17 @@ const ApiPublicHooksAnalyzeSentimentRoute =
     path: '/api/public/hooks/analyze-sentiment',
     getParentRoute: () => rootRouteImport,
   } as any)
-const AdminMarketsIdResolveRoute = AdminMarketsIdResolveRouteImport.update({
-  id: '/markets/$id/resolve',
-  path: '/markets/$id/resolve',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
-const AdminMarketsIdEditRoute = AdminMarketsIdEditRouteImport.update({
-  id: '/markets/$id/edit',
-  path: '/markets/$id/edit',
-  getParentRoute: () => AdminRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRouteWithChildren
   '/contact': typeof ContactRoute
   '/learn': typeof LearnRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/pulse': typeof PulseRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
+  '/watchlist': typeof WatchlistRoute
   '/coming-soon': typeof AuthedComingSoonRoute
   '/kyc': typeof AuthedKycRoute
   '/leaderboard': typeof AuthedLeaderboardRoute
@@ -419,18 +318,6 @@ export interface FileRoutesByFullPath {
   '/profile': typeof AuthedProfileRoute
   '/support': typeof AuthedSupportRouteWithChildren
   '/wallet': typeof AuthedWalletRoute
-  '/admin/alerts': typeof AdminAlertsRoute
-  '/admin/edge': typeof AdminEdgeRoute
-  '/admin/health': typeof AdminHealthRoute
-  '/admin/kyc': typeof AdminKycRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/news': typeof AdminNewsRoute
-  '/admin/signals': typeof AdminSignalsRoute
-  '/admin/suggestions': typeof AdminSuggestionsRoute
-  '/admin/support': typeof AdminSupportRoute
-  '/admin/syndicates': typeof AdminSyndicatesRoute
-  '/admin/trades': typeof AdminTradesRoute
-  '/admin/users': typeof AdminUsersRoute
   '/api/alerts': typeof ApiAlertsRouteWithChildren
   '/learn/about': typeof LearnAboutRoute
   '/learn/disclaimer': typeof LearnDisclaimerRoute
@@ -439,13 +326,11 @@ export interface FileRoutesByFullPath {
   '/learn/markets': typeof LearnMarketsRoute
   '/learn/risk': typeof LearnRiskRoute
   '/learn/slippage': typeof LearnSlippageRoute
-  '/admin/': typeof AdminIndexRoute
   '/learn/': typeof LearnIndexRoute
+  '/markets/': typeof MarketsIndexRoute
   '/markets/$slug': typeof AuthedMarketsSlugRoute
   '/support/$ticketId': typeof AuthedSupportTicketIdRoute
   '/u/$userId': typeof AuthedUUserIdRoute
-  '/admin/markets/create': typeof AdminMarketsCreateRoute
-  '/admin/markets/suggest': typeof AdminMarketsSuggestRoute
   '/api/alerts/$id': typeof ApiAlertsIdRoute
   '/api/alerts/check': typeof ApiAlertsCheckRoute
   '/api/local/$': typeof ApiLocalSplatRoute
@@ -454,10 +339,6 @@ export interface FileRoutesByFullPath {
   '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/api/payments/verify': typeof ApiPaymentsVerifyRoute
   '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
-  '/markets/': typeof AuthedMarketsIndexRoute
-  '/admin/markets/': typeof AdminMarketsIndexRoute
-  '/admin/markets/$id/edit': typeof AdminMarketsIdEditRoute
-  '/admin/markets/$id/resolve': typeof AdminMarketsIdResolveRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/auto-resolve': typeof ApiPublicHooksAutoResolveRoute
   '/api/public/hooks/auto-suggest-markets': typeof ApiPublicHooksAutoSuggestMarketsRoute
@@ -471,8 +352,10 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/pulse': typeof PulseRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
+  '/watchlist': typeof WatchlistRoute
   '/coming-soon': typeof AuthedComingSoonRoute
   '/kyc': typeof AuthedKycRoute
   '/leaderboard': typeof AuthedLeaderboardRoute
@@ -482,18 +365,6 @@ export interface FileRoutesByTo {
   '/profile': typeof AuthedProfileRoute
   '/support': typeof AuthedSupportRouteWithChildren
   '/wallet': typeof AuthedWalletRoute
-  '/admin/alerts': typeof AdminAlertsRoute
-  '/admin/edge': typeof AdminEdgeRoute
-  '/admin/health': typeof AdminHealthRoute
-  '/admin/kyc': typeof AdminKycRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/news': typeof AdminNewsRoute
-  '/admin/signals': typeof AdminSignalsRoute
-  '/admin/suggestions': typeof AdminSuggestionsRoute
-  '/admin/support': typeof AdminSupportRoute
-  '/admin/syndicates': typeof AdminSyndicatesRoute
-  '/admin/trades': typeof AdminTradesRoute
-  '/admin/users': typeof AdminUsersRoute
   '/api/alerts': typeof ApiAlertsRouteWithChildren
   '/learn/about': typeof LearnAboutRoute
   '/learn/disclaimer': typeof LearnDisclaimerRoute
@@ -502,13 +373,11 @@ export interface FileRoutesByTo {
   '/learn/markets': typeof LearnMarketsRoute
   '/learn/risk': typeof LearnRiskRoute
   '/learn/slippage': typeof LearnSlippageRoute
-  '/admin': typeof AdminIndexRoute
   '/learn': typeof LearnIndexRoute
+  '/markets': typeof MarketsIndexRoute
   '/markets/$slug': typeof AuthedMarketsSlugRoute
   '/support/$ticketId': typeof AuthedSupportTicketIdRoute
   '/u/$userId': typeof AuthedUUserIdRoute
-  '/admin/markets/create': typeof AdminMarketsCreateRoute
-  '/admin/markets/suggest': typeof AdminMarketsSuggestRoute
   '/api/alerts/$id': typeof ApiAlertsIdRoute
   '/api/alerts/check': typeof ApiAlertsCheckRoute
   '/api/local/$': typeof ApiLocalSplatRoute
@@ -517,10 +386,6 @@ export interface FileRoutesByTo {
   '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/api/payments/verify': typeof ApiPaymentsVerifyRoute
   '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
-  '/markets': typeof AuthedMarketsIndexRoute
-  '/admin/markets': typeof AdminMarketsIndexRoute
-  '/admin/markets/$id/edit': typeof AdminMarketsIdEditRoute
-  '/admin/markets/$id/resolve': typeof AdminMarketsIdResolveRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/auto-resolve': typeof ApiPublicHooksAutoResolveRoute
   '/api/public/hooks/auto-suggest-markets': typeof ApiPublicHooksAutoSuggestMarketsRoute
@@ -532,14 +397,15 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteRouteWithChildren
   '/_authed': typeof AuthedRouteWithChildren
   '/contact': typeof ContactRoute
   '/learn': typeof LearnRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
+  '/pulse': typeof PulseRoute
   '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
+  '/watchlist': typeof WatchlistRoute
   '/_authed/coming-soon': typeof AuthedComingSoonRoute
   '/_authed/kyc': typeof AuthedKycRoute
   '/_authed/leaderboard': typeof AuthedLeaderboardRoute
@@ -549,18 +415,6 @@ export interface FileRoutesById {
   '/_authed/profile': typeof AuthedProfileRoute
   '/_authed/support': typeof AuthedSupportRouteWithChildren
   '/_authed/wallet': typeof AuthedWalletRoute
-  '/admin/alerts': typeof AdminAlertsRoute
-  '/admin/edge': typeof AdminEdgeRoute
-  '/admin/health': typeof AdminHealthRoute
-  '/admin/kyc': typeof AdminKycRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/news': typeof AdminNewsRoute
-  '/admin/signals': typeof AdminSignalsRoute
-  '/admin/suggestions': typeof AdminSuggestionsRoute
-  '/admin/support': typeof AdminSupportRoute
-  '/admin/syndicates': typeof AdminSyndicatesRoute
-  '/admin/trades': typeof AdminTradesRoute
-  '/admin/users': typeof AdminUsersRoute
   '/api/alerts': typeof ApiAlertsRouteWithChildren
   '/learn/about': typeof LearnAboutRoute
   '/learn/disclaimer': typeof LearnDisclaimerRoute
@@ -569,13 +423,11 @@ export interface FileRoutesById {
   '/learn/markets': typeof LearnMarketsRoute
   '/learn/risk': typeof LearnRiskRoute
   '/learn/slippage': typeof LearnSlippageRoute
-  '/admin/': typeof AdminIndexRoute
   '/learn/': typeof LearnIndexRoute
+  '/markets/': typeof MarketsIndexRoute
   '/_authed/markets/$slug': typeof AuthedMarketsSlugRoute
   '/_authed/support/$ticketId': typeof AuthedSupportTicketIdRoute
   '/_authed/u/$userId': typeof AuthedUUserIdRoute
-  '/admin/markets/create': typeof AdminMarketsCreateRoute
-  '/admin/markets/suggest': typeof AdminMarketsSuggestRoute
   '/api/alerts/$id': typeof ApiAlertsIdRoute
   '/api/alerts/check': typeof ApiAlertsCheckRoute
   '/api/local/$': typeof ApiLocalSplatRoute
@@ -584,10 +436,6 @@ export interface FileRoutesById {
   '/api/payments/status': typeof ApiPaymentsStatusRoute
   '/api/payments/verify': typeof ApiPaymentsVerifyRoute
   '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
-  '/_authed/markets/': typeof AuthedMarketsIndexRoute
-  '/admin/markets/': typeof AdminMarketsIndexRoute
-  '/admin/markets/$id/edit': typeof AdminMarketsIdEditRoute
-  '/admin/markets/$id/resolve': typeof AdminMarketsIdResolveRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/auto-resolve': typeof ApiPublicHooksAutoResolveRoute
   '/api/public/hooks/auto-suggest-markets': typeof ApiPublicHooksAutoSuggestMarketsRoute
@@ -600,13 +448,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/contact'
     | '/learn'
     | '/login'
     | '/onboarding'
+    | '/pulse'
     | '/signup'
     | '/terms'
+    | '/watchlist'
     | '/coming-soon'
     | '/kyc'
     | '/leaderboard'
@@ -616,18 +465,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/support'
     | '/wallet'
-    | '/admin/alerts'
-    | '/admin/edge'
-    | '/admin/health'
-    | '/admin/kyc'
-    | '/admin/login'
-    | '/admin/news'
-    | '/admin/signals'
-    | '/admin/suggestions'
-    | '/admin/support'
-    | '/admin/syndicates'
-    | '/admin/trades'
-    | '/admin/users'
     | '/api/alerts'
     | '/learn/about'
     | '/learn/disclaimer'
@@ -636,13 +473,11 @@ export interface FileRouteTypes {
     | '/learn/markets'
     | '/learn/risk'
     | '/learn/slippage'
-    | '/admin/'
     | '/learn/'
+    | '/markets/'
     | '/markets/$slug'
     | '/support/$ticketId'
     | '/u/$userId'
-    | '/admin/markets/create'
-    | '/admin/markets/suggest'
     | '/api/alerts/$id'
     | '/api/alerts/check'
     | '/api/local/$'
@@ -651,10 +486,6 @@ export interface FileRouteTypes {
     | '/api/payments/status'
     | '/api/payments/verify'
     | '/api/payments/webhook'
-    | '/markets/'
-    | '/admin/markets/'
-    | '/admin/markets/$id/edit'
-    | '/admin/markets/$id/resolve'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/auto-resolve'
     | '/api/public/hooks/auto-suggest-markets'
@@ -668,8 +499,10 @@ export interface FileRouteTypes {
     | '/contact'
     | '/login'
     | '/onboarding'
+    | '/pulse'
     | '/signup'
     | '/terms'
+    | '/watchlist'
     | '/coming-soon'
     | '/kyc'
     | '/leaderboard'
@@ -679,18 +512,6 @@ export interface FileRouteTypes {
     | '/profile'
     | '/support'
     | '/wallet'
-    | '/admin/alerts'
-    | '/admin/edge'
-    | '/admin/health'
-    | '/admin/kyc'
-    | '/admin/login'
-    | '/admin/news'
-    | '/admin/signals'
-    | '/admin/suggestions'
-    | '/admin/support'
-    | '/admin/syndicates'
-    | '/admin/trades'
-    | '/admin/users'
     | '/api/alerts'
     | '/learn/about'
     | '/learn/disclaimer'
@@ -699,13 +520,11 @@ export interface FileRouteTypes {
     | '/learn/markets'
     | '/learn/risk'
     | '/learn/slippage'
-    | '/admin'
     | '/learn'
+    | '/markets'
     | '/markets/$slug'
     | '/support/$ticketId'
     | '/u/$userId'
-    | '/admin/markets/create'
-    | '/admin/markets/suggest'
     | '/api/alerts/$id'
     | '/api/alerts/check'
     | '/api/local/$'
@@ -714,10 +533,6 @@ export interface FileRouteTypes {
     | '/api/payments/status'
     | '/api/payments/verify'
     | '/api/payments/webhook'
-    | '/markets'
-    | '/admin/markets'
-    | '/admin/markets/$id/edit'
-    | '/admin/markets/$id/resolve'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/auto-resolve'
     | '/api/public/hooks/auto-suggest-markets'
@@ -728,14 +543,15 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/_authed'
     | '/contact'
     | '/learn'
     | '/login'
     | '/onboarding'
+    | '/pulse'
     | '/signup'
     | '/terms'
+    | '/watchlist'
     | '/_authed/coming-soon'
     | '/_authed/kyc'
     | '/_authed/leaderboard'
@@ -745,18 +561,6 @@ export interface FileRouteTypes {
     | '/_authed/profile'
     | '/_authed/support'
     | '/_authed/wallet'
-    | '/admin/alerts'
-    | '/admin/edge'
-    | '/admin/health'
-    | '/admin/kyc'
-    | '/admin/login'
-    | '/admin/news'
-    | '/admin/signals'
-    | '/admin/suggestions'
-    | '/admin/support'
-    | '/admin/syndicates'
-    | '/admin/trades'
-    | '/admin/users'
     | '/api/alerts'
     | '/learn/about'
     | '/learn/disclaimer'
@@ -765,13 +569,11 @@ export interface FileRouteTypes {
     | '/learn/markets'
     | '/learn/risk'
     | '/learn/slippage'
-    | '/admin/'
     | '/learn/'
+    | '/markets/'
     | '/_authed/markets/$slug'
     | '/_authed/support/$ticketId'
     | '/_authed/u/$userId'
-    | '/admin/markets/create'
-    | '/admin/markets/suggest'
     | '/api/alerts/$id'
     | '/api/alerts/check'
     | '/api/local/$'
@@ -780,10 +582,6 @@ export interface FileRouteTypes {
     | '/api/payments/status'
     | '/api/payments/verify'
     | '/api/payments/webhook'
-    | '/_authed/markets/'
-    | '/admin/markets/'
-    | '/admin/markets/$id/edit'
-    | '/admin/markets/$id/resolve'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/auto-resolve'
     | '/api/public/hooks/auto-suggest-markets'
@@ -795,15 +593,17 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRouteRoute: typeof AdminRouteRouteWithChildren
   AuthedRoute: typeof AuthedRouteWithChildren
   ContactRoute: typeof ContactRoute
   LearnRoute: typeof LearnRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
+  PulseRoute: typeof PulseRoute
   SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
+  WatchlistRoute: typeof WatchlistRoute
   ApiAlertsRoute: typeof ApiAlertsRouteWithChildren
+  MarketsIndexRoute: typeof MarketsIndexRoute
   ApiLocalSplatRoute: typeof ApiLocalSplatRoute
   ApiNotificationsPreferencesRoute: typeof ApiNotificationsPreferencesRoute
   ApiPaymentsDepositRoute: typeof ApiPaymentsDepositRoute
@@ -821,6 +621,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/watchlist': {
+      id: '/watchlist'
+      path: '/watchlist'
+      fullPath: '/watchlist'
+      preLoaderRoute: typeof WatchlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -833,6 +640,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pulse': {
+      id: '/pulse'
+      path: '/pulse'
+      fullPath: '/pulse'
+      preLoaderRoute: typeof PulseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -870,18 +684,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/markets/': {
+      id: '/markets/'
+      path: '/markets'
+      fullPath: '/markets/'
+      preLoaderRoute: typeof MarketsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/learn/': {
@@ -890,13 +704,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/learn/'
       preLoaderRoute: typeof LearnIndexRouteImport
       parentRoute: typeof LearnRoute
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
     }
     '/learn/slippage': {
       id: '/learn/slippage'
@@ -953,90 +760,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/alerts'
       preLoaderRoute: typeof ApiAlertsRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/trades': {
-      id: '/admin/trades'
-      path: '/trades'
-      fullPath: '/admin/trades'
-      preLoaderRoute: typeof AdminTradesRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/syndicates': {
-      id: '/admin/syndicates'
-      path: '/syndicates'
-      fullPath: '/admin/syndicates'
-      preLoaderRoute: typeof AdminSyndicatesRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/support': {
-      id: '/admin/support'
-      path: '/support'
-      fullPath: '/admin/support'
-      preLoaderRoute: typeof AdminSupportRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/suggestions': {
-      id: '/admin/suggestions'
-      path: '/suggestions'
-      fullPath: '/admin/suggestions'
-      preLoaderRoute: typeof AdminSuggestionsRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/signals': {
-      id: '/admin/signals'
-      path: '/signals'
-      fullPath: '/admin/signals'
-      preLoaderRoute: typeof AdminSignalsRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/news': {
-      id: '/admin/news'
-      path: '/news'
-      fullPath: '/admin/news'
-      preLoaderRoute: typeof AdminNewsRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/kyc': {
-      id: '/admin/kyc'
-      path: '/kyc'
-      fullPath: '/admin/kyc'
-      preLoaderRoute: typeof AdminKycRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/health': {
-      id: '/admin/health'
-      path: '/health'
-      fullPath: '/admin/health'
-      preLoaderRoute: typeof AdminHealthRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/edge': {
-      id: '/admin/edge'
-      path: '/edge'
-      fullPath: '/admin/edge'
-      preLoaderRoute: typeof AdminEdgeRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/alerts': {
-      id: '/admin/alerts'
-      path: '/alerts'
-      fullPath: '/admin/alerts'
-      preLoaderRoute: typeof AdminAlertsRouteImport
-      parentRoute: typeof AdminRouteRoute
     }
     '/_authed/wallet': {
       id: '/_authed/wallet'
@@ -1101,20 +824,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedComingSoonRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/admin/markets/': {
-      id: '/admin/markets/'
-      path: '/markets'
-      fullPath: '/admin/markets/'
-      preLoaderRoute: typeof AdminMarketsIndexRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/_authed/markets/': {
-      id: '/_authed/markets/'
-      path: '/markets'
-      fullPath: '/markets/'
-      preLoaderRoute: typeof AuthedMarketsIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/api/payments/webhook': {
       id: '/api/payments/webhook'
       path: '/api/payments/webhook'
@@ -1170,20 +879,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/alerts/$id'
       preLoaderRoute: typeof ApiAlertsIdRouteImport
       parentRoute: typeof ApiAlertsRoute
-    }
-    '/admin/markets/suggest': {
-      id: '/admin/markets/suggest'
-      path: '/markets/suggest'
-      fullPath: '/admin/markets/suggest'
-      preLoaderRoute: typeof AdminMarketsSuggestRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/markets/create': {
-      id: '/admin/markets/create'
-      path: '/markets/create'
-      fullPath: '/admin/markets/create'
-      preLoaderRoute: typeof AdminMarketsCreateRouteImport
-      parentRoute: typeof AdminRouteRoute
     }
     '/_authed/u/$userId': {
       id: '/_authed/u/$userId'
@@ -1255,68 +950,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksAnalyzeSentimentRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/markets/$id/resolve': {
-      id: '/admin/markets/$id/resolve'
-      path: '/markets/$id/resolve'
-      fullPath: '/admin/markets/$id/resolve'
-      preLoaderRoute: typeof AdminMarketsIdResolveRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
-    '/admin/markets/$id/edit': {
-      id: '/admin/markets/$id/edit'
-      path: '/markets/$id/edit'
-      fullPath: '/admin/markets/$id/edit'
-      preLoaderRoute: typeof AdminMarketsIdEditRouteImport
-      parentRoute: typeof AdminRouteRoute
-    }
   }
 }
-
-interface AdminRouteRouteChildren {
-  AdminAlertsRoute: typeof AdminAlertsRoute
-  AdminEdgeRoute: typeof AdminEdgeRoute
-  AdminHealthRoute: typeof AdminHealthRoute
-  AdminKycRoute: typeof AdminKycRoute
-  AdminLoginRoute: typeof AdminLoginRoute
-  AdminNewsRoute: typeof AdminNewsRoute
-  AdminSignalsRoute: typeof AdminSignalsRoute
-  AdminSuggestionsRoute: typeof AdminSuggestionsRoute
-  AdminSupportRoute: typeof AdminSupportRoute
-  AdminSyndicatesRoute: typeof AdminSyndicatesRoute
-  AdminTradesRoute: typeof AdminTradesRoute
-  AdminUsersRoute: typeof AdminUsersRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-  AdminMarketsCreateRoute: typeof AdminMarketsCreateRoute
-  AdminMarketsSuggestRoute: typeof AdminMarketsSuggestRoute
-  AdminMarketsIndexRoute: typeof AdminMarketsIndexRoute
-  AdminMarketsIdEditRoute: typeof AdminMarketsIdEditRoute
-  AdminMarketsIdResolveRoute: typeof AdminMarketsIdResolveRoute
-}
-
-const AdminRouteRouteChildren: AdminRouteRouteChildren = {
-  AdminAlertsRoute: AdminAlertsRoute,
-  AdminEdgeRoute: AdminEdgeRoute,
-  AdminHealthRoute: AdminHealthRoute,
-  AdminKycRoute: AdminKycRoute,
-  AdminLoginRoute: AdminLoginRoute,
-  AdminNewsRoute: AdminNewsRoute,
-  AdminSignalsRoute: AdminSignalsRoute,
-  AdminSuggestionsRoute: AdminSuggestionsRoute,
-  AdminSupportRoute: AdminSupportRoute,
-  AdminSyndicatesRoute: AdminSyndicatesRoute,
-  AdminTradesRoute: AdminTradesRoute,
-  AdminUsersRoute: AdminUsersRoute,
-  AdminIndexRoute: AdminIndexRoute,
-  AdminMarketsCreateRoute: AdminMarketsCreateRoute,
-  AdminMarketsSuggestRoute: AdminMarketsSuggestRoute,
-  AdminMarketsIndexRoute: AdminMarketsIndexRoute,
-  AdminMarketsIdEditRoute: AdminMarketsIdEditRoute,
-  AdminMarketsIdResolveRoute: AdminMarketsIdResolveRoute,
-}
-
-const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
-  AdminRouteRouteChildren,
-)
 
 interface AuthedSupportRouteChildren {
   AuthedSupportTicketIdRoute: typeof AuthedSupportTicketIdRoute
@@ -1342,7 +977,6 @@ interface AuthedRouteChildren {
   AuthedWalletRoute: typeof AuthedWalletRoute
   AuthedMarketsSlugRoute: typeof AuthedMarketsSlugRoute
   AuthedUUserIdRoute: typeof AuthedUUserIdRoute
-  AuthedMarketsIndexRoute: typeof AuthedMarketsIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -1357,7 +991,6 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedWalletRoute: AuthedWalletRoute,
   AuthedMarketsSlugRoute: AuthedMarketsSlugRoute,
   AuthedUUserIdRoute: AuthedUUserIdRoute,
-  AuthedMarketsIndexRoute: AuthedMarketsIndexRoute,
 }
 
 const AuthedRouteWithChildren =
@@ -1403,15 +1036,17 @@ const ApiAlertsRouteWithChildren = ApiAlertsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRouteRoute: AdminRouteRouteWithChildren,
   AuthedRoute: AuthedRouteWithChildren,
   ContactRoute: ContactRoute,
   LearnRoute: LearnRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
+  PulseRoute: PulseRoute,
   SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
+  WatchlistRoute: WatchlistRoute,
   ApiAlertsRoute: ApiAlertsRouteWithChildren,
+  MarketsIndexRoute: MarketsIndexRoute,
   ApiLocalSplatRoute: ApiLocalSplatRoute,
   ApiNotificationsPreferencesRoute: ApiNotificationsPreferencesRoute,
   ApiPaymentsDepositRoute: ApiPaymentsDepositRoute,

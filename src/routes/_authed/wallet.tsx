@@ -41,7 +41,7 @@ import {
 } from "@/lib/payments-client";
 
 export const Route = createFileRoute("/_authed/wallet")({
-  head: () => ({ meta: [{ title: "Wallet — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Wallet — Soko Stock" }] }),
   component: WalletPage,
 });
 

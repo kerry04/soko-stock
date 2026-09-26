@@ -193,7 +193,7 @@ function ProfilePage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Join SokoResult",
+          title: "Join Soko Stock",
           text: "Trade Kenyan prediction markets",
           url,
         });

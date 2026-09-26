@@ -64,7 +64,7 @@ export function FirstTradeWarning({ open, onConfirm, onCancel }: FirstTradeProps
           </div>
           <DialogTitle className="text-center">Before your first trade</DialogTitle>
           <DialogDescription className="text-center">
-            SokoResult is real money. You can lose some or all of what you invest.
+            Soko Stock is real money. You can lose some or all of what you invest.
           </DialogDescription>
         </DialogHeader>
 

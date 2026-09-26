@@ -1,47 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Logo } from "@/components/brand/Logo";
-import { Button } from "@/components/ui/button";
-import { PublicHeader } from "@/components/nav/PublicHeader";
-import { MobileBottomNav } from "@/components/nav/MobileBottomNav";
-import { FeaturedMarketCarousel } from "@/components/markets/FeaturedMarketCarousel";
-import {
-  CategoryRail,
-  railKeyToDbCategory,
-  RAIL_CATEGORIES,
-} from "@/components/markets/CategoryRail";
-import { ProductMarketCard } from "@/components/markets/ProductMarketCard";
+import { TerminalShell } from "@/components/nav/TerminalShell";
+import { SignalMap } from "@/components/signals/SignalMap";
 import { NewsTicker } from "@/components/markets/NewsTicker";
+import { ProductMarketCard } from "@/components/markets/ProductMarketCard";
 import { EmptyMarketState } from "@/components/markets/EmptyMarketState";
-import { PaymentBadges } from "@/components/marketing/PaymentBadges";
-import {
-  sortMarkets,
-  type MarketSort,
-  type PricePoint,
-  type ProductMarket,
-} from "@/components/markets/product-market";
-import { cn } from "@/lib/utils";
-import { useLang } from "@/lib/i18n";
+import { type PricePoint, type ProductMarket } from "@/components/markets/product-market";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SokoResult — Africa's Prediction Market" },
+      { title: "Soko Stock — Live Signal Terminal" },
       {
         name: "description",
         content:
-          "Browse live prediction markets on Kenyan politics, football, business, and culture. Draft your prediction free — sign in only when you buy.",
+          "Watch the world's news move across a live signal map, then trade the outcome on Soko Stock prediction markets.",
       },
-      { property: "og:title", content: "SokoResult — Africa's Prediction Market" },
-      {
-        property: "og:description",
-        content: "Browse live markets, draft your prediction, and trade probabilities in KES.",
-      },
+      { property: "og:title", content: "Soko Stock — Live Signal Terminal" },
     ],
   }),
-  component: LandingPage,
+  component: SignalHome,
 });
 
 interface MarketRow {
@@ -59,27 +40,22 @@ interface MarketRow {
 
 function useOpenMarkets() {
   const [markets, setMarkets] = useState<ProductMarket[]>([]);
-  const [count, setCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
-      const { data: m, count: c } = await supabase
+    (async () => {
+      const { data: m } = await supabase
         .from("markets")
         .select(
           "id, slug, question, category, yes_price, no_price, volume_cents, trader_count, closes_at, created_at",
-          { count: "exact" },
         )
         .eq("status", "open")
         .order("volume_cents", { ascending: false })
-        .limit(12);
+        .limit(6);
       if (cancelled) return;
       const rows = (m ?? []) as MarketRow[];
-      setCount(c ?? rows.length);
-
       const histories: Record<string, PricePoint[]> = {};
-      const signals: Record<string, { prob: number; conf: number }> = {};
       if (rows.length > 0) {
         const { data: ph } = await supabase
           .from("price_history")
@@ -96,22 +72,6 @@ function useOpenMarkets() {
             histories[k].push({ yes_price: Number(row.yes_price), recorded_at: row.recorded_at });
           },
         );
-        // Soko model estimates for the AI-vs-market comparison (public read).
-        const { data: sig } = await supabase
-          .from("market_signals")
-          .select("market_id, signal_prob, confidence")
-          .in(
-            "market_id",
-            rows.map((r) => r.id),
-          );
-        ((sig ?? []) as { market_id: string; signal_prob: number; confidence: number }[]).forEach(
-          (row) => {
-            signals[row.market_id] = {
-              prob: Number(row.signal_prob),
-              conf: Number(row.confidence),
-            };
-          },
-        );
       }
       if (!cancelled) {
         setMarkets(
@@ -122,292 +82,99 @@ function useOpenMarkets() {
             volume_cents: Number(r.volume_cents),
             trader_count: Number(r.trader_count ?? 0),
             history: histories[r.id] ?? [],
-            signalProb: signals[r.id]?.prob ?? null,
-            signalConfidence: signals[r.id]?.conf ?? null,
+            signalProb: null,
+            signalConfidence: null,
           })),
         );
         setLoading(false);
       }
-    };
-    load();
-    // Keep the board live: refresh prices every 30s while the tab is visible,
-    // so odds glide in without a page reload once markets are open.
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") load();
-    }, 30_000);
+    })();
     return () => {
       cancelled = true;
-      clearInterval(id);
     };
   }, []);
 
-  return { markets, count, loading };
+  return { markets, loading };
 }
 
-function LandingPage() {
-  const { markets, count, loading } = useOpenMarkets();
-  const { t } = useLang();
+function SignalHome() {
+  const { markets, loading } = useOpenMarkets();
 
   return (
-    <div className="min-h-screen flex flex-col bg-background pb-[84px] md:pb-0">
-      <PublicHeader />
+    <TerminalShell>
       <NewsTicker />
-      <main>
-        {/* Markets first — no marketing hero. */}
-        <section
-          aria-labelledby="markets-heading"
-          className="mx-auto max-w-7xl px-4 sm:px-6 pt-4 sm:pt-8"
-        >
+      <main className="mx-auto max-w-[1400px] px-3 sm:px-5">
+        {/* Question-driven header, ops-room style */}
+        <section className="pt-5 sm:pt-8" aria-labelledby="signal-heading">
+          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-success">
+            Live · Global intelligence
+          </p>
+          <h1
+            id="signal-heading"
+            className="mt-2 max-w-3xl text-2xl font-extrabold tracking-tight sm:text-4xl"
+          >
+            What are you trying to find out?
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+            The map streams the world&apos;s raw news signals — every pulse is a story moving a
+            market somewhere. When a country lights up, the trade is underneath it.
+          </p>
+        </section>
+
+        <section aria-label="Live signal map" className="mt-5">
+          <SignalMap />
+        </section>
+
+        {/* Markets strip */}
+        <section aria-label="Open markets" className="py-8 sm:py-10">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h1
-                id="markets-heading"
-                className="text-2xl font-extrabold tracking-tight sm:text-3xl"
-              >
-                {t("home.title")}
-              </h1>
-              <p className="mt-1 max-w-xl text-sm text-muted-foreground">{t("home.subtitle")}</p>
-            </div>
-            {!loading && count !== null && count > 0 && (
-              <p className="inline-flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" aria-hidden />
-                <span className="num font-semibold text-foreground">{count}</span> {t("home.open")}
+              <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+                Terminal
               </p>
-            )}
+              <h2 className="mt-1 text-lg font-bold tracking-tight sm:text-xl">Open markets</h2>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="font-mono text-[11px] uppercase tracking-[0.14em]"
+            >
+              <Link to="/markets">
+                All markets <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            </Button>
           </div>
 
           <div className="mt-5">
             {loading ? (
-              <div
-                aria-hidden
-                className="h-72 rounded-xl border border-border bg-card/50 animate-pulse"
-              />
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="h-64 animate-pulse rounded-xl border border-border bg-card/50"
+                  />
+                ))}
+              </div>
+            ) : markets.length === 0 ? (
+              <EmptyMarketState />
             ) : (
-              <FeaturedMarketCarousel markets={markets} />
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {markets.map((m) => (
+                  <ProductMarketCard key={m.id} market={m} />
+                ))}
+              </div>
             )}
           </div>
         </section>
-
-        <MarketsSection markets={markets} loading={loading} />
       </main>
-      <SiteFooter />
-      <MobileBottomNav />
-    </div>
-  );
-}
 
-/* ───────────────────────────  MARKET GRID  ─────────────────────────── */
-
-const SORTS: { key: MarketSort; label: string }[] = [
-  { key: "trending", label: "Trending" },
-  { key: "new", label: "New" },
-  { key: "ending", label: "Ending soon" },
-  { key: "volume", label: "Highest volume" },
-];
-
-function MarketsSection({ markets, loading }: { markets: ProductMarket[]; loading: boolean }) {
-  const [cat, setCat] = useState("all");
-  const [sort, setSort] = useState<MarketSort>("trending");
-
-  const visible = useMemo(() => {
-    const db = railKeyToDbCategory(cat);
-    const filtered = db ? markets.filter((m) => m.category === db) : markets;
-    return sortMarkets(filtered, sort);
-  }, [markets, cat, sort]);
-
-  const catLabel = RAIL_CATEGORIES.find((c) => c.key === cat)?.label;
-
-  return (
-    <section aria-label="All markets" className="mx-auto max-w-7xl px-4 sm:px-6 py-8 sm:py-10">
-      <h2 className="text-lg font-bold tracking-tight sm:text-xl">All markets</h2>
-
-      <div className="mt-4">
-        <CategoryRail active={cat} onChange={setCat} />
-      </div>
-
-      <div
-        className="no-scrollbar -mx-4 mt-3 flex flex-nowrap gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0"
-        role="group"
-        aria-label="Sort markets"
-      >
-        {SORTS.map((s) => (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => setSort(s.key)}
-            aria-pressed={sort === s.key}
-            className={cn(
-              "h-8 shrink-0 rounded-full border px-3 text-xs font-medium transition-colors",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60",
-              sort === s.key
-                ? "border-success/50 bg-success/10 text-success"
-                : "border-border text-muted-foreground hover:border-border hover:text-foreground",
-            )}
-          >
-            {s.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-6">
-        {loading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-64 rounded-xl border border-border bg-card/50 animate-pulse"
-              />
-            ))}
-          </div>
-        ) : visible.length === 0 ? (
-          <EmptyMarketState topic={cat === "all" ? undefined : catLabel} />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {visible.map((m) => (
-              <ProductMarketCard key={m.id} market={m} />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {!loading && visible.length > 0 && (
-        <div className="mt-8 flex justify-center">
-          <Button variant="outline" asChild>
-            <Link to="/markets">
-              Explore all markets <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
-          </Button>
+      <footer className="border-t border-border/60">
+        <div className="mx-auto flex max-w-[1400px] flex-col items-center justify-between gap-2 px-4 py-6 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground sm:flex-row sm:px-5">
+          <span>Soko Stock — signal terminal</span>
+          <span>Trade responsibly. 18+.</span>
         </div>
-      )}
-    </section>
-  );
-}
-
-/* ───────────────────────────────  FOOTER  ─────────────────────────────── */
-
-function SiteFooter() {
-  const cols = [
-    {
-      title: "Trade",
-      links: [
-        { l: "All Markets", to: "/markets" },
-        { l: "About SokoResult", to: "/learn/about" },
-        { l: "How It Works", to: "/learn/how-to-trade" },
-      ],
-    },
-    {
-      title: "Company",
-      links: [
-        { l: "Contact", to: "/contact" },
-        { l: "Learn", to: "/learn" },
-      ],
-    },
-    {
-      title: "Legal",
-      links: [
-        { l: "Terms", to: "/terms" },
-        { l: "Responsible Trading", to: "/learn/risk" },
-        { l: "Disclaimer", to: "/learn/disclaimer" },
-      ],
-    },
-  ];
-
-  return (
-    <footer className="border-t border-border/60 mt-auto bg-card/20">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-10 pb-14">
-        {/* Cinematic banner — Nairobi at dusk */}
-        <div className="relative overflow-hidden rounded-2xl border border-border/60 shadow-card">
-          <img
-            src="/images/nairobi-dusk.jpg"
-            alt="Nairobi skyline at dusk, city lights"
-            loading="lazy"
-            className="h-52 w-full object-cover sm:h-64"
-          />
-          <div
-            className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10"
-            aria-hidden
-          />
-          <div className="absolute inset-0 flex flex-col justify-end p-5 sm:p-8">
-            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">
-              SokoResult
-            </p>
-            <h2 className="mt-1.5 max-w-xl text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-              Put your money where your mouth is.
-            </h2>
-            <p className="mt-1.5 max-w-lg text-sm leading-relaxed text-white/75">
-              Kenyan politics, football, business and culture — priced by the crowd, settled in KES.
-            </p>
-            <div className="mt-4">
-              <Button
-                asChild
-                size="lg"
-                className="min-h-[48px] w-full bg-success font-bold text-success-foreground hover:bg-success/90 sm:w-auto"
-              >
-                <Link to="/signup" search={{ redirect: "/" }}>
-                  Start trading free <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
-            </div>
-          </div>
-          <a
-            href="https://commons.wikimedia.org/wiki/File:Nairobi_night_skyline_at_dusk_.jpg"
-            target="_blank"
-            rel="noreferrer"
-            className="absolute bottom-2 right-3 text-[10px] text-white/50 underline-offset-2 hover:text-white/80 hover:underline"
-          >
-            Photo: Nbi101 / Wikimedia Commons (CC BY-SA 4.0)
-          </a>
-        </div>
-
-        <div className="mt-12 grid gap-10 md:gap-8 md:grid-cols-12">
-          <div className="md:col-span-4">
-            <Logo size="md" />
-            <p className="mt-4 text-sm text-muted-foreground max-w-xs leading-relaxed">
-              Africa&apos;s prediction market. Trade outcomes on the events shaping the continent —
-              with information, not luck.
-            </p>
-            <div className="mt-5">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2.5">
-                Pay with
-              </div>
-              <PaymentBadges />
-            </div>
-          </div>
-          <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-8">
-            {cols.map((c) => (
-              <FooterCol key={c.title} title={c.title} links={c.links} />
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="border-t border-border/60">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span>© {new Date().getFullYear()} SokoResult. Trade responsibly. 18+.</span>
-          <span className="font-mono">Made in Nairobi</span>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-function FooterCol({ title, links }: { title: string; links: { l: string; to: string }[] }) {
-  return (
-    <div>
-      <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground">
-        {title}
-      </div>
-      <ul className="mt-4 space-y-2.5 text-sm">
-        {links.map((link) => (
-          <li key={link.l}>
-            <a
-              href={link.to}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {link.l}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </div>
+      </footer>
+    </TerminalShell>
   );
 }

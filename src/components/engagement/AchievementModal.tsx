@@ -45,7 +45,7 @@ export function AchievementModal({
   const grad = TIER_GLOW[unlock.tier] ?? TIER_GLOW.bronze;
 
   const share = async () => {
-    const text = `🏆 I just unlocked "${unlock.title}" on SokoResult! ${unlock.description}`;
+    const text = `🏆 I just unlocked "${unlock.title}" on Soko Stock! ${unlock.description}`;
     const url = typeof window !== "undefined" ? window.location.origin : "";
     if (navigator.share) {
       try {

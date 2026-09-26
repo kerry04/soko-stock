@@ -11,7 +11,7 @@ import { EquityHero } from "@/components/portfolio/EquityHero";
 import { CapitalDeployer } from "@/components/portfolio/CapitalDeployer";
 
 export const Route = createFileRoute("/_authed/portfolio")({
-  head: () => ({ meta: [{ title: "Portfolio — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Portfolio — Soko Stock" }] }),
   component: PortfolioPage,
 });
 

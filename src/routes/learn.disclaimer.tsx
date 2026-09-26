@@ -3,9 +3,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/learn/disclaimer")({
   head: () => ({
     meta: [
-      { title: "Disclaimer — SokoResult" },
-      { name: "description", content: "Important disclaimer about trading prediction markets on SokoResult." },
-      { property: "og:title", content: "SokoResult disclaimer" },
+      { title: "Disclaimer — Soko Stock" },
+      { name: "description", content: "Important disclaimer about trading prediction markets on Soko Stock." },
+      { property: "og:title", content: "Soko Stock disclaimer" },
       { property: "og:description", content: "Read this before you trade." },
     ],
   }),
@@ -25,7 +25,7 @@ function Page() {
         </div>
 
         <ul className="space-y-3 text-muted-foreground text-sm list-disc list-inside">
-          <li>SokoResult is not financial, investment, or legal advice. Anything you read on this site or from other users is opinion, not advice.</li>
+          <li>Soko Stock is not financial, investment, or legal advice. Anything you read on this site or from other users is opinion, not advice.</li>
           <li>Past performance does not guarantee future results. A market that "always" resolves a certain way can still surprise you.</li>
           <li>Markets can be wrong. The crowd's estimate is just an estimate.</li>
           <li>You must be 18+ and a resident of a jurisdiction where prediction markets are legal.</li>

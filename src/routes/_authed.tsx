@@ -4,8 +4,7 @@ import { ShieldAlert, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { recordSessionOnce } from "@/lib/fingerprint";
 import { AchievementModal } from "@/components/engagement/AchievementModal";
-import { PublicHeader } from "@/components/nav/PublicHeader";
-import { MobileBottomNav } from "@/components/nav/MobileBottomNav";
+import { TerminalShell } from "@/components/nav/TerminalShell";
 
 export const Route = createFileRoute("/_authed")({
   beforeLoad: ({ location }) => {
@@ -28,29 +27,22 @@ function AuthedLayout() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        Loading…
+      <div className="min-h-screen flex items-center justify-center font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        Authenticating…
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Same nav as the public board: top header on laptop, bottom tab bar
-          on phones. No sidebar, no drawer menu — signed-in users get the
-          account variant (Wallet instead of Learn). */}
-      <PublicHeader />
+    <TerminalShell>
       <KycBanner show={(profile?.kyc_tier ?? 0) === 0} />
-      <main className="pb-[84px] md:pb-0">
-        <Outlet />
-      </main>
-      <MobileBottomNav />
+      <Outlet />
       <AchievementModal
         unlock={topAchievement}
         open={!!topAchievement}
         onClose={dismissTopAchievement}
       />
-    </div>
+    </TerminalShell>
   );
 }
 

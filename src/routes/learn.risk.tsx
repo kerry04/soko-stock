@@ -3,10 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/learn/risk")({
   head: () => ({
     meta: [
-      { title: "Risk management — SokoResult" },
+      { title: "Risk management — Soko Stock" },
       { name: "description", content: "How to manage risk when trading prediction markets. Position sizing, bankroll management, and the 1% rule." },
       { property: "og:title", content: "Risk management for prediction markets" },
-      { property: "og:description", content: "Trade smarter, lose less — the SokoResult risk management primer." },
+      { property: "og:description", content: "Trade smarter, lose less — the Soko Stock risk management primer." },
     ],
   }),
   component: Page,

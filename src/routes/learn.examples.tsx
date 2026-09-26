@@ -3,8 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/learn/examples")({
   head: () => ({
     meta: [
-      { title: "Worked examples — SokoResult" },
-      { name: "description", content: "Real-world examples of prediction market trades on SokoResult." },
+      { title: "Worked examples — Soko Stock" },
+      { name: "description", content: "Real-world examples of prediction market trades on Soko Stock." },
       { property: "og:title", content: "Prediction market worked examples" },
       { property: "og:description", content: "Step-by-step examples of winning and losing trades." },
     ],

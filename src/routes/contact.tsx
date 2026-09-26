@@ -10,10 +10,10 @@ import { Mail, MessageCircle } from "lucide-react";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact & FAQ — SokoResult" },
-      { name: "description", content: "Get in touch with SokoResult or read answers to the most common questions about prediction markets, KYC, deposits and withdrawals." },
-      { property: "og:title", content: "Contact & FAQ — SokoResult" },
-      { property: "og:description", content: "Reach the SokoResult team or browse the FAQ for prediction markets in Kenya." },
+      { title: "Contact & FAQ — Soko Stock" },
+      { name: "description", content: "Get in touch with Soko Stock or read answers to the most common questions about prediction markets, KYC, deposits and withdrawals." },
+      { property: "og:title", content: "Contact & FAQ — Soko Stock" },
+      { property: "og:description", content: "Reach the Soko Stock team or browse the FAQ for prediction markets in Kenya." },
     ],
   }),
   component: ContactPage,
@@ -75,7 +75,7 @@ function ContactPage() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="font-bold tracking-tight">SokoResult</Link>
+          <Link to="/" className="font-bold tracking-tight">Soko Stock</Link>
           <nav className="flex gap-4 text-sm text-muted-foreground">
             <Link to="/learn" className="hover:text-foreground">Learn</Link>
             <Link to="/terms" className="hover:text-foreground">Terms</Link>

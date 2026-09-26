@@ -3,10 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms & Conditions — SokoResult" },
-      { name: "description", content: "SokoResult terms of service: eligibility, KYC, deposits, trading rules, withdrawals, dispute resolution and risk disclosure." },
-      { property: "og:title", content: "Terms & Conditions — SokoResult" },
-      { property: "og:description", content: "Read the SokoResult terms before trading on Kenya's prediction market." },
+      { title: "Terms & Conditions — Soko Stock" },
+      { name: "description", content: "Soko Stock terms of service: eligibility, KYC, deposits, trading rules, withdrawals, dispute resolution and risk disclosure." },
+      { property: "og:title", content: "Terms & Conditions — Soko Stock" },
+      { property: "og:description", content: "Read the Soko Stock terms before trading on Kenya's prediction market." },
     ],
   }),
   component: TermsPage,
@@ -26,7 +26,7 @@ function TermsPage() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="font-bold tracking-tight">SokoResult</Link>
+          <Link to="/" className="font-bold tracking-tight">Soko Stock</Link>
           <nav className="flex gap-4 text-sm text-muted-foreground">
             <Link to="/learn" className="hover:text-foreground">Learn</Link>
             <Link to="/contact" className="hover:text-foreground">Contact</Link>
@@ -37,11 +37,11 @@ function TermsPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Terms &amp; Conditions</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          Last updated: April 2026. Please read these terms carefully before using SokoResult.
+          Last updated: April 2026. Please read these terms carefully before using Soko Stock.
         </p>
 
         <div className="mt-6 rounded-xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
-          <strong>Risk disclosure:</strong> SokoResult is a real-money prediction market. You can lose
+          <strong>Risk disclosure:</strong> Soko Stock is a real-money prediction market. You can lose
           some or all of the funds you deposit. Only trade with money you can afford to lose.
         </div>
 
@@ -65,8 +65,8 @@ function TermsPage() {
 
         <div className="mt-10 space-y-10">
           <Section id="eligibility" title="1. Eligibility">
-            <p>You must be at least 18 years old and a resident of Kenya (or another jurisdiction where prediction markets are lawful) to use SokoResult. By creating an account you confirm that you meet these requirements.</p>
-            <p>SokoResult is not available to politically-exposed persons subject to active sanctions, or to anyone barred from financial services by Kenyan law.</p>
+            <p>You must be at least 18 years old and a resident of Kenya (or another jurisdiction where prediction markets are lawful) to use Soko Stock. By creating an account you confirm that you meet these requirements.</p>
+            <p>Soko Stock is not available to politically-exposed persons subject to active sanctions, or to anyone barred from financial services by Kenyan law.</p>
           </Section>
 
           <Section id="account" title="2. Your account">
@@ -79,7 +79,7 @@ function TermsPage() {
           </Section>
 
           <Section id="deposits" title="4. Deposits & balances">
-            <p>All balances on SokoResult are denominated in Kenyan Shillings (KES). Deposits are processed via M-Pesa and other supported channels. Funds are held in a segregated client account and never used for SokoResult operations.</p>
+            <p>All balances on Soko Stock are denominated in Kenyan Shillings (KES). Deposits are processed via M-Pesa and other supported channels. Funds are held in a segregated client account and never used for Soko Stock operations.</p>
             <p>Minimum deposit: KSh 100. We do not pay interest on idle balances.</p>
           </Section>
 
@@ -89,7 +89,7 @@ function TermsPage() {
           </Section>
 
           <Section id="resolution" title="6. Market resolution">
-            <p>Each market lists the official source used to determine the winning outcome. Markets are resolved by the SokoResult operations team based on that source within 48 hours of the event ending.</p>
+            <p>Each market lists the official source used to determine the winning outcome. Markets are resolved by the Soko Stock operations team based on that source within 48 hours of the event ending.</p>
             <p>If the outcome is genuinely ambiguous, we may extend the resolution window or refund all positions at their pre-event price.</p>
           </Section>
 
@@ -101,7 +101,7 @@ function TermsPage() {
           <Section id="prohibited" title="8. Prohibited conduct">
             <ul className="list-disc list-inside space-y-1">
               <li>Creating multiple accounts to abuse promotions or limits</li>
-              <li>Using SokoResult for money laundering or to evade sanctions</li>
+              <li>Using Soko Stock for money laundering or to evade sanctions</li>
               <li>Automated trading without prior written permission</li>
               <li>Insider trading on markets where you have non-public information about the outcome</li>
               <li>Harassing other users or the support team</li>
@@ -117,7 +117,7 @@ function TermsPage() {
           </Section>
 
           <Section id="changes" title="11. Changes to these terms">
-            <p>We may update these terms from time to time. Material changes will be announced by email and an in-app notice at least 14 days before they take effect. Continued use of SokoResult after the effective date means you accept the updated terms.</p>
+            <p>We may update these terms from time to time. Material changes will be announced by email and an in-app notice at least 14 days before they take effect. Continued use of Soko Stock after the effective date means you accept the updated terms.</p>
           </Section>
 
           <Section id="contact" title="12. Contact">
@@ -130,7 +130,7 @@ function TermsPage() {
 
         <div className="mt-14 pt-6 border-t border-border text-xs text-muted-foreground flex justify-between">
           <Link to="/" className="hover:text-foreground">← Back to home</Link>
-          <span>SokoResult Ltd · Nairobi, Kenya</span>
+          <span>Soko Stock Ltd · Nairobi, Kenya</span>
         </div>
       </main>
     </div>

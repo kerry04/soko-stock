@@ -3,7 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/learn/slippage")({
   head: () => ({
     meta: [
-      { title: "Slippage & price impact — SokoResult" },
+      { title: "Slippage & price impact — Soko Stock" },
       { name: "description", content: "Understand why your trade moves the price and how to keep slippage small." },
       { property: "og:title", content: "Slippage & price impact" },
       { property: "og:description", content: "How LMSR pricing works and why bigger trades cost more per share." },

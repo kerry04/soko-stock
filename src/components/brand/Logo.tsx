@@ -26,7 +26,7 @@ export function Logo({ className, size = "md", withMark = true, wordmark = true 
         <span className={cn("relative inline-flex items-center justify-center shrink-0", s.mark)}>
           <img
             src={logoSrc}
-            alt="SokoResult"
+            alt="Soko Stock"
             className="h-full w-full object-contain"
             draggable={false}
           />

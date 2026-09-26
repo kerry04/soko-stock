@@ -34,7 +34,7 @@ export function TokenTeaser() {
             Own a piece of the market
           </h2>
           <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-            The $OKO utility token powers the SokoResult ecosystem. Token launch details will be
+            The $OKO utility token powers the Soko Stock ecosystem. Token launch details will be
             announced — trading today works in KES.
           </p>
           <ul className="mt-6 space-y-4">

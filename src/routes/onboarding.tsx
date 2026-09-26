@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { friendlyError } from "@/lib/errors";
 
 export const Route = createFileRoute("/onboarding")({
-  head: () => ({ meta: [{ title: "Welcome — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Welcome — Soko Stock" }] }),
   component: OnboardingPage,
 });
 

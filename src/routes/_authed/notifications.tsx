@@ -19,7 +19,7 @@ import { safeInternalLink, timeAgo } from "@/components/engagement/NotificationB
 import { Bell, BellRing, Info, Loader2, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authed/notifications")({
-  head: () => ({ meta: [{ title: "Notifications — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Notifications — Soko Stock" }] }),
   component: NotificationsPage,
 });
 

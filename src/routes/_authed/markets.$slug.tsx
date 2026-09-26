@@ -17,6 +17,8 @@ import {
 } from "@/components/markets/VerificationGateModal";
 import { MarketActivityStrip } from "@/components/engagement/MarketActivityStrip";
 import { LiveTradeStream } from "@/components/engagement/LiveTradeStream";
+import { MarketSignals } from "@/components/markets/MarketSignals";
+import { WatchButton } from "@/components/markets/WatchButton";
 import { CountdownPill } from "@/components/engagement/CountdownPill";
 import { fireConfettiAt } from "@/components/engagement/ConfettiBurst";
 import { playChaChing } from "@/lib/sound";
@@ -53,7 +55,7 @@ type MarketSearch = {
 };
 
 export const Route = createFileRoute("/_authed/markets/$slug")({
-  head: () => ({ meta: [{ title: "Market — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Market — Soko Stock" }] }),
   validateSearch: (search: Record<string, unknown>): MarketSearch => {
     const sideRaw = String(search.side ?? "").toUpperCase();
     const side = sideRaw === "YES" || sideRaw === "NO" ? (sideRaw as "YES" | "NO") : undefined;
@@ -253,6 +255,7 @@ function MarketDetailPage() {
               <h1 className="text-base sm:text-lg lg:text-xl font-bold tracking-tight leading-snug flex-1 min-w-0 break-words">
                 {market.question}
               </h1>
+              <WatchButton marketId={market.id} />
             </div>
 
             {market.market_type === "multi" ? (
@@ -399,6 +402,9 @@ function MarketDetailPage() {
               <p className="text-sm text-muted-foreground leading-relaxed">{market.description}</p>
             </div>
           )}
+
+          {/* What's moving this — signal fusion panel */}
+          <MarketSignals marketId={market.id} keywords={market.keywords ?? []} />
 
           {/* Cinematic live news stream — lazy on mobile */}
           <Suspense

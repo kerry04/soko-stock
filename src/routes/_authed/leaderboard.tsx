@@ -9,7 +9,7 @@ import { formatKES, formatKESCompact } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authed/leaderboard")({
-  head: () => ({ meta: [{ title: "Leaderboard — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Leaderboard — Soko Stock" }] }),
   component: LeaderboardPage,
 });
 
@@ -105,7 +105,7 @@ function LeaderboardPage() {
             Leaderboard
           </h1>
           <p className="text-sm text-muted-foreground">
-            The sharpest traders on SokoResult. Tap any name to copy their playbook.
+            The sharpest traders on Soko Stock. Tap any name to copy their playbook.
           </p>
         </div>
       </header>

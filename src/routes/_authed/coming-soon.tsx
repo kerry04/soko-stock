@@ -3,7 +3,7 @@ import { Construction } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authed/coming-soon")({
-  head: () => ({ meta: [{ title: "Coming soon — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Coming soon — Soko Stock" }] }),
   component: ComingSoonPage,
 });
 

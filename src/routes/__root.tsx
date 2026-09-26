@@ -1,18 +1,9 @@
-import {
-  Outlet,
-  Link,
-  createRootRoute,
-  HeadContent,
-  Scripts,
-  notFound,
-  redirect,
-} from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { LanguageProvider } from "@/lib/i18n";
-import { getAdminEnabled } from "@/lib/admin-gate.functions";
 
 import appCss from "../styles.css?url";
 
@@ -35,71 +26,34 @@ function NotFoundComponent() {
   );
 }
 
-// Whether this deployment is the admin-only one. Cached per browser tab;
-// ADMIN_ENABLED never changes at runtime. On the server the env var is read
-// directly (zero cost); on the client it goes through the server function
-// once, so the public site pays no per-navigation penalty.
-let adminEnabledCache: boolean | null = null;
-
-async function isAdminDeployment(): Promise<boolean> {
-  if (typeof window === "undefined") return process.env.ADMIN_ENABLED === "true";
-  if (adminEnabledCache === null) {
-    try {
-      adminEnabledCache = await getAdminEnabled();
-    } catch {
-      // The admin gate must never take the whole site down: if the check
-      // itself fails (flaky network, cold start), fall through to public
-      // mode. The real admin lock stays in AdminLayout's role check.
-      adminEnabledCache = false;
-    }
-  }
-  return adminEnabledCache;
-}
-
 export const Route = createRootRoute({
-  beforeLoad: async ({ location }) => {
-    // Admin-only deployment: the public surface is disabled here so the
-    // admin domain never serves the marketing site or trading pages.
-    // The root path lands on the admin dashboard instead; /api stays
-    // reachable (admin UI uses it, cron hooks live there).
-    if (!(await isAdminDeployment())) return;
-    const pathname = location.pathname;
-    if (pathname === "/") throw redirect({ to: "/admin" });
-    if (pathname.startsWith("/admin") || pathname.startsWith("/api")) return;
-    throw notFound();
-  },
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SokoResult — Africa's Prediction Market" },
+      { title: "Soko Stock — Live Signal Terminal" },
       {
         name: "description",
         content:
-          "Trade outcomes on African politics, sports, entertainment, and culture. Put your money where your mouth is.",
+          "Soko Stock: a live signal terminal for prediction markets. Watch the world's news move across the map, then trade the outcome.",
       },
-      { name: "author", content: "SokoResult" },
+      { name: "author", content: "Soko Stock" },
       { name: "theme-color", content: "#06060f" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
-      { name: "apple-mobile-web-app-title", content: "SokoResult" },
-      { property: "og:title", content: "SokoResult — Africa's Prediction Market" },
+      { name: "apple-mobile-web-app-title", content: "Soko Stock" },
+      { property: "og:title", content: "Soko Stock — Live Signal Terminal" },
       {
         property: "og:description",
-        content: "Trade outcomes on African politics, sports, and culture.",
+        content: "Watch the world's signals move. Trade the outcome.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "SokoResult — Africa's Prediction Market" },
-      { name: "description", content: "Africa's rising prediction market and news platform" },
-      {
-        property: "og:description",
-        content: "Africa's rising prediction market and news platform",
-      },
+      { name: "twitter:title", content: "Soko Stock — Live Signal Terminal" },
       {
         name: "twitter:description",
-        content: "Africa's rising prediction market and news platform",
+        content: "Watch the world's signals move. Trade the outcome.",
       },
     ],
     links: [

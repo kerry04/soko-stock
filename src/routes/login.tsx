@@ -9,7 +9,7 @@ export const Route = createFileRoute("/login")({
     redirect: z.string().optional().default("/markets"),
   }),
   head: () => ({
-    meta: [{ title: "Sign in — SokoResult" }],
+    meta: [{ title: "Sign in — Soko Stock" }],
   }),
   component: LoginPage,
 });

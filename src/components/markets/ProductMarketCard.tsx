@@ -10,6 +10,7 @@ import { useLang } from "@/lib/i18n";
 import { Sparkline } from "./Sparkline";
 import { DraftTradeTicket } from "./DraftTradeTicket";
 import { ModelEdge } from "./ModelEdge";
+import { WatchButton } from "./WatchButton";
 import { priceChangePts, type ProductMarket } from "./product-market";
 import { cn } from "@/lib/utils";
 
@@ -31,25 +32,30 @@ export function ProductMarketCard({ market }: { market: ProductMarket }) {
         <span className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/90">
           {CATEGORY_LABEL[market.category] ?? market.category}
         </span>
-        {change !== null ? (
-          <span
-            className={cn(
-              "inline-flex items-center gap-0.5 font-nums text-xs font-bold tabular-nums",
-              up ? "text-success" : "text-destructive",
-            )}
-            aria-label={`Price moved ${up ? "up" : "down"} ${formatOneDecimal(Math.abs(change))} points`}
-          >
-            {up ? (
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            ) : (
-              <ArrowDownRight className="h-3.5 w-3.5" />
-            )}
-            {up ? "+" : "−"}
-            {formatOneDecimal(Math.abs(change))} pts
-          </span>
-        ) : (
-          <span className="font-mono text-[11px] text-muted-foreground">{t("card.newMarket")}</span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {change !== null ? (
+            <span
+              className={cn(
+                "inline-flex items-center gap-0.5 font-nums text-xs font-bold tabular-nums",
+                up ? "text-success" : "text-destructive",
+              )}
+              aria-label={`Price moved ${up ? "up" : "down"} ${formatOneDecimal(Math.abs(change))} points`}
+            >
+              {up ? (
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              ) : (
+                <ArrowDownRight className="h-3.5 w-3.5" />
+              )}
+              {up ? "+" : "−"}
+              {formatOneDecimal(Math.abs(change))} pts
+            </span>
+          ) : (
+            <span className="font-mono text-[11px] text-muted-foreground">
+              {t("card.newMarket")}
+            </span>
+          )}
+          <WatchButton marketId={market.id} className="h-7 w-7" />
+        </div>
       </div>
 
       <h3 className="mt-2.5 min-h-[2.75rem] text-[15px] font-semibold leading-snug line-clamp-2">

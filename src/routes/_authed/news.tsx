@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { CATEGORY_LABEL, formatPrice } from "@/lib/format";
 
 export const Route = createFileRoute("/_authed/news")({
-  head: () => ({ meta: [{ title: "News — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "News — Soko Stock" }] }),
   component: NewsPage,
 });
 

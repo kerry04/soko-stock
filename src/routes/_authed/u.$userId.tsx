@@ -10,7 +10,7 @@ import { formatKES, formatKESCompact, CATEGORY_LABEL } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authed/u/$userId")({
-  head: () => ({ meta: [{ title: "Trader profile — SokoResult" }] }),
+  head: () => ({ meta: [{ title: "Trader profile — Soko Stock" }] }),
   component: PublicProfilePage,
 });
 
