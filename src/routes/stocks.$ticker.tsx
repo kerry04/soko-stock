@@ -9,7 +9,6 @@ import {
   Star,
 } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
-import { supabase } from "@/integrations/supabase/client";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
@@ -72,12 +71,31 @@ interface QuoteResponse {
   technicals?: Technicals | null;
 }
 
-interface NewsHit {
+interface NewsArticle {
   id: string;
   title: string;
   url: string;
   source: string;
   published_at: string;
+  sentiment_score: number | null;
+}
+
+interface NewsSignal {
+  ticker: string;
+  keywords: string[];
+  count24h: number;
+  medianDaily: number;
+  surgeRatio: number | null;
+  surging: boolean;
+  sentiment7d: {
+    pos: number;
+    neg: number;
+    neu: number;
+    unknown: number;
+    tilt: "positive" | "negative" | "mixed" | null;
+  };
+  articles: NewsArticle[];
+  latestAt: string | null;
 }
 
 const RANGES = [
@@ -296,11 +314,129 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
   );
 }
 
-/** First meaningful word of the company name, for news matching. */
-function companyKeyword(name: string): string {
-  const stop = new Set(["the", "group", "holdings", "limited", "ltd", "sa", "nv", "plc", "inc"]);
-  const words = name.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/);
-  return words.find((w) => w.length > 2 && !stop.has(w)) ?? words[0] ?? "";
+/** Sentiment dot: green ≥ 0.2, red ≤ −0.2, grey in between, hollow when unscored. */
+function SentimentDot({ score }: { score: number | null }) {
+  const cls =
+    score == null
+      ? "border-muted-foreground/40 bg-transparent"
+      : score >= 0.2
+        ? "border-success bg-success"
+        : score <= -0.2
+          ? "border-red-500 bg-red-500"
+          : "border-muted-foreground/50 bg-muted-foreground/40";
+  return (
+    <span
+      title={
+        score == null
+          ? "Not yet scored"
+          : `Sentiment ${score >= 0 ? "+" : ""}${score.toFixed(2)}`
+      }
+      className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full border", cls)}
+      aria-hidden
+    />
+  );
+}
+
+/** Headline sentiment, news surge, and 7-day tilt for one stock. */
+function SignalWire({
+  signal,
+  updatedAt,
+  name,
+}: {
+  signal: NewsSignal | null;
+  updatedAt: number | null;
+  name: string;
+}) {
+  const s = signal?.sentiment7d;
+  const tiltLabel =
+    s?.tilt === "positive"
+      ? "Positive tilt"
+      : s?.tilt === "negative"
+        ? "Negative tilt"
+        : s?.tilt === "mixed"
+          ? "Mixed"
+          : null;
+  return (
+    <section className="mt-6" aria-label="Related news signals">
+      <div className="flex items-center gap-2">
+        <Newspaper className="h-4 w-4 text-success" aria-hidden />
+        <h2 className="font-mono text-sm font-bold uppercase tracking-[0.18em]">
+          Signal wire
+        </h2>
+        {signal?.surging && signal.surgeRatio != null && (
+          <span
+            title={`${signal.count24h} linked stories in 24h vs a ${signal.medianDaily}/day 30-day pace`}
+            className="rounded bg-sky-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-sky-400"
+          >
+            News {signal.surgeRatio.toFixed(1)}×
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Headlines mentioning {name} from our global news pipeline.
+        {updatedAt != null && (
+          <span className="font-mono text-[11px]">
+            {" "}
+            · updated {timeAgo(new Date(updatedAt).toISOString())}
+          </span>
+        )}
+      </p>
+
+      {tiltLabel && s && (
+        <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+          7-day sentiment:{" "}
+          <span
+            className={cn(
+              s.tilt === "positive" && "text-success",
+              s.tilt === "negative" && "text-red-500",
+            )}
+          >
+            {tiltLabel}
+          </span>{" "}
+          · {s.pos} positive · {s.neg} negative · {s.neu} neutral
+        </p>
+      )}
+
+      {!signal || signal.articles.length === 0 ? (
+        <p className="mt-3 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
+          No linked headlines in the last 7 days.{" "}
+          <Link to="/map" className="text-success hover:underline">
+            Check the signal map
+          </Link>{" "}
+          for the wider picture.
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2.5">
+          {signal.articles.slice(0, 8).map((n) => (
+            <li key={n.id} className="flex gap-2.5">
+              <SentimentDot score={n.sentiment_score} />
+              <div className="min-w-0">
+                <a
+                  href={n.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block text-sm leading-snug hover:underline"
+                >
+                  {n.title}
+                  <ExternalLink
+                    className="ml-1 inline h-3 w-3 text-muted-foreground"
+                    aria-hidden
+                  />
+                </a>
+                <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  {n.source} · {timeAgo(n.published_at)}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="mt-3 font-mono text-[10px] leading-relaxed text-muted-foreground">
+        Dots show per-article sentiment where scored. Surge compares the last
+        24 hours against this stock's own 30-day daily pace.
+      </p>
+    </section>
+  );
 }
 
 function PriceChart({ bars, sym, up }: { bars: Bar[]; sym: string; up: boolean }) {
@@ -356,7 +492,8 @@ function StockDetail() {
   const [quote, setQuote] = useState<QuoteResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [news, setNews] = useState<NewsHit[]>([]);
+  const [news, setNews] = useState<NewsSignal | null>(null);
+  const [newsAt, setNewsAt] = useState<number | null>(null);
   const { ids: watched, toggle } = useWatchlist();
 
   const exchange = Object.values(EXCHANGE_BY_ID).find(
@@ -390,31 +527,34 @@ function StockDetail() {
     };
   }, [ticker, range]);
 
-  // Linked news: company keyword in title/keywords, last 7 days.
+  // Linked news via the news-signals API: distinctive-phrase matching
+  // server-side (no more bare "standard" / "price" pollution), with surge
+  // detection and sentiment. Refreshes every 5 minutes while open.
   useEffect(() => {
-    if (!quote) return;
-    const kw = companyKeyword(quote.name);
-    if (!kw) return;
-    const since = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
     let cancelled = false;
-    (async () => {
+    const load = async () => {
       try {
-        const { data } = await supabase
-          .from("raw_news_data")
-          .select("id, title, url, source, published_at")
-          .gte("published_at", since)
-          .ilike("title", `%${kw}%`)
-          .order("published_at", { ascending: false })
-          .limit(5);
-        if (!cancelled && data) setNews(data as NewsHit[]);
+        const r = await fetch(
+          `/api/stocks/news-signals?tickers=${encodeURIComponent(ticker)}`,
+        );
+        if (!r.ok) return;
+        const j = await r.json();
+        const sig = (j.signals ?? [])[0] as NewsSignal | undefined;
+        if (!cancelled && sig) {
+          setNews(sig);
+          setNewsAt(Date.now());
+        }
       } catch {
         /* news is enrichment — never break the page */
       }
-    })();
+    };
+    load();
+    const id = setInterval(load, 5 * 60 * 1000);
     return () => {
       cancelled = true;
+      clearInterval(id);
     };
-  }, [quote]);
+  }, [ticker]);
 
   const stats = useMemo(() => {
     if (!quote) return null;
@@ -643,47 +783,7 @@ function StockDetail() {
               )
             )}
 
-            {/* Why it's moving */}
-            <section className="mt-6" aria-label="Related news signals">
-              <div className="flex items-center gap-2">
-                <Newspaper className="h-4 w-4 text-success" aria-hidden />
-                <h2 className="font-mono text-sm font-bold uppercase tracking-[0.18em]">
-                  Signal wire
-                </h2>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Latest headlines mentioning {companyKeyword(quote.name) || "this company"} from our
-                global news pipeline.
-              </p>
-              {news.length === 0 ? (
-                <p className="mt-3 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
-                  No headlines in the last 7 days.{" "}
-                  <Link to="/map" className="text-success hover:underline">
-                    Check the signal map
-                  </Link>{" "}
-                  for the wider picture.
-                </p>
-              ) : (
-                <ul className="mt-3 space-y-2.5">
-                  {news.map((n) => (
-                    <li key={n.id}>
-                      <a
-                        href={n.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block text-sm leading-snug hover:underline"
-                      >
-                        {n.title}
-                        <ExternalLink className="ml-1 inline h-3 w-3 text-muted-foreground" aria-hidden />
-                      </a>
-                      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                        {n.source} · {timeAgo(n.published_at)}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
+            <SignalWire signal={news} updatedAt={newsAt} name={quote.name} />
 
             <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               Educational terminal — not investment advice.

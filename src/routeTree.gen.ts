@@ -16,6 +16,7 @@ import { Route as MapRouteImport } from './routes/map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StocksTickerRouteImport } from './routes/stocks.$ticker'
 import { Route as ApiStocksQuoteRouteImport } from './routes/api/stocks/quote'
+import { Route as ApiStocksNewsSignalsRouteImport } from './routes/api/stocks/news-signals'
 import { Route as ApiStocksBoardRouteImport } from './routes/api/stocks/board'
 import { Route as ApiPublicHooksSignalsRouteImport } from './routes/api/public/hooks/signals'
 import { Route as ApiPublicHooksScrapeNewsRouteImport } from './routes/api/public/hooks/scrape-news'
@@ -57,6 +58,11 @@ const ApiStocksQuoteRoute = ApiStocksQuoteRouteImport.update({
   path: '/api/stocks/quote',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStocksNewsSignalsRoute = ApiStocksNewsSignalsRouteImport.update({
+  id: '/api/stocks/news-signals',
+  path: '/api/stocks/news-signals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStocksBoardRoute = ApiStocksBoardRouteImport.update({
   id: '/api/stocks/board',
   path: '/api/stocks/board',
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/watchlist'
     | '/stocks/$ticker'
     | '/api/stocks/board'
+    | '/api/stocks/news-signals'
     | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/watchlist'
     | '/stocks/$ticker'
     | '/api/stocks/board'
+    | '/api/stocks/news-signals'
     | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
@@ -167,6 +178,7 @@ export interface FileRouteTypes {
     | '/watchlist'
     | '/stocks/$ticker'
     | '/api/stocks/board'
+    | '/api/stocks/news-signals'
     | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
@@ -182,6 +194,7 @@ export interface RootRouteChildren {
   WatchlistRoute: typeof WatchlistRoute
   StocksTickerRoute: typeof StocksTickerRoute
   ApiStocksBoardRoute: typeof ApiStocksBoardRoute
+  ApiStocksNewsSignalsRoute: typeof ApiStocksNewsSignalsRoute
   ApiStocksQuoteRoute: typeof ApiStocksQuoteRoute
   ApiPublicHooksAnalyzeSentimentRoute: typeof ApiPublicHooksAnalyzeSentimentRoute
   ApiPublicHooksComputeTrendsRoute: typeof ApiPublicHooksComputeTrendsRoute
@@ -240,6 +253,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStocksQuoteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stocks/news-signals': {
+      id: '/api/stocks/news-signals'
+      path: '/api/stocks/news-signals'
+      fullPath: '/api/stocks/news-signals'
+      preLoaderRoute: typeof ApiStocksNewsSignalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stocks/board': {
       id: '/api/stocks/board'
       path: '/api/stocks/board'
@@ -286,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   WatchlistRoute: WatchlistRoute,
   StocksTickerRoute: StocksTickerRoute,
   ApiStocksBoardRoute: ApiStocksBoardRoute,
+  ApiStocksNewsSignalsRoute: ApiStocksNewsSignalsRoute,
   ApiStocksQuoteRoute: ApiStocksQuoteRoute,
   ApiPublicHooksAnalyzeSentimentRoute: ApiPublicHooksAnalyzeSentimentRoute,
   ApiPublicHooksComputeTrendsRoute: ApiPublicHooksComputeTrendsRoute,

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { getDBBoard } from "@/lib/stocks/boards-db.server";
 import { getBoard, get52wkStats, getTechnicals } from "@/lib/stocks/yahoo.server";
+import { getNewsSignals } from "@/lib/stocks/news-signals.server";
 
 /** Bounded-parallel map for the 52-week stat fan-out. */
 async function mapParallel<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
@@ -63,12 +64,15 @@ export const Route = createFileRoute("/api/stocks/board")({
               rsi: null,
               aboveSma50: null,
               relVolume: null,
+              // Surge flags are computed below for history listings.
+              newsSurge: null,
               asOf: q.fetched_at,
             }));
           } else {
             const quotes = await getBoard(exchange.tickers);
             const d = exchange.divisor;
-            // 52-week stats + technicals are cached 12h server-side.
+            // 52-week stats + technicals are cached 12h server-side;
+            // news signals 30 min. All independent — fan out together.
             const [w52, tc] = await Promise.all([
               mapParallel(exchange.tickers, 6, (t) => get52wkStats(t)),
               mapParallel(exchange.tickers, 6, (t) => getTechnicals(t)),
@@ -100,6 +104,8 @@ export const Route = createFileRoute("/api/stocks/board")({
                   rsi: t?.rsi ?? null,
                   aboveSma50: t?.aboveSma50 ?? null,
                   relVolume: t?.relVolume ?? null,
+                  // Surge flags are computed below.
+                  newsSurge: null,
                   asOf: q!.asOf,
                 };
               });
@@ -109,6 +115,27 @@ export const Route = createFileRoute("/api/stocks/board")({
             status: 502,
             headers: { "content-type": "application/json" },
           });
+        }
+
+        // News-surge flags for price-history listings (JSE). EOD listings
+        // get theirs on their own stock pages; the board stays fast.
+        if (exchange.source !== "africanfinancials") {
+          try {
+            const signals = await getNewsSignals(
+              (
+                rows as { ticker: string; name: string; newsSurge: number | null }[]
+              ).map((r) => ({ ticker: r.ticker, name: r.name })),
+            );
+            const byTicker = new Map(signals.map((s) => [s.ticker, s]));
+            for (const r of rows as {
+              ticker: string;
+              newsSurge: number | null;
+            }[]) {
+              r.newsSurge = byTicker.get(r.ticker)?.surgeRatio ?? null;
+            }
+          } catch {
+            /* news is enrichment — never break the board */
+          }
         }
         return new Response(
           JSON.stringify({

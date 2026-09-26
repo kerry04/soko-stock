@@ -37,6 +37,8 @@ interface BoardRow {
   aboveSma50: boolean | null;
   /** Latest volume ÷ 20-day average. Null without history (EOD listings). */
   relVolume: number | null;
+  /** 24h news volume ÷ 30-day daily median, when surging (≥3×, ≥3 articles). */
+  newsSurge: number | null;
   asOf: string;
 }
 
@@ -64,11 +66,11 @@ function fmtCompactValue(v: number, sym: string): string {
 
 /**
  * One badge slot per row (Robinhood watchlist-density pattern).
- * Priority: 52-week events > unusual volume > RSI extremes > 50-day trend.
+ * Priority: 52-week events > news surge > unusual volume > RSI > 50-day trend.
  * EOD-only listings carry no history, so they get no badge.
  */
 function RowBadge({ row }: { row: BoardRow }) {
-  const { price, wk52High, wk52Low, rsi, aboveSma50, relVolume } = row;
+  const { price, wk52High, wk52Low, rsi, aboveSma50, relVolume, newsSurge } = row;
 
   if (wk52High != null && wk52Low != null && wk52High > 0) {
     let label: string | null = null;
@@ -104,6 +106,18 @@ function RowBadge({ row }: { row: BoardRow }) {
         </span>
       );
     }
+  }
+
+  // News surge is attention without a direction — blue, never green/red.
+  if (newsSurge != null) {
+    return (
+      <span
+        title={`News volume ${newsSurge.toFixed(1)}× the 30-day daily pace`}
+        className="ml-2 inline-block rounded bg-sky-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-sky-400"
+      >
+        News {newsSurge.toFixed(1)}×
+      </span>
+    );
   }
 
   // Volume is attention, not direction — amber, never green/red.
