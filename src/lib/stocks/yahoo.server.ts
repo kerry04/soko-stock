@@ -21,6 +21,135 @@ export interface Wk52Stats {
   low: number;
 }
 
+export type TechLabel = "Strong Sell" | "Sell" | "Neutral" | "Buy" | "Strong Buy";
+
+export interface Technicals {
+  rsi: number;
+  rsiState: "Overbought" | "Oversold" | "Neutral";
+  sma50: number;
+  sma200: number;
+  aboveSma50: boolean;
+  aboveSma200: boolean;
+  /** sma50 > sma200 (golden-cross regime) vs below (death-cross regime). */
+  goldenCross: boolean;
+  macdBullish: boolean;
+  votes: { rsi: number; macd: number; vs50: number; vs200: number; cross: number };
+  /** Average vote, -1..1. */
+  composite: number;
+  label: TechLabel;
+  barsUsed: number;
+}
+
+function smaOf(vals: number[], n: number): number {
+  const s = vals.slice(-n);
+  return s.reduce((a, b) => a + b, 0) / s.length;
+}
+
+function emaSeries(vals: number[], period: number): number[] {
+  const k = 2 / (period + 1);
+  const out: number[] = new Array(vals.length);
+  let e = vals[0];
+  for (let i = 0; i < vals.length; i++) {
+    e = i === 0 ? vals[0] : vals[i] * k + e * (1 - k);
+    out[i] = e;
+  }
+  return out;
+}
+
+/** Wilder's RSI over the full series — needs real history, not a window. */
+function rsiWilder(closes: number[], period = 14): number {
+  let gains = 0;
+  let losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const d = closes[i] - closes[i - 1];
+    if (d >= 0) gains += d;
+    else losses -= d;
+  }
+  let avgG = gains / period;
+  let avgL = losses / period;
+  for (let i = period + 1; i < closes.length; i++) {
+    const d = closes[i] - closes[i - 1];
+    avgG = (avgG * (period - 1) + Math.max(d, 0)) / period;
+    avgL = (avgL * (period - 1) + Math.max(-d, 0)) / period;
+  }
+  if (avgL === 0) return 100;
+  return 100 - 100 / (1 + avgG / avgL);
+}
+
+function computeTechnicals(closes: number[]): Technicals {
+  const price = closes[closes.length - 1];
+  const rsi = rsiWilder(closes, 14);
+  const sma50 = smaOf(closes, 50);
+  const sma200 = smaOf(closes, 200);
+
+  const e12 = emaSeries(closes, 12);
+  const e26 = emaSeries(closes, 26);
+  const macdLine = e12.map((v, i) => v - e26[i]);
+  const signal = emaSeries(macdLine, 9);
+  const macdBullish = macdLine[macdLine.length - 1] > signal[signal.length - 1];
+
+  const aboveSma50 = price > sma50;
+  const aboveSma200 = price > sma200;
+  const goldenCross = sma50 > sma200;
+
+  const votes = {
+    rsi: rsi >= 70 ? -1 : rsi <= 30 ? 1 : 0,
+    macd: macdBullish ? 1 : -1,
+    vs50: aboveSma50 ? 1 : -1,
+    vs200: aboveSma200 ? 1 : -1,
+    cross: goldenCross ? 1 : -1,
+  };
+  const composite = (votes.rsi + votes.macd + votes.vs50 + votes.vs200 + votes.cross) / 5;
+  const label: TechLabel =
+    composite >= 0.6
+      ? "Strong Buy"
+      : composite >= 0.2
+        ? "Buy"
+        : composite > -0.2
+          ? "Neutral"
+          : composite > -0.6
+            ? "Sell"
+            : "Strong Sell";
+
+  return {
+    rsi,
+    rsiState: rsi >= 70 ? "Overbought" : rsi <= 30 ? "Oversold" : "Neutral",
+    sma50,
+    sma200,
+    aboveSma50,
+    aboveSma200,
+    goldenCross,
+    macdBullish,
+    votes,
+    composite,
+    label,
+    barsUsed: closes.length,
+  };
+}
+
+/** Technical signals from real daily history. Long-TTL cached like 52wk. */
+const TECH_TTL_MS = 12 * 60 * 60 * 1000;
+const techCache = new Map<string, { at: number; data: Technicals | null }>();
+
+export async function getTechnicals(ticker: string): Promise<Technicals | null> {
+  const hit = techCache.get(ticker);
+  if (hit && Date.now() - hit.at < TECH_TTL_MS) return hit.data;
+
+  let t: Technicals | null = null;
+  try {
+    const q = await getQuote(ticker, "1y", "1d");
+    const closes = (q?.bars ?? [])
+      .map((b) => b.c)
+      .filter((c): c is number => c != null);
+    // SMA(200) is the hungriest indicator — require it, or say nothing.
+    if (closes.length >= 200) t = computeTechnicals(closes);
+  } catch {
+    t = null;
+  }
+  techCache.set(ticker, { at: Date.now(), data: t });
+  return t;
+}
+
 /**
  * 52-week high/low from 1y daily bars. Long-TTL cached: the board calls
  * this per ticker, and the numbers only move once per trading day.

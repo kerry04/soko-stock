@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { getDBBoard } from "@/lib/stocks/boards-db.server";
-import { getBoard, get52wkStats } from "@/lib/stocks/yahoo.server";
+import { getBoard, get52wkStats, getTechnicals } from "@/lib/stocks/yahoo.server";
 
 /** Bounded-parallel map for the 52-week stat fan-out. */
 async function mapParallel<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/api/stocks/board")({
         }
         let rows;
         let wk52: ({ high: number; low: number } | null | undefined)[] = [];
+        let techs: ({ rsi: number; aboveSma50: boolean } | null | undefined)[] = [];
         try {
           if (exchange.source === "africanfinancials") {
             rows = (await getDBBoard(exchange.id)).map((q) => ({
@@ -59,17 +60,20 @@ export const Route = createFileRoute("/api/stocks/board")({
               // accumulated daily snapshots.
               wk52High: null,
               wk52Low: null,
+              rsi: null,
+              aboveSma50: null,
               asOf: q.fetched_at,
             }));
           } else {
             const quotes = await getBoard(exchange.tickers);
             const d = exchange.divisor;
-            // 52-week stats are cached 12h server-side — cheap per refresh.
-            wk52 = await mapParallel(
-              exchange.tickers,
-              6,
-              (t) => get52wkStats(t),
-            );
+            // 52-week stats + technicals are cached 12h server-side.
+            const [w52, tc] = await Promise.all([
+              mapParallel(exchange.tickers, 6, (t) => get52wkStats(t)),
+              mapParallel(exchange.tickers, 6, (t) => getTechnicals(t)),
+            ]);
+            wk52 = w52;
+            techs = tc;
             rows = quotes
               .map((q, qi) => ({ q, qi }))
               .filter(({ q }) => q && q.price != null)
@@ -77,6 +81,7 @@ export const Route = createFileRoute("/api/stocks/board")({
                 const price = q!.price! / d;
                 const vol = q!.bars[q!.bars.length - 1]?.v ?? null;
                 const w = wk52[qi];
+                const t = techs[qi];
                 return {
                   ticker: q!.ticker,
                   name: q!.name,
@@ -91,6 +96,8 @@ export const Route = createFileRoute("/api/stocks/board")({
                   value: vol != null ? price * vol : null,
                   wk52High: w?.high != null ? w.high / d : null,
                   wk52Low: w?.low != null ? w.low / d : null,
+                  rsi: t?.rsi ?? null,
+                  aboveSma50: t?.aboveSma50 ?? null,
                   asOf: q!.asOf,
                 };
               });

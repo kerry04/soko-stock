@@ -33,6 +33,8 @@ interface BoardRow {
   value: number | null;
   wk52High: number | null;
   wk52Low: number | null;
+  rsi: number | null;
+  aboveSma50: boolean | null;
   asOf: string;
 }
 
@@ -59,40 +61,87 @@ function fmtCompactValue(v: number, sym: string): string {
 }
 
 /**
- * One badge slot per row (Robinhood watchlist-density pattern). 52-week
- * events only — needs real history, so EOD-only listings get no badge.
- * Priority: new high/low > near high/low.
+ * One badge slot per row (Robinhood watchlist-density pattern).
+ * Priority: 52-week events > RSI extremes > 50-day trend.
+ * EOD-only listings carry no history, so they get no badge.
  */
 function RowBadge({ row }: { row: BoardRow }) {
-  const { price, wk52High, wk52Low } = row;
-  if (wk52High == null || wk52Low == null || wk52High <= 0) return null;
-  let label: string | null = null;
-  let cls = "";
-  if (price >= wk52High) {
-    label = "New 52wk high";
-    cls = "bg-success/15 text-success";
-  } else if (price <= wk52Low) {
-    label = "New 52wk low";
-    cls = "bg-red-500/15 text-red-500";
-  } else if (price >= wk52High * 0.97) {
-    label = "Near 52wk high";
-    cls = "bg-success/10 text-success/80";
-  } else if (price <= wk52Low * 1.03) {
-    label = "Near 52wk low";
-    cls = "bg-red-500/10 text-red-500/80";
+  const { price, wk52High, wk52Low, rsi, aboveSma50 } = row;
+
+  if (wk52High != null && wk52Low != null && wk52High > 0) {
+    let label: string | null = null;
+    let cls = "";
+    let short = "";
+    if (price >= wk52High) {
+      label = "New 52wk high";
+      short = "52WK HI";
+      cls = "bg-success/15 text-success";
+    } else if (price <= wk52Low) {
+      label = "New 52wk low";
+      short = "52WK LO";
+      cls = "bg-red-500/15 text-red-500";
+    } else if (price >= wk52High * 0.97) {
+      label = "Near 52wk high";
+      short = "≈HI";
+      cls = "bg-success/10 text-success/80";
+    } else if (price <= wk52Low * 1.03) {
+      label = "Near 52wk low";
+      short = "≈LO";
+      cls = "bg-red-500/10 text-red-500/80";
+    }
+    if (label) {
+      return (
+        <span
+          title={label}
+          className={cn(
+            "ml-2 inline-block rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
+            cls,
+          )}
+        >
+          {short}
+        </span>
+      );
+    }
   }
-  if (!label) return null;
-  return (
-    <span
-      title={label}
-      className={cn(
-        "ml-2 inline-block rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
-        cls,
-      )}
-    >
-      {label === "New 52wk high" ? "52WK HI" : label === "New 52wk low" ? "52WK LO" : label === "Near 52wk high" ? "≈HI" : "≈LO"}
-    </span>
-  );
+
+  if (rsi != null) {
+    if (rsi >= 70) {
+      return (
+        <span
+          title={`RSI ${rsi.toFixed(0)} — overbought`}
+          className="ml-2 inline-block rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-red-500"
+        >
+          RSI hot
+        </span>
+      );
+    }
+    if (rsi <= 30) {
+      return (
+        <span
+          title={`RSI ${rsi.toFixed(0)} — oversold`}
+          className="ml-2 inline-block rounded bg-success/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-success"
+        >
+          RSI cold
+        </span>
+      );
+    }
+  }
+
+  if (aboveSma50 != null) {
+    return (
+      <span
+        title={aboveSma50 ? "Above 50-day average" : "Below 50-day average"}
+        className={cn(
+          "ml-2 inline-block rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
+          aboveSma50 ? "bg-success/10 text-success/80" : "bg-red-500/10 text-red-500/80",
+        )}
+      >
+        {aboveSma50 ? "▲50d" : "▼50d"}
+      </span>
+    );
+  }
+
+  return null;
 }
 
 function ChangeBadge({ pct }: { pct: number | null }) {

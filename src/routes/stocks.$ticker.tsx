@@ -38,6 +38,21 @@ interface QuoteExtras {
   updated: string | null;
 }
 
+interface Technicals {
+  rsi: number;
+  rsiState: "Overbought" | "Oversold" | "Neutral";
+  sma50: number;
+  sma200: number;
+  aboveSma50: boolean;
+  aboveSma200: boolean;
+  goldenCross: boolean;
+  macdBullish: boolean;
+  votes: { rsi: number; macd: number; vs50: number; vs200: number; cross: number };
+  composite: number;
+  label: "Strong Sell" | "Sell" | "Neutral" | "Buy" | "Strong Buy";
+  barsUsed: number;
+}
+
 interface QuoteResponse {
   ok: boolean;
   ticker: string;
@@ -52,6 +67,7 @@ interface QuoteResponse {
   timeNote: string;
   bars: Bar[];
   extras?: QuoteExtras;
+  technicals?: Technicals | null;
 }
 
 interface NewsHit {
@@ -151,6 +167,123 @@ function Wk52Bar({
         </span>
       </div>
     </div>
+  );
+}
+
+const GAUGE_SEGS = [
+  { label: "Strong Sell", color: "#ef4444" },
+  { label: "Sell", color: "#f59e0b" },
+  { label: "Neutral", color: "#6b7280" },
+  { label: "Buy", color: "#a3e635" },
+  { label: "Strong Buy", color: "#22c55e" },
+] as const;
+
+function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): string {
+  const rad = (a: number) => (a * Math.PI) / 180;
+  const x0 = cx + r * Math.cos(rad(a0));
+  const y0 = cy - r * Math.sin(rad(a0));
+  const x1 = cx + r * Math.cos(rad(a1));
+  const y1 = cy - r * Math.sin(rad(a1));
+  return `M${x0.toFixed(1)},${y0.toFixed(1)} A${r},${r} 0 0 1 ${x1.toFixed(1)},${y1.toFixed(1)}`;
+}
+
+/**
+ * Technical signals card (TradingView pattern): composite gauge from five
+ * real votes — RSI(14), MACD, price vs 50D/200D, 50D vs 200D — plus the
+ * breakdown. Delayed daily data only; labeled as pattern, not advice.
+ */
+function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
+  const cx = 110;
+  const cy = 104;
+  const r = 84;
+  const needleDeg = 180 - ((t.composite + 1) / 2) * 180;
+  const nx = cx + 62 * Math.cos((needleDeg * Math.PI) / 180);
+  const ny = cy - 62 * Math.sin((needleDeg * Math.PI) / 180);
+
+  const pill = (vote: number): [string, string] =>
+    vote > 0
+      ? ["Buy", "bg-success/15 text-success"]
+      : vote < 0
+        ? ["Sell", "bg-red-500/15 text-red-500"]
+        : ["Neutral", "bg-muted text-muted-foreground"];
+
+  const rows: [string, string, [string, string]][] = [
+    [`RSI (14)`, t.rsi.toFixed(1), pill(t.votes.rsi)],
+    ["MACD (12, 26, 9)", t.macdBullish ? "Bullish" : "Bearish", pill(t.votes.macd)],
+    [`Price vs 50-day ${fmt(t.sma50, sym)}`, t.aboveSma50 ? "Above" : "Below", pill(t.votes.vs50)],
+    [`Price vs 200-day ${fmt(t.sma200, sym)}`, t.aboveSma200 ? "Above" : "Below", pill(t.votes.vs200)],
+    [
+      "50-day vs 200-day",
+      t.goldenCross ? "Golden cross" : "Death cross",
+      pill(t.votes.cross),
+    ],
+  ];
+
+  return (
+    <section
+      aria-label="Technical signals"
+      className="mt-3 rounded-xl border border-border/60 bg-card/40 p-3 sm:p-4"
+    >
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          Technical signals
+        </p>
+        <p className="font-mono text-[10px] text-muted-foreground">{t.barsUsed}d of history</p>
+      </div>
+
+      <div className="mt-1 flex flex-col items-center sm:flex-row sm:gap-6">
+        <div className="w-full max-w-[240px]">
+          <svg viewBox="0 0 220 118" className="w-full" role="img" aria-label={`Technical rating: ${t.label}`}>
+            {GAUGE_SEGS.map((s, i) => (
+              <path
+                key={s.label}
+                d={arcPath(cx, cy, r, 180 - i * 36, 180 - (i + 1) * 36)}
+                fill="none"
+                stroke={s.color}
+                strokeWidth="11"
+                strokeLinecap="butt"
+                opacity={t.label === s.label ? 1 : 0.28}
+              />
+            ))}
+            <line x1={cx} y1={cy} x2={nx.toFixed(1)} y2={ny.toFixed(1)} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="text-foreground" />
+            <circle cx={cx} cy={cy} r="5" className="fill-foreground" />
+          </svg>
+          <p
+            className={cn(
+              "num -mt-1 text-center font-mono text-sm font-bold",
+              t.composite >= 0.2 ? "text-success" : t.composite <= -0.2 ? "text-red-500" : "text-muted-foreground",
+            )}
+          >
+            {t.label}
+          </p>
+        </div>
+
+        <ul className="mt-3 w-full flex-1 space-y-1.5 sm:mt-0">
+          {rows.map(([name, value, [pv, pc]]) => (
+            <li key={name} className="flex items-center justify-between gap-2 text-sm">
+              <span className="min-w-0 truncate text-muted-foreground">
+                {name}{" "}
+                <span className="num font-mono text-[12px] font-semibold text-foreground">
+                  {value}
+                </span>
+              </span>
+              <span
+                className={cn(
+                  "shrink-0 rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em]",
+                  pc,
+                )}
+              >
+                {pv}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <p className="mt-3 border-t border-border/50 pt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+        Pattern from delayed daily data — not a recommendation.
+      </p>
+    </section>
   );
 }
 
@@ -410,17 +543,39 @@ function StockDetail() {
                 {range === "1y" && quote.price != null && (
                   <Wk52Bar bars={quote.bars} price={quote.price} sym={sym} />
                 )}
+
+                {/* Technical signals — real history only */}
+                {quote.technicals ? (
+                  <SignalsCard t={quote.technicals} sym={sym} />
+                ) : (
+                  <p className="mt-3 rounded-xl border border-border/60 bg-card/40 p-3 font-mono text-[11px] text-muted-foreground">
+                    Not enough price history yet for technical signals — check back as history
+                    accumulates.
+                  </p>
+                )}
               </>
             ) : (
-              <div className="mt-4 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">
-                  End-of-day quote{quote.extras?.updated ? ` · ${quote.extras.updated}` : ""}.
-                </p>
-                <p className="mt-1">
-                  Price history isn't available for this listing yet — the board updates once per
-                  trading day.
-                </p>
-              </div>
+              <>
+                <div className="mt-4 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground">
+                    End-of-day quote{quote.extras?.updated ? ` · ${quote.extras.updated}` : ""}.
+                  </p>
+                  <p className="mt-1">
+                    Price history isn't available for this listing yet — the board updates once per
+                    trading day.
+                  </p>
+                </div>
+                <div className="mt-3 rounded-xl border border-border/60 bg-card/40 p-4">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                    Technical signals · history building
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Signals like RSI, moving averages, and volume patterns need daily price
+                    history. We're recording this listing's closes every trading day — signals
+                    unlock automatically once there's enough to compute them honestly.
+                  </p>
+                </div>
+              </>
             )}
 
             {/* Stats */}

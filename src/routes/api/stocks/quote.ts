@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { getDBQuote } from "@/lib/stocks/boards-db.server";
-import { getQuote } from "@/lib/stocks/yahoo.server";
+import { getQuote, getTechnicals } from "@/lib/stocks/yahoo.server";
 
 const ALLOWED_RANGES = new Set(["1mo", "3mo", "6mo", "1y", "2y", "5y"]);
 
@@ -75,7 +75,10 @@ export const Route = createFileRoute("/api/stocks/quote")({
           );
         }
 
-        const q = await getQuote(ticker, range, "1d");
+        const [q, tech] = await Promise.all([
+          getQuote(ticker, range, "1d"),
+          getTechnicals(ticker),
+        ]);
         if (!q) {
           return new Response(JSON.stringify({ ok: false, error: "quote unavailable" }), {
             status: 502,
@@ -104,6 +107,14 @@ export const Route = createFileRoute("/api/stocks/quote")({
               c: b.c != null ? b.c / d : null,
               v: b.v,
             })),
+            // Unitless/boolean signals pass through; price-like fields convert.
+            technicals: tech
+              ? {
+                  ...tech,
+                  sma50: tech.sma50 / d,
+                  sma200: tech.sma200 / d,
+                }
+              : null,
           }),
           { headers: { "content-type": "application/json" } },
         );
