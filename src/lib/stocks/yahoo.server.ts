@@ -12,6 +12,40 @@ const UA =
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const cache = new Map<string, { at: number; data: unknown }>();
 
+/** 52-week high/low changes once a day — cache it long and separately. */
+const WK52_TTL_MS = 12 * 60 * 60 * 1000;
+const wk52Cache = new Map<string, { at: number; data: { high: number; low: number } | null }>();
+
+export interface Wk52Stats {
+  high: number;
+  low: number;
+}
+
+/**
+ * 52-week high/low from 1y daily bars. Long-TTL cached: the board calls
+ * this per ticker, and the numbers only move once per trading day.
+ * Returns null when history is unavailable — callers must handle the
+ * honest empty state, never fabricate.
+ */
+export async function get52wkStats(ticker: string): Promise<Wk52Stats | null> {
+  const hit = wk52Cache.get(ticker);
+  if (hit && Date.now() - hit.at < WK52_TTL_MS) return hit.data;
+
+  let stats: Wk52Stats | null = null;
+  try {
+    const q = await getQuote(ticker, "1y", "1d");
+    const highs = (q?.bars ?? []).map((b) => b.h ?? b.c).filter((v): v is number => v != null);
+    const lows = (q?.bars ?? []).map((b) => b.l ?? b.c).filter((v): v is number => v != null);
+    if (highs.length >= 50 && lows.length >= 50) {
+      stats = { high: Math.max(...highs), low: Math.min(...lows) };
+    }
+  } catch {
+    stats = null;
+  }
+  wk52Cache.set(ticker, { at: Date.now(), data: stats });
+  return stats;
+}
+
 export interface PriceBar {
   t: number;
   o: number | null;

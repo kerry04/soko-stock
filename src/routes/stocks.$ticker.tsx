@@ -82,6 +82,78 @@ function timeAgo(iso: string): string {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+/**
+ * 52-week range bar (TradingView pattern): current price positioned
+ * between the verified 52-week low and high. Rendered only from real
+ * 1y history — never for EOD-only listings.
+ */
+function Wk52Bar({
+  bars,
+  price,
+  sym,
+}: {
+  bars: Bar[];
+  price: number;
+  sym: string;
+}) {
+  const stats = useMemo(() => {
+    const highs = bars.map((b) => b.h ?? b.c).filter((v): v is number => v != null);
+    const lows = bars.map((b) => b.l ?? b.c).filter((v): v is number => v != null);
+    if (highs.length < 50 || lows.length < 50) return null;
+    const high = Math.max(...highs);
+    const low = Math.min(...lows);
+    if (!(high > low)) return null;
+    return { high, low };
+  }, [bars]);
+
+  if (!stats) return null;
+  const { high, low } = stats;
+  const pos = Math.min(1, Math.max(0, (price - low) / (high - low)));
+  const belowHigh = ((high - price) / high) * 100;
+  const nearHigh = price >= high * 0.97;
+  const nearLow = price <= low * 1.03;
+
+  return (
+    <div className="mt-3 rounded-xl border border-border/60 bg-card/40 p-3 sm:p-4">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          52-week range
+        </p>
+        <p
+          className={cn(
+            "num font-mono text-[11px] font-semibold",
+            nearHigh ? "text-success" : nearLow ? "text-red-500" : "text-muted-foreground",
+          )}
+        >
+          {nearHigh
+            ? "At 52wk high"
+            : nearLow
+              ? "At 52wk low"
+              : `${belowHigh.toFixed(1)}% below high`}
+        </p>
+      </div>
+      <div
+        className="relative mt-3 h-1.5 rounded-full bg-muted"
+        role="img"
+        aria-label={`Price ${fmt(price, sym)} between 52-week low ${fmt(low, sym)} and high ${fmt(high, sym)}`}
+      >
+        <div
+          className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-background bg-foreground"
+          style={{ left: `${(pos * 100).toFixed(1)}%` }}
+        />
+      </div>
+      <div className="num mt-2 flex items-center justify-between font-mono text-[11px] text-muted-foreground">
+        <span>
+          <span className="text-red-500/90">Low</span> {fmt(low, sym)}
+        </span>
+        <span>
+          <span className="text-success/90">High</span> {fmt(high, sym)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** First meaningful word of the company name, for news matching. */
 function companyKeyword(name: string): string {
   const stop = new Set(["the", "group", "holdings", "limited", "ltd", "sa", "nv", "plc", "inc"]);
@@ -333,6 +405,11 @@ function StockDetail() {
                 <div className="mt-2 rounded-xl border border-border/70 bg-card/40 p-3 sm:p-4">
                   <PriceChart bars={quote.bars} sym={sym} up={up} />
                 </div>
+
+                {/* 52-week position — only meaningful on the 1Y view */}
+                {range === "1y" && quote.price != null && (
+                  <Wk52Bar bars={quote.bars} price={quote.price} sym={sym} />
+                )}
               </>
             ) : (
               <div className="mt-4 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">

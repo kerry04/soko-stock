@@ -28,6 +28,11 @@ interface BoardRow {
   previousClose: number | null;
   change: number | null;
   changePercent: number | null;
+  volume: number | null;
+  /** Value traded in display currency (EOD table for AF, price×volume for JSE). */
+  value: number | null;
+  wk52High: number | null;
+  wk52Low: number | null;
   asOf: string;
 }
 
@@ -39,10 +44,55 @@ interface BoardResponse {
   rows: BoardRow[];
 }
 
-type SortKey = "name" | "price" | "changePercent";
+type SortKey = "name" | "price" | "changePercent" | "value";
 
 function fmtPrice(v: number, sym: string): string {
   return `${sym}${v.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function fmtCompactValue(v: number, sym: string): string {
+  const c = new Intl.NumberFormat("en-ZA", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(v);
+  return `${sym}${c}`;
+}
+
+/**
+ * One badge slot per row (Robinhood watchlist-density pattern). 52-week
+ * events only — needs real history, so EOD-only listings get no badge.
+ * Priority: new high/low > near high/low.
+ */
+function RowBadge({ row }: { row: BoardRow }) {
+  const { price, wk52High, wk52Low } = row;
+  if (wk52High == null || wk52Low == null || wk52High <= 0) return null;
+  let label: string | null = null;
+  let cls = "";
+  if (price >= wk52High) {
+    label = "New 52wk high";
+    cls = "bg-success/15 text-success";
+  } else if (price <= wk52Low) {
+    label = "New 52wk low";
+    cls = "bg-red-500/15 text-red-500";
+  } else if (price >= wk52High * 0.97) {
+    label = "Near 52wk high";
+    cls = "bg-success/10 text-success/80";
+  } else if (price <= wk52Low * 1.03) {
+    label = "Near 52wk low";
+    cls = "bg-red-500/10 text-red-500/80";
+  }
+  if (!label) return null;
+  return (
+    <span
+      title={label}
+      className={cn(
+        "ml-2 inline-block rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
+        cls,
+      )}
+    >
+      {label === "New 52wk high" ? "52WK HI" : label === "New 52wk low" ? "52WK LO" : label === "Near 52wk high" ? "≈HI" : "≈LO"}
+    </span>
+  );
 }
 
 function ChangeBadge({ pct }: { pct: number | null }) {
@@ -144,9 +194,14 @@ function StocksBoard() {
 
   const movers = useMemo(() => {
     const list = (board?.rows ?? []).filter((r) => r.changePercent != null);
+    const active = (board?.rows ?? [])
+      .filter((r) => r.value != null && r.value > 0)
+      .sort((a, b) => (b.value as number) - (a.value as number))
+      .slice(0, 3);
     return {
       gainers: [...list].sort((a, b) => b.changePercent! - a.changePercent!).slice(0, 3),
       losers: [...list].sort((a, b) => a.changePercent! - b.changePercent!).slice(0, 3),
+      active,
     };
   }, [board]);
 
@@ -225,7 +280,7 @@ function StocksBoard() {
 
             {/* Movers strip */}
             {!loading && !error && movers.gainers.length > 0 && (
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 <div className="rounded-xl border border-border/60 bg-card/40 p-3">
                   <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-success">
                     Top gainers
@@ -264,6 +319,29 @@ function StocksBoard() {
                     ))}
                   </ul>
                 </div>
+                {movers.active.length > 0 && (
+                  <div className="rounded-xl border border-border/60 bg-card/40 p-3 sm:col-span-2 lg:col-span-1">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                      Most active · value traded
+                    </p>
+                    <ul className="mt-1.5 space-y-1">
+                      {movers.active.map((r) => (
+                        <li key={r.ticker} className="flex items-center justify-between gap-2 text-sm">
+                          <Link
+                            to="/stocks/$ticker"
+                            params={{ ticker: r.ticker }}
+                            className="truncate hover:underline"
+                          >
+                            {r.name}
+                          </Link>
+                          <span className="num shrink-0 font-mono text-[12px] font-semibold text-muted-foreground">
+                            {fmtCompactValue(r.value as number, board?.currencySymbol ?? "")}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
 
@@ -292,13 +370,18 @@ function StocksBoard() {
                         24h {sortKey === "changePercent" && (sortDir === 1 ? "▲" : "▼")}
                       </button>
                     </th>
+                    <th className="hidden px-3 py-2.5 text-right md:table-cell">
+                      <button onClick={() => flipSort("value")} className="hover:text-foreground">
+                        Value {sortKey === "value" && (sortDir === 1 ? "▲" : "▼")}
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading &&
                     Array.from({ length: 8 }).map((_, i) => (
                       <tr key={i} className="border-b border-border/40">
-                        <td colSpan={5} className="px-3 py-3">
+                        <td colSpan={6} className="px-3 py-3">
                           <div className="h-4 animate-pulse rounded bg-muted/60" />
                         </td>
                       </tr>
@@ -336,6 +419,7 @@ function StocksBoard() {
                           >
                             {r.name}
                           </Link>
+                          <RowBadge row={r} />
                         </td>
                         <td className="hidden px-3 py-2.5 font-mono text-[11px] text-muted-foreground sm:table-cell">
                           {r.ticker}
@@ -345,6 +429,11 @@ function StocksBoard() {
                         </td>
                         <td className="px-3 py-2.5 text-right">
                           <ChangeBadge pct={r.changePercent} />
+                        </td>
+                        <td className="num hidden px-3 py-2.5 text-right font-mono text-[12px] text-muted-foreground md:table-cell">
+                          {r.value != null
+                            ? fmtCompactValue(r.value, board?.currencySymbol ?? "")
+                            : "—"}
                         </td>
                       </tr>
                     ))}
