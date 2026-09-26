@@ -1,7 +1,6 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/lib/auth-context";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import { LanguageProvider } from "@/lib/i18n";
 
@@ -103,10 +102,8 @@ function RootComponent() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <AuthProvider>
-          <Outlet />
-          <ThemedToaster />
-        </AuthProvider>
+        <Outlet />
+        <ThemedToaster />
       </LanguageProvider>
     </ThemeProvider>
   );

@@ -11,50 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SignupRouteImport } from './routes/signup'
 import { Route as PulseRouteImport } from './routes/pulse'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as LearnRouteImport } from './routes/learn'
-import { Route as ContactRouteImport } from './routes/contact'
-import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as MapRouteImport } from './routes/map'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as MarketsIndexRouteImport } from './routes/markets.index'
-import { Route as LearnIndexRouteImport } from './routes/learn.index'
-import { Route as LearnSlippageRouteImport } from './routes/learn.slippage'
-import { Route as LearnRiskRouteImport } from './routes/learn.risk'
-import { Route as LearnMarketsRouteImport } from './routes/learn.markets'
-import { Route as LearnHowToTradeRouteImport } from './routes/learn.how-to-trade'
-import { Route as LearnExamplesRouteImport } from './routes/learn.examples'
-import { Route as LearnDisclaimerRouteImport } from './routes/learn.disclaimer'
-import { Route as LearnAboutRouteImport } from './routes/learn.about'
-import { Route as ApiAlertsRouteImport } from './routes/api/alerts'
-import { Route as AuthedWalletRouteImport } from './routes/_authed/wallet'
-import { Route as AuthedSupportRouteImport } from './routes/_authed/support'
-import { Route as AuthedProfileRouteImport } from './routes/_authed/profile'
-import { Route as AuthedPortfolioRouteImport } from './routes/_authed/portfolio'
-import { Route as AuthedNotificationsRouteImport } from './routes/_authed/notifications'
-import { Route as AuthedNewsRouteImport } from './routes/_authed/news'
-import { Route as AuthedLeaderboardRouteImport } from './routes/_authed/leaderboard'
-import { Route as AuthedKycRouteImport } from './routes/_authed/kyc'
-import { Route as AuthedComingSoonRouteImport } from './routes/_authed/coming-soon'
-import { Route as ApiPaymentsWebhookRouteImport } from './routes/api/payments/webhook'
-import { Route as ApiPaymentsVerifyRouteImport } from './routes/api/payments/verify'
-import { Route as ApiPaymentsStatusRouteImport } from './routes/api/payments/status'
-import { Route as ApiPaymentsDepositRouteImport } from './routes/api/payments/deposit'
-import { Route as ApiNotificationsPreferencesRouteImport } from './routes/api/notifications/preferences'
-import { Route as ApiLocalSplatRouteImport } from './routes/api/local/$'
-import { Route as ApiAlertsCheckRouteImport } from './routes/api/alerts/check'
-import { Route as ApiAlertsIdRouteImport } from './routes/api/alerts.$id'
-import { Route as AuthedUUserIdRouteImport } from './routes/_authed/u.$userId'
-import { Route as AuthedSupportTicketIdRouteImport } from './routes/_authed/support.$ticketId'
-import { Route as AuthedMarketsSlugRouteImport } from './routes/_authed/markets.$slug'
+import { Route as StocksTickerRouteImport } from './routes/stocks.$ticker'
+import { Route as ApiStocksQuoteRouteImport } from './routes/api/stocks/quote'
+import { Route as ApiStocksBoardRouteImport } from './routes/api/stocks/board'
 import { Route as ApiPublicHooksSignalsRouteImport } from './routes/api/public/hooks/signals'
-import { Route as ApiPublicHooksScrapeTweetsRouteImport } from './routes/api/public/hooks/scrape-tweets'
 import { Route as ApiPublicHooksScrapeNewsRouteImport } from './routes/api/public/hooks/scrape-news'
 import { Route as ApiPublicHooksComputeTrendsRouteImport } from './routes/api/public/hooks/compute-trends'
-import { Route as ApiPublicHooksAutoSuggestMarketsRouteImport } from './routes/api/public/hooks/auto-suggest-markets'
-import { Route as ApiPublicHooksAutoResolveRouteImport } from './routes/api/public/hooks/auto-resolve'
 import { Route as ApiPublicHooksAnalyzeSentimentRouteImport } from './routes/api/public/hooks/analyze-sentiment'
 
 const WatchlistRoute = WatchlistRouteImport.update({
@@ -67,38 +32,14 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PulseRoute = PulseRouteImport.update({
   id: '/pulse',
   path: '/pulse',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LearnRoute = LearnRouteImport.update({
-  id: '/learn',
-  path: '/learn',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactRoute = ContactRouteImport.update({
-  id: '/contact',
-  path: '/contact',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthedRoute = AuthedRouteImport.update({
-  id: '/_authed',
+const MapRoute = MapRouteImport.update({
+  id: '/map',
+  path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -106,168 +47,26 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MarketsIndexRoute = MarketsIndexRouteImport.update({
-  id: '/markets/',
-  path: '/markets/',
+const StocksTickerRoute = StocksTickerRouteImport.update({
+  id: '/stocks/$ticker',
+  path: '/stocks/$ticker',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LearnIndexRoute = LearnIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LearnRoute,
-} as any)
-const LearnSlippageRoute = LearnSlippageRouteImport.update({
-  id: '/slippage',
-  path: '/slippage',
-  getParentRoute: () => LearnRoute,
-} as any)
-const LearnRiskRoute = LearnRiskRouteImport.update({
-  id: '/risk',
-  path: '/risk',
-  getParentRoute: () => LearnRoute,
-} as any)
-const LearnMarketsRoute = LearnMarketsRouteImport.update({
-  id: '/markets',
-  path: '/markets',
-  getParentRoute: () => LearnRoute,
-} as any)
-const LearnHowToTradeRoute = LearnHowToTradeRouteImport.update({
-  id: '/how-to-trade',
-  path: '/how-to-trade',
-  getParentRoute: () => LearnRoute,
-} as any)
-const LearnExamplesRoute = LearnExamplesRouteImport.update({
-  id: '/examples',
-  path: '/examples',
-  getParentRoute: () => LearnRoute,
-} as any)
-const LearnDisclaimerRoute = LearnDisclaimerRouteImport.update({
-  id: '/disclaimer',
-  path: '/disclaimer',
-  getParentRoute: () => LearnRoute,
-} as any)
-const LearnAboutRoute = LearnAboutRouteImport.update({
-  id: '/about',
-  path: '/about',
-  getParentRoute: () => LearnRoute,
-} as any)
-const ApiAlertsRoute = ApiAlertsRouteImport.update({
-  id: '/api/alerts',
-  path: '/api/alerts',
+const ApiStocksQuoteRoute = ApiStocksQuoteRouteImport.update({
+  id: '/api/stocks/quote',
+  path: '/api/stocks/quote',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthedWalletRoute = AuthedWalletRouteImport.update({
-  id: '/wallet',
-  path: '/wallet',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedSupportRoute = AuthedSupportRouteImport.update({
-  id: '/support',
-  path: '/support',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedProfileRoute = AuthedProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedPortfolioRoute = AuthedPortfolioRouteImport.update({
-  id: '/portfolio',
-  path: '/portfolio',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedNotificationsRoute = AuthedNotificationsRouteImport.update({
-  id: '/notifications',
-  path: '/notifications',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedNewsRoute = AuthedNewsRouteImport.update({
-  id: '/news',
-  path: '/news',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedLeaderboardRoute = AuthedLeaderboardRouteImport.update({
-  id: '/leaderboard',
-  path: '/leaderboard',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedKycRoute = AuthedKycRouteImport.update({
-  id: '/kyc',
-  path: '/kyc',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedComingSoonRoute = AuthedComingSoonRouteImport.update({
-  id: '/coming-soon',
-  path: '/coming-soon',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const ApiPaymentsWebhookRoute = ApiPaymentsWebhookRouteImport.update({
-  id: '/api/payments/webhook',
-  path: '/api/payments/webhook',
+const ApiStocksBoardRoute = ApiStocksBoardRouteImport.update({
+  id: '/api/stocks/board',
+  path: '/api/stocks/board',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPaymentsVerifyRoute = ApiPaymentsVerifyRouteImport.update({
-  id: '/api/payments/verify',
-  path: '/api/payments/verify',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPaymentsStatusRoute = ApiPaymentsStatusRouteImport.update({
-  id: '/api/payments/status',
-  path: '/api/payments/status',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPaymentsDepositRoute = ApiPaymentsDepositRouteImport.update({
-  id: '/api/payments/deposit',
-  path: '/api/payments/deposit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiNotificationsPreferencesRoute =
-  ApiNotificationsPreferencesRouteImport.update({
-    id: '/api/notifications/preferences',
-    path: '/api/notifications/preferences',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiLocalSplatRoute = ApiLocalSplatRouteImport.update({
-  id: '/api/local/$',
-  path: '/api/local/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAlertsCheckRoute = ApiAlertsCheckRouteImport.update({
-  id: '/check',
-  path: '/check',
-  getParentRoute: () => ApiAlertsRoute,
-} as any)
-const ApiAlertsIdRoute = ApiAlertsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApiAlertsRoute,
-} as any)
-const AuthedUUserIdRoute = AuthedUUserIdRouteImport.update({
-  id: '/u/$userId',
-  path: '/u/$userId',
-  getParentRoute: () => AuthedRoute,
-} as any)
-const AuthedSupportTicketIdRoute = AuthedSupportTicketIdRouteImport.update({
-  id: '/$ticketId',
-  path: '/$ticketId',
-  getParentRoute: () => AuthedSupportRoute,
-} as any)
-const AuthedMarketsSlugRoute = AuthedMarketsSlugRouteImport.update({
-  id: '/markets/$slug',
-  path: '/markets/$slug',
-  getParentRoute: () => AuthedRoute,
 } as any)
 const ApiPublicHooksSignalsRoute = ApiPublicHooksSignalsRouteImport.update({
   id: '/api/public/hooks/signals',
   path: '/api/public/hooks/signals',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksScrapeTweetsRoute =
-  ApiPublicHooksScrapeTweetsRouteImport.update({
-    id: '/api/public/hooks/scrape-tweets',
-    path: '/api/public/hooks/scrape-tweets',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicHooksScrapeNewsRoute =
   ApiPublicHooksScrapeNewsRouteImport.update({
     id: '/api/public/hooks/scrape-news',
@@ -280,18 +79,6 @@ const ApiPublicHooksComputeTrendsRoute =
     path: '/api/public/hooks/compute-trends',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksAutoSuggestMarketsRoute =
-  ApiPublicHooksAutoSuggestMarketsRouteImport.update({
-    id: '/api/public/hooks/auto-suggest-markets',
-    path: '/api/public/hooks/auto-suggest-markets',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicHooksAutoResolveRoute =
-  ApiPublicHooksAutoResolveRouteImport.update({
-    id: '/api/public/hooks/auto-resolve',
-    path: '/api/public/hooks/auto-resolve',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicHooksAnalyzeSentimentRoute =
   ApiPublicHooksAnalyzeSentimentRouteImport.update({
     id: '/api/public/hooks/analyze-sentiment',
@@ -301,321 +88,104 @@ const ApiPublicHooksAnalyzeSentimentRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/contact': typeof ContactRoute
-  '/learn': typeof LearnRouteWithChildren
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
+  '/map': typeof MapRoute
   '/pulse': typeof PulseRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
-  '/coming-soon': typeof AuthedComingSoonRoute
-  '/kyc': typeof AuthedKycRoute
-  '/leaderboard': typeof AuthedLeaderboardRoute
-  '/news': typeof AuthedNewsRoute
-  '/notifications': typeof AuthedNotificationsRoute
-  '/portfolio': typeof AuthedPortfolioRoute
-  '/profile': typeof AuthedProfileRoute
-  '/support': typeof AuthedSupportRouteWithChildren
-  '/wallet': typeof AuthedWalletRoute
-  '/api/alerts': typeof ApiAlertsRouteWithChildren
-  '/learn/about': typeof LearnAboutRoute
-  '/learn/disclaimer': typeof LearnDisclaimerRoute
-  '/learn/examples': typeof LearnExamplesRoute
-  '/learn/how-to-trade': typeof LearnHowToTradeRoute
-  '/learn/markets': typeof LearnMarketsRoute
-  '/learn/risk': typeof LearnRiskRoute
-  '/learn/slippage': typeof LearnSlippageRoute
-  '/learn/': typeof LearnIndexRoute
-  '/markets/': typeof MarketsIndexRoute
-  '/markets/$slug': typeof AuthedMarketsSlugRoute
-  '/support/$ticketId': typeof AuthedSupportTicketIdRoute
-  '/u/$userId': typeof AuthedUUserIdRoute
-  '/api/alerts/$id': typeof ApiAlertsIdRoute
-  '/api/alerts/check': typeof ApiAlertsCheckRoute
-  '/api/local/$': typeof ApiLocalSplatRoute
-  '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
-  '/api/payments/deposit': typeof ApiPaymentsDepositRoute
-  '/api/payments/status': typeof ApiPaymentsStatusRoute
-  '/api/payments/verify': typeof ApiPaymentsVerifyRoute
-  '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
+  '/stocks/$ticker': typeof StocksTickerRoute
+  '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
-  '/api/public/hooks/auto-resolve': typeof ApiPublicHooksAutoResolveRoute
-  '/api/public/hooks/auto-suggest-markets': typeof ApiPublicHooksAutoSuggestMarketsRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
-  '/api/public/hooks/scrape-tweets': typeof ApiPublicHooksScrapeTweetsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/contact': typeof ContactRoute
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
+  '/map': typeof MapRoute
   '/pulse': typeof PulseRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
-  '/coming-soon': typeof AuthedComingSoonRoute
-  '/kyc': typeof AuthedKycRoute
-  '/leaderboard': typeof AuthedLeaderboardRoute
-  '/news': typeof AuthedNewsRoute
-  '/notifications': typeof AuthedNotificationsRoute
-  '/portfolio': typeof AuthedPortfolioRoute
-  '/profile': typeof AuthedProfileRoute
-  '/support': typeof AuthedSupportRouteWithChildren
-  '/wallet': typeof AuthedWalletRoute
-  '/api/alerts': typeof ApiAlertsRouteWithChildren
-  '/learn/about': typeof LearnAboutRoute
-  '/learn/disclaimer': typeof LearnDisclaimerRoute
-  '/learn/examples': typeof LearnExamplesRoute
-  '/learn/how-to-trade': typeof LearnHowToTradeRoute
-  '/learn/markets': typeof LearnMarketsRoute
-  '/learn/risk': typeof LearnRiskRoute
-  '/learn/slippage': typeof LearnSlippageRoute
-  '/learn': typeof LearnIndexRoute
-  '/markets': typeof MarketsIndexRoute
-  '/markets/$slug': typeof AuthedMarketsSlugRoute
-  '/support/$ticketId': typeof AuthedSupportTicketIdRoute
-  '/u/$userId': typeof AuthedUUserIdRoute
-  '/api/alerts/$id': typeof ApiAlertsIdRoute
-  '/api/alerts/check': typeof ApiAlertsCheckRoute
-  '/api/local/$': typeof ApiLocalSplatRoute
-  '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
-  '/api/payments/deposit': typeof ApiPaymentsDepositRoute
-  '/api/payments/status': typeof ApiPaymentsStatusRoute
-  '/api/payments/verify': typeof ApiPaymentsVerifyRoute
-  '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
+  '/stocks/$ticker': typeof StocksTickerRoute
+  '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
-  '/api/public/hooks/auto-resolve': typeof ApiPublicHooksAutoResolveRoute
-  '/api/public/hooks/auto-suggest-markets': typeof ApiPublicHooksAutoSuggestMarketsRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
-  '/api/public/hooks/scrape-tweets': typeof ApiPublicHooksScrapeTweetsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authed': typeof AuthedRouteWithChildren
-  '/contact': typeof ContactRoute
-  '/learn': typeof LearnRouteWithChildren
-  '/login': typeof LoginRoute
-  '/onboarding': typeof OnboardingRoute
+  '/map': typeof MapRoute
   '/pulse': typeof PulseRoute
-  '/signup': typeof SignupRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
-  '/_authed/coming-soon': typeof AuthedComingSoonRoute
-  '/_authed/kyc': typeof AuthedKycRoute
-  '/_authed/leaderboard': typeof AuthedLeaderboardRoute
-  '/_authed/news': typeof AuthedNewsRoute
-  '/_authed/notifications': typeof AuthedNotificationsRoute
-  '/_authed/portfolio': typeof AuthedPortfolioRoute
-  '/_authed/profile': typeof AuthedProfileRoute
-  '/_authed/support': typeof AuthedSupportRouteWithChildren
-  '/_authed/wallet': typeof AuthedWalletRoute
-  '/api/alerts': typeof ApiAlertsRouteWithChildren
-  '/learn/about': typeof LearnAboutRoute
-  '/learn/disclaimer': typeof LearnDisclaimerRoute
-  '/learn/examples': typeof LearnExamplesRoute
-  '/learn/how-to-trade': typeof LearnHowToTradeRoute
-  '/learn/markets': typeof LearnMarketsRoute
-  '/learn/risk': typeof LearnRiskRoute
-  '/learn/slippage': typeof LearnSlippageRoute
-  '/learn/': typeof LearnIndexRoute
-  '/markets/': typeof MarketsIndexRoute
-  '/_authed/markets/$slug': typeof AuthedMarketsSlugRoute
-  '/_authed/support/$ticketId': typeof AuthedSupportTicketIdRoute
-  '/_authed/u/$userId': typeof AuthedUUserIdRoute
-  '/api/alerts/$id': typeof ApiAlertsIdRoute
-  '/api/alerts/check': typeof ApiAlertsCheckRoute
-  '/api/local/$': typeof ApiLocalSplatRoute
-  '/api/notifications/preferences': typeof ApiNotificationsPreferencesRoute
-  '/api/payments/deposit': typeof ApiPaymentsDepositRoute
-  '/api/payments/status': typeof ApiPaymentsStatusRoute
-  '/api/payments/verify': typeof ApiPaymentsVerifyRoute
-  '/api/payments/webhook': typeof ApiPaymentsWebhookRoute
+  '/stocks/$ticker': typeof StocksTickerRoute
+  '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/quote': typeof ApiStocksQuoteRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
-  '/api/public/hooks/auto-resolve': typeof ApiPublicHooksAutoResolveRoute
-  '/api/public/hooks/auto-suggest-markets': typeof ApiPublicHooksAutoSuggestMarketsRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
-  '/api/public/hooks/scrape-tweets': typeof ApiPublicHooksScrapeTweetsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/contact'
-    | '/learn'
-    | '/login'
-    | '/onboarding'
+    | '/map'
     | '/pulse'
-    | '/signup'
     | '/terms'
     | '/watchlist'
-    | '/coming-soon'
-    | '/kyc'
-    | '/leaderboard'
-    | '/news'
-    | '/notifications'
-    | '/portfolio'
-    | '/profile'
-    | '/support'
-    | '/wallet'
-    | '/api/alerts'
-    | '/learn/about'
-    | '/learn/disclaimer'
-    | '/learn/examples'
-    | '/learn/how-to-trade'
-    | '/learn/markets'
-    | '/learn/risk'
-    | '/learn/slippage'
-    | '/learn/'
-    | '/markets/'
-    | '/markets/$slug'
-    | '/support/$ticketId'
-    | '/u/$userId'
-    | '/api/alerts/$id'
-    | '/api/alerts/check'
-    | '/api/local/$'
-    | '/api/notifications/preferences'
-    | '/api/payments/deposit'
-    | '/api/payments/status'
-    | '/api/payments/verify'
-    | '/api/payments/webhook'
+    | '/stocks/$ticker'
+    | '/api/stocks/board'
+    | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
-    | '/api/public/hooks/auto-resolve'
-    | '/api/public/hooks/auto-suggest-markets'
     | '/api/public/hooks/compute-trends'
     | '/api/public/hooks/scrape-news'
-    | '/api/public/hooks/scrape-tweets'
     | '/api/public/hooks/signals'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/contact'
-    | '/login'
-    | '/onboarding'
+    | '/map'
     | '/pulse'
-    | '/signup'
     | '/terms'
     | '/watchlist'
-    | '/coming-soon'
-    | '/kyc'
-    | '/leaderboard'
-    | '/news'
-    | '/notifications'
-    | '/portfolio'
-    | '/profile'
-    | '/support'
-    | '/wallet'
-    | '/api/alerts'
-    | '/learn/about'
-    | '/learn/disclaimer'
-    | '/learn/examples'
-    | '/learn/how-to-trade'
-    | '/learn/markets'
-    | '/learn/risk'
-    | '/learn/slippage'
-    | '/learn'
-    | '/markets'
-    | '/markets/$slug'
-    | '/support/$ticketId'
-    | '/u/$userId'
-    | '/api/alerts/$id'
-    | '/api/alerts/check'
-    | '/api/local/$'
-    | '/api/notifications/preferences'
-    | '/api/payments/deposit'
-    | '/api/payments/status'
-    | '/api/payments/verify'
-    | '/api/payments/webhook'
+    | '/stocks/$ticker'
+    | '/api/stocks/board'
+    | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
-    | '/api/public/hooks/auto-resolve'
-    | '/api/public/hooks/auto-suggest-markets'
     | '/api/public/hooks/compute-trends'
     | '/api/public/hooks/scrape-news'
-    | '/api/public/hooks/scrape-tweets'
     | '/api/public/hooks/signals'
   id:
     | '__root__'
     | '/'
-    | '/_authed'
-    | '/contact'
-    | '/learn'
-    | '/login'
-    | '/onboarding'
+    | '/map'
     | '/pulse'
-    | '/signup'
     | '/terms'
     | '/watchlist'
-    | '/_authed/coming-soon'
-    | '/_authed/kyc'
-    | '/_authed/leaderboard'
-    | '/_authed/news'
-    | '/_authed/notifications'
-    | '/_authed/portfolio'
-    | '/_authed/profile'
-    | '/_authed/support'
-    | '/_authed/wallet'
-    | '/api/alerts'
-    | '/learn/about'
-    | '/learn/disclaimer'
-    | '/learn/examples'
-    | '/learn/how-to-trade'
-    | '/learn/markets'
-    | '/learn/risk'
-    | '/learn/slippage'
-    | '/learn/'
-    | '/markets/'
-    | '/_authed/markets/$slug'
-    | '/_authed/support/$ticketId'
-    | '/_authed/u/$userId'
-    | '/api/alerts/$id'
-    | '/api/alerts/check'
-    | '/api/local/$'
-    | '/api/notifications/preferences'
-    | '/api/payments/deposit'
-    | '/api/payments/status'
-    | '/api/payments/verify'
-    | '/api/payments/webhook'
+    | '/stocks/$ticker'
+    | '/api/stocks/board'
+    | '/api/stocks/quote'
     | '/api/public/hooks/analyze-sentiment'
-    | '/api/public/hooks/auto-resolve'
-    | '/api/public/hooks/auto-suggest-markets'
     | '/api/public/hooks/compute-trends'
     | '/api/public/hooks/scrape-news'
-    | '/api/public/hooks/scrape-tweets'
     | '/api/public/hooks/signals'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthedRoute: typeof AuthedRouteWithChildren
-  ContactRoute: typeof ContactRoute
-  LearnRoute: typeof LearnRouteWithChildren
-  LoginRoute: typeof LoginRoute
-  OnboardingRoute: typeof OnboardingRoute
+  MapRoute: typeof MapRoute
   PulseRoute: typeof PulseRoute
-  SignupRoute: typeof SignupRoute
   TermsRoute: typeof TermsRoute
   WatchlistRoute: typeof WatchlistRoute
-  ApiAlertsRoute: typeof ApiAlertsRouteWithChildren
-  MarketsIndexRoute: typeof MarketsIndexRoute
-  ApiLocalSplatRoute: typeof ApiLocalSplatRoute
-  ApiNotificationsPreferencesRoute: typeof ApiNotificationsPreferencesRoute
-  ApiPaymentsDepositRoute: typeof ApiPaymentsDepositRoute
-  ApiPaymentsStatusRoute: typeof ApiPaymentsStatusRoute
-  ApiPaymentsVerifyRoute: typeof ApiPaymentsVerifyRoute
-  ApiPaymentsWebhookRoute: typeof ApiPaymentsWebhookRoute
+  StocksTickerRoute: typeof StocksTickerRoute
+  ApiStocksBoardRoute: typeof ApiStocksBoardRoute
+  ApiStocksQuoteRoute: typeof ApiStocksQuoteRoute
   ApiPublicHooksAnalyzeSentimentRoute: typeof ApiPublicHooksAnalyzeSentimentRoute
-  ApiPublicHooksAutoResolveRoute: typeof ApiPublicHooksAutoResolveRoute
-  ApiPublicHooksAutoSuggestMarketsRoute: typeof ApiPublicHooksAutoSuggestMarketsRoute
   ApiPublicHooksComputeTrendsRoute: typeof ApiPublicHooksComputeTrendsRoute
   ApiPublicHooksScrapeNewsRoute: typeof ApiPublicHooksScrapeNewsRoute
-  ApiPublicHooksScrapeTweetsRoute: typeof ApiPublicHooksScrapeTweetsRoute
   ApiPublicHooksSignalsRoute: typeof ApiPublicHooksSignalsRoute
 }
 
@@ -635,13 +205,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/pulse': {
       id: '/pulse'
       path: '/pulse'
@@ -649,39 +212,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PulseRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/learn': {
-      id: '/learn'
-      path: '/learn'
-      fullPath: '/learn'
-      preLoaderRoute: typeof LearnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contact': {
-      id: '/contact'
-      path: '/contact'
-      fullPath: '/contact'
-      preLoaderRoute: typeof ContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authed': {
-      id: '/_authed'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthedRouteImport
+    '/map': {
+      id: '/map'
+      path: '/map'
+      fullPath: '/map'
+      preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -691,228 +226,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/markets/': {
-      id: '/markets/'
-      path: '/markets'
-      fullPath: '/markets/'
-      preLoaderRoute: typeof MarketsIndexRouteImport
+    '/stocks/$ticker': {
+      id: '/stocks/$ticker'
+      path: '/stocks/$ticker'
+      fullPath: '/stocks/$ticker'
+      preLoaderRoute: typeof StocksTickerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/learn/': {
-      id: '/learn/'
-      path: '/'
-      fullPath: '/learn/'
-      preLoaderRoute: typeof LearnIndexRouteImport
-      parentRoute: typeof LearnRoute
-    }
-    '/learn/slippage': {
-      id: '/learn/slippage'
-      path: '/slippage'
-      fullPath: '/learn/slippage'
-      preLoaderRoute: typeof LearnSlippageRouteImport
-      parentRoute: typeof LearnRoute
-    }
-    '/learn/risk': {
-      id: '/learn/risk'
-      path: '/risk'
-      fullPath: '/learn/risk'
-      preLoaderRoute: typeof LearnRiskRouteImport
-      parentRoute: typeof LearnRoute
-    }
-    '/learn/markets': {
-      id: '/learn/markets'
-      path: '/markets'
-      fullPath: '/learn/markets'
-      preLoaderRoute: typeof LearnMarketsRouteImport
-      parentRoute: typeof LearnRoute
-    }
-    '/learn/how-to-trade': {
-      id: '/learn/how-to-trade'
-      path: '/how-to-trade'
-      fullPath: '/learn/how-to-trade'
-      preLoaderRoute: typeof LearnHowToTradeRouteImport
-      parentRoute: typeof LearnRoute
-    }
-    '/learn/examples': {
-      id: '/learn/examples'
-      path: '/examples'
-      fullPath: '/learn/examples'
-      preLoaderRoute: typeof LearnExamplesRouteImport
-      parentRoute: typeof LearnRoute
-    }
-    '/learn/disclaimer': {
-      id: '/learn/disclaimer'
-      path: '/disclaimer'
-      fullPath: '/learn/disclaimer'
-      preLoaderRoute: typeof LearnDisclaimerRouteImport
-      parentRoute: typeof LearnRoute
-    }
-    '/learn/about': {
-      id: '/learn/about'
-      path: '/about'
-      fullPath: '/learn/about'
-      preLoaderRoute: typeof LearnAboutRouteImport
-      parentRoute: typeof LearnRoute
-    }
-    '/api/alerts': {
-      id: '/api/alerts'
-      path: '/api/alerts'
-      fullPath: '/api/alerts'
-      preLoaderRoute: typeof ApiAlertsRouteImport
+    '/api/stocks/quote': {
+      id: '/api/stocks/quote'
+      path: '/api/stocks/quote'
+      fullPath: '/api/stocks/quote'
+      preLoaderRoute: typeof ApiStocksQuoteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/wallet': {
-      id: '/_authed/wallet'
-      path: '/wallet'
-      fullPath: '/wallet'
-      preLoaderRoute: typeof AuthedWalletRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/support': {
-      id: '/_authed/support'
-      path: '/support'
-      fullPath: '/support'
-      preLoaderRoute: typeof AuthedSupportRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/profile': {
-      id: '/_authed/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AuthedProfileRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/portfolio': {
-      id: '/_authed/portfolio'
-      path: '/portfolio'
-      fullPath: '/portfolio'
-      preLoaderRoute: typeof AuthedPortfolioRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/notifications': {
-      id: '/_authed/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AuthedNotificationsRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/news': {
-      id: '/_authed/news'
-      path: '/news'
-      fullPath: '/news'
-      preLoaderRoute: typeof AuthedNewsRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/leaderboard': {
-      id: '/_authed/leaderboard'
-      path: '/leaderboard'
-      fullPath: '/leaderboard'
-      preLoaderRoute: typeof AuthedLeaderboardRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/kyc': {
-      id: '/_authed/kyc'
-      path: '/kyc'
-      fullPath: '/kyc'
-      preLoaderRoute: typeof AuthedKycRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/coming-soon': {
-      id: '/_authed/coming-soon'
-      path: '/coming-soon'
-      fullPath: '/coming-soon'
-      preLoaderRoute: typeof AuthedComingSoonRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/api/payments/webhook': {
-      id: '/api/payments/webhook'
-      path: '/api/payments/webhook'
-      fullPath: '/api/payments/webhook'
-      preLoaderRoute: typeof ApiPaymentsWebhookRouteImport
+    '/api/stocks/board': {
+      id: '/api/stocks/board'
+      path: '/api/stocks/board'
+      fullPath: '/api/stocks/board'
+      preLoaderRoute: typeof ApiStocksBoardRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/api/payments/verify': {
-      id: '/api/payments/verify'
-      path: '/api/payments/verify'
-      fullPath: '/api/payments/verify'
-      preLoaderRoute: typeof ApiPaymentsVerifyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/payments/status': {
-      id: '/api/payments/status'
-      path: '/api/payments/status'
-      fullPath: '/api/payments/status'
-      preLoaderRoute: typeof ApiPaymentsStatusRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/payments/deposit': {
-      id: '/api/payments/deposit'
-      path: '/api/payments/deposit'
-      fullPath: '/api/payments/deposit'
-      preLoaderRoute: typeof ApiPaymentsDepositRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/notifications/preferences': {
-      id: '/api/notifications/preferences'
-      path: '/api/notifications/preferences'
-      fullPath: '/api/notifications/preferences'
-      preLoaderRoute: typeof ApiNotificationsPreferencesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/local/$': {
-      id: '/api/local/$'
-      path: '/api/local/$'
-      fullPath: '/api/local/$'
-      preLoaderRoute: typeof ApiLocalSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/alerts/check': {
-      id: '/api/alerts/check'
-      path: '/check'
-      fullPath: '/api/alerts/check'
-      preLoaderRoute: typeof ApiAlertsCheckRouteImport
-      parentRoute: typeof ApiAlertsRoute
-    }
-    '/api/alerts/$id': {
-      id: '/api/alerts/$id'
-      path: '/$id'
-      fullPath: '/api/alerts/$id'
-      preLoaderRoute: typeof ApiAlertsIdRouteImport
-      parentRoute: typeof ApiAlertsRoute
-    }
-    '/_authed/u/$userId': {
-      id: '/_authed/u/$userId'
-      path: '/u/$userId'
-      fullPath: '/u/$userId'
-      preLoaderRoute: typeof AuthedUUserIdRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/support/$ticketId': {
-      id: '/_authed/support/$ticketId'
-      path: '/$ticketId'
-      fullPath: '/support/$ticketId'
-      preLoaderRoute: typeof AuthedSupportTicketIdRouteImport
-      parentRoute: typeof AuthedSupportRoute
-    }
-    '/_authed/markets/$slug': {
-      id: '/_authed/markets/$slug'
-      path: '/markets/$slug'
-      fullPath: '/markets/$slug'
-      preLoaderRoute: typeof AuthedMarketsSlugRouteImport
-      parentRoute: typeof AuthedRoute
     }
     '/api/public/hooks/signals': {
       id: '/api/public/hooks/signals'
       path: '/api/public/hooks/signals'
       fullPath: '/api/public/hooks/signals'
       preLoaderRoute: typeof ApiPublicHooksSignalsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/scrape-tweets': {
-      id: '/api/public/hooks/scrape-tweets'
-      path: '/api/public/hooks/scrape-tweets'
-      fullPath: '/api/public/hooks/scrape-tweets'
-      preLoaderRoute: typeof ApiPublicHooksScrapeTweetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/scrape-news': {
@@ -929,20 +268,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksComputeTrendsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/auto-suggest-markets': {
-      id: '/api/public/hooks/auto-suggest-markets'
-      path: '/api/public/hooks/auto-suggest-markets'
-      fullPath: '/api/public/hooks/auto-suggest-markets'
-      preLoaderRoute: typeof ApiPublicHooksAutoSuggestMarketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/hooks/auto-resolve': {
-      id: '/api/public/hooks/auto-resolve'
-      path: '/api/public/hooks/auto-resolve'
-      fullPath: '/api/public/hooks/auto-resolve'
-      preLoaderRoute: typeof ApiPublicHooksAutoResolveRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/hooks/analyze-sentiment': {
       id: '/api/public/hooks/analyze-sentiment'
       path: '/api/public/hooks/analyze-sentiment'
@@ -953,112 +278,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthedSupportRouteChildren {
-  AuthedSupportTicketIdRoute: typeof AuthedSupportTicketIdRoute
-}
-
-const AuthedSupportRouteChildren: AuthedSupportRouteChildren = {
-  AuthedSupportTicketIdRoute: AuthedSupportTicketIdRoute,
-}
-
-const AuthedSupportRouteWithChildren = AuthedSupportRoute._addFileChildren(
-  AuthedSupportRouteChildren,
-)
-
-interface AuthedRouteChildren {
-  AuthedComingSoonRoute: typeof AuthedComingSoonRoute
-  AuthedKycRoute: typeof AuthedKycRoute
-  AuthedLeaderboardRoute: typeof AuthedLeaderboardRoute
-  AuthedNewsRoute: typeof AuthedNewsRoute
-  AuthedNotificationsRoute: typeof AuthedNotificationsRoute
-  AuthedPortfolioRoute: typeof AuthedPortfolioRoute
-  AuthedProfileRoute: typeof AuthedProfileRoute
-  AuthedSupportRoute: typeof AuthedSupportRouteWithChildren
-  AuthedWalletRoute: typeof AuthedWalletRoute
-  AuthedMarketsSlugRoute: typeof AuthedMarketsSlugRoute
-  AuthedUUserIdRoute: typeof AuthedUUserIdRoute
-}
-
-const AuthedRouteChildren: AuthedRouteChildren = {
-  AuthedComingSoonRoute: AuthedComingSoonRoute,
-  AuthedKycRoute: AuthedKycRoute,
-  AuthedLeaderboardRoute: AuthedLeaderboardRoute,
-  AuthedNewsRoute: AuthedNewsRoute,
-  AuthedNotificationsRoute: AuthedNotificationsRoute,
-  AuthedPortfolioRoute: AuthedPortfolioRoute,
-  AuthedProfileRoute: AuthedProfileRoute,
-  AuthedSupportRoute: AuthedSupportRouteWithChildren,
-  AuthedWalletRoute: AuthedWalletRoute,
-  AuthedMarketsSlugRoute: AuthedMarketsSlugRoute,
-  AuthedUUserIdRoute: AuthedUUserIdRoute,
-}
-
-const AuthedRouteWithChildren =
-  AuthedRoute._addFileChildren(AuthedRouteChildren)
-
-interface LearnRouteChildren {
-  LearnAboutRoute: typeof LearnAboutRoute
-  LearnDisclaimerRoute: typeof LearnDisclaimerRoute
-  LearnExamplesRoute: typeof LearnExamplesRoute
-  LearnHowToTradeRoute: typeof LearnHowToTradeRoute
-  LearnMarketsRoute: typeof LearnMarketsRoute
-  LearnRiskRoute: typeof LearnRiskRoute
-  LearnSlippageRoute: typeof LearnSlippageRoute
-  LearnIndexRoute: typeof LearnIndexRoute
-}
-
-const LearnRouteChildren: LearnRouteChildren = {
-  LearnAboutRoute: LearnAboutRoute,
-  LearnDisclaimerRoute: LearnDisclaimerRoute,
-  LearnExamplesRoute: LearnExamplesRoute,
-  LearnHowToTradeRoute: LearnHowToTradeRoute,
-  LearnMarketsRoute: LearnMarketsRoute,
-  LearnRiskRoute: LearnRiskRoute,
-  LearnSlippageRoute: LearnSlippageRoute,
-  LearnIndexRoute: LearnIndexRoute,
-}
-
-const LearnRouteWithChildren = LearnRoute._addFileChildren(LearnRouteChildren)
-
-interface ApiAlertsRouteChildren {
-  ApiAlertsIdRoute: typeof ApiAlertsIdRoute
-  ApiAlertsCheckRoute: typeof ApiAlertsCheckRoute
-}
-
-const ApiAlertsRouteChildren: ApiAlertsRouteChildren = {
-  ApiAlertsIdRoute: ApiAlertsIdRoute,
-  ApiAlertsCheckRoute: ApiAlertsCheckRoute,
-}
-
-const ApiAlertsRouteWithChildren = ApiAlertsRoute._addFileChildren(
-  ApiAlertsRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthedRoute: AuthedRouteWithChildren,
-  ContactRoute: ContactRoute,
-  LearnRoute: LearnRouteWithChildren,
-  LoginRoute: LoginRoute,
-  OnboardingRoute: OnboardingRoute,
+  MapRoute: MapRoute,
   PulseRoute: PulseRoute,
-  SignupRoute: SignupRoute,
   TermsRoute: TermsRoute,
   WatchlistRoute: WatchlistRoute,
-  ApiAlertsRoute: ApiAlertsRouteWithChildren,
-  MarketsIndexRoute: MarketsIndexRoute,
-  ApiLocalSplatRoute: ApiLocalSplatRoute,
-  ApiNotificationsPreferencesRoute: ApiNotificationsPreferencesRoute,
-  ApiPaymentsDepositRoute: ApiPaymentsDepositRoute,
-  ApiPaymentsStatusRoute: ApiPaymentsStatusRoute,
-  ApiPaymentsVerifyRoute: ApiPaymentsVerifyRoute,
-  ApiPaymentsWebhookRoute: ApiPaymentsWebhookRoute,
+  StocksTickerRoute: StocksTickerRoute,
+  ApiStocksBoardRoute: ApiStocksBoardRoute,
+  ApiStocksQuoteRoute: ApiStocksQuoteRoute,
   ApiPublicHooksAnalyzeSentimentRoute: ApiPublicHooksAnalyzeSentimentRoute,
-  ApiPublicHooksAutoResolveRoute: ApiPublicHooksAutoResolveRoute,
-  ApiPublicHooksAutoSuggestMarketsRoute: ApiPublicHooksAutoSuggestMarketsRoute,
   ApiPublicHooksComputeTrendsRoute: ApiPublicHooksComputeTrendsRoute,
   ApiPublicHooksScrapeNewsRoute: ApiPublicHooksScrapeNewsRoute,
-  ApiPublicHooksScrapeTweetsRoute: ApiPublicHooksScrapeTweetsRoute,
   ApiPublicHooksSignalsRoute: ApiPublicHooksSignalsRoute,
 }
 export const routeTree = rootRouteImport

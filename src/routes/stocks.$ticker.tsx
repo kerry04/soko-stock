@@ -1,0 +1,394 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ExternalLink,
+  Minus,
+  Newspaper,
+  Star,
+} from "lucide-react";
+import { TerminalShell } from "@/components/nav/TerminalShell";
+import { supabase } from "@/integrations/supabase/client";
+import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
+import { useWatchlist } from "@/lib/watchlist";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/stocks/$ticker")({
+  head: ({ params }) => ({
+    meta: [{ title: `${params.ticker} — Soko Stock` }],
+  }),
+  component: StockDetail,
+});
+
+interface Bar {
+  t: number;
+  o: number | null;
+  h: number | null;
+  l: number | null;
+  c: number | null;
+  v: number | null;
+}
+
+interface QuoteResponse {
+  ok: boolean;
+  ticker: string;
+  name: string;
+  exchange: string;
+  currencySymbol: string;
+  price: number | null;
+  previousClose: number | null;
+  change: number | null;
+  changePercent: number | null;
+  asOf: string;
+  timeNote: string;
+  bars: Bar[];
+}
+
+interface NewsHit {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  published_at: string;
+}
+
+const RANGES = [
+  { id: "1mo", label: "1M" },
+  { id: "3mo", label: "3M" },
+  { id: "6mo", label: "6M" },
+  { id: "1y", label: "1Y" },
+  { id: "2y", label: "2Y" },
+  { id: "5y", label: "5Y" },
+] as const;
+
+function fmt(v: number, sym: string): string {
+  return `${sym}${v.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function timeAgo(iso: string): string {
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+/** First meaningful word of the company name, for news matching. */
+function companyKeyword(name: string): string {
+  const stop = new Set(["the", "group", "holdings", "limited", "ltd", "sa", "nv", "plc", "inc"]);
+  const words = name.toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/);
+  return words.find((w) => w.length > 2 && !stop.has(w)) ?? words[0] ?? "";
+}
+
+function PriceChart({ bars, sym, up }: { bars: Bar[]; sym: string; up: boolean }) {
+  const pts = useMemo(() => bars.filter((b) => b.c != null) as (Bar & { c: number })[], [bars]);
+  if (pts.length < 2) return <div className="flex h-56 items-center justify-center text-sm text-muted-foreground">Not enough history yet.</div>;
+
+  const W = 720;
+  const H = 240;
+  const padX = 8;
+  const padY = 14;
+  const min = Math.min(...pts.map((p) => p.c));
+  const max = Math.max(...pts.map((p) => p.c));
+  const span = Math.max(0.0001, max - min);
+  const x = (i: number) => padX + (i / (pts.length - 1)) * (W - padX * 2);
+  const y = (v: number) => padY + (1 - (v - min) / span) * (H - padY * 2);
+  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.c).toFixed(1)}`).join(" ");
+  const area = `${line} L${x(pts.length - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`;
+  const color = up ? "#22c55e" : "#ef4444";
+  const gid = `sg-${up ? "up" : "dn"}`;
+
+  const firstT = new Date(pts[0].t);
+  const lastT = new Date(pts[pts.length - 1].t);
+  const dateFmt = (d: Date) =>
+    d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-56 w-full" role="img" aria-label="Price history chart">
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={area} fill={`url(#${gid})`} />
+        <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
+        <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1].c)} r="3.5" fill={color} />
+      </svg>
+      <div className="mt-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+        <span>{fmt(max, sym)} high</span>
+        <span>
+          {dateFmt(firstT)} → {dateFmt(lastT)}
+        </span>
+        <span>{fmt(min, sym)} low</span>
+      </div>
+    </div>
+  );
+}
+
+function StockDetail() {
+  const { ticker } = Route.useParams();
+  const [range, setRange] = useState<(typeof RANGES)[number]["id"]>("1y");
+  const [quote, setQuote] = useState<QuoteResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [news, setNews] = useState<NewsHit[]>([]);
+  const { ids: watched, toggle } = useWatchlist();
+
+  const exchange = Object.values(EXCHANGE_BY_ID).find((e) => e.tickers.includes(ticker));
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    fetch(`/api/stocks/quote?ticker=${encodeURIComponent(ticker)}&range=${range}`)
+      .then((r) => {
+        if (!r.ok) throw new Error();
+        return r.json();
+      })
+      .then((j) => {
+        if (!cancelled) {
+          setQuote(j as QuoteResponse);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setError(true);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticker, range]);
+
+  // Linked news: company keyword in title/keywords, last 7 days.
+  useEffect(() => {
+    if (!quote) return;
+    const kw = companyKeyword(quote.name);
+    if (!kw) return;
+    const since = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("raw_news_data")
+          .select("id, title, url, source, published_at")
+          .gte("published_at", since)
+          .ilike("title", `%${kw}%`)
+          .order("published_at", { ascending: false })
+          .limit(5);
+        if (!cancelled && data) setNews(data as NewsHit[]);
+      } catch {
+        /* news is enrichment — never break the page */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [quote]);
+
+  const stats = useMemo(() => {
+    if (!quote) return null;
+    const valid = quote.bars.filter((b) => b.c != null);
+    const closes = valid.map((b) => b.c as number);
+    const highs = valid.map((b) => b.h ?? b.c).filter((v): v is number => v != null);
+    const lows = valid.map((b) => b.l ?? b.c).filter((v): v is number => v != null);
+    const last = valid[valid.length - 1];
+    return {
+      prevClose: quote.previousClose,
+      dayOpen: last?.o ?? null,
+      dayHigh: last?.h ?? null,
+      dayLow: last?.l ?? null,
+      rangeHigh: closes.length ? Math.max(...closes) : null,
+      rangeLow: closes.length ? Math.min(...closes) : null,
+      allHigh: highs.length ? Math.max(...highs) : null,
+      allLow: lows.length ? Math.min(...lows) : null,
+    };
+  }, [quote]);
+
+  const pct = quote?.changePercent ?? null;
+  const up = (pct ?? 0) >= 0;
+  const sym = quote?.currencySymbol ?? "";
+
+  return (
+    <TerminalShell>
+      <div className="mx-auto max-w-[1100px] px-3 py-4 sm:px-5">
+        <Link
+          to="/"
+          className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
+        >
+          ← Boards
+        </Link>
+
+        {loading && (
+          <div className="mt-4 space-y-3">
+            <div className="h-8 w-64 animate-pulse rounded bg-muted/60" />
+            <div className="h-56 animate-pulse rounded-xl bg-muted/40" />
+          </div>
+        )}
+        {!loading && (error || !quote) && (
+          <p className="mt-8 text-center text-sm text-muted-foreground">
+            Quote unavailable right now — check back shortly.
+          </p>
+        )}
+        {!loading && quote && (
+          <>
+            <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold sm:text-2xl">{quote.name}</h1>
+                  <button
+                    onClick={() => toggle(ticker)}
+                    aria-label={watched.includes(ticker) ? "Unwatch" : "Watch"}
+                    aria-pressed={watched.includes(ticker)}
+                    className={cn(
+                      "rounded p-1",
+                      watched.includes(ticker)
+                        ? "text-amber-400"
+                        : "text-muted-foreground/50 hover:text-amber-400",
+                    )}
+                  >
+                    <Star
+                      className="h-5 w-5"
+                      fill={watched.includes(ticker) ? "currentColor" : "none"}
+                      aria-hidden
+                    />
+                  </button>
+                </div>
+                <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                  {quote.ticker} · {exchange?.name ?? quote.exchange}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="num font-mono text-3xl font-bold">
+                  {quote.price != null ? fmt(quote.price, sym) : "—"}
+                </p>
+                <p
+                  className={cn(
+                    "num mt-0.5 inline-flex items-center gap-1 font-mono text-sm font-semibold",
+                    up ? "text-success" : "text-red-500",
+                  )}
+                >
+                  {pct == null ? (
+                    <Minus className="h-3.5 w-3.5" aria-hidden />
+                  ) : up ? (
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                  ) : (
+                    <ArrowDownRight className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                  {quote.change != null && (
+                    <span>
+                      {up && quote.change > 0 ? "+" : ""}
+                      {fmt(quote.change, sym)}
+                    </span>
+                  )}
+                  {pct != null && (
+                    <span>
+                      ({up ? "+" : ""}
+                      {pct.toFixed(2)}%)
+                    </span>
+                  )}
+                </p>
+                <p className="mt-1 font-mono text-[10px] text-muted-foreground">{quote.timeNote}</p>
+              </div>
+            </div>
+
+            {/* Range selector */}
+            <div className="mt-4 flex gap-1.5" role="tablist" aria-label="Chart range">
+              {RANGES.map((r) => (
+                <button
+                  key={r.id}
+                  role="tab"
+                  aria-selected={range === r.id}
+                  onClick={() => setRange(r.id)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 font-mono text-[11px] font-bold",
+                    range === r.id
+                      ? "bg-success/15 text-success"
+                      : "text-muted-foreground hover:bg-card hover:text-foreground",
+                  )}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-2 rounded-xl border border-border/70 bg-card/40 p-3 sm:p-4">
+              <PriceChart bars={quote.bars} sym={sym} up={up} />
+            </div>
+
+            {/* Stats */}
+            {stats && (
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  ["Prev close", stats.prevClose],
+                  ["Day high", stats.dayHigh],
+                  ["Day low", stats.dayLow],
+                  [`${range.toUpperCase()} high`, stats.allHigh],
+                ].map(([label, v]) => (
+                  <div key={label as string} className="rounded-xl border border-border/60 bg-card/40 p-3">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                      {label}
+                    </p>
+                    <p className="num mt-1 font-mono text-sm font-semibold">
+                      {typeof v === "number" ? fmt(v, sym) : "—"}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Why it's moving */}
+            <section className="mt-6" aria-label="Related news signals">
+              <div className="flex items-center gap-2">
+                <Newspaper className="h-4 w-4 text-success" aria-hidden />
+                <h2 className="font-mono text-sm font-bold uppercase tracking-[0.18em]">
+                  Signal wire
+                </h2>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Latest headlines mentioning {companyKeyword(quote.name) || "this company"} from our
+                global news pipeline.
+              </p>
+              {news.length === 0 ? (
+                <p className="mt-3 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
+                  No headlines in the last 7 days.{" "}
+                  <Link to="/map" className="text-success hover:underline">
+                    Check the signal map
+                  </Link>{" "}
+                  for the wider picture.
+                </p>
+              ) : (
+                <ul className="mt-3 space-y-2.5">
+                  {news.map((n) => (
+                    <li key={n.id}>
+                      <a
+                        href={n.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block text-sm leading-snug hover:underline"
+                      >
+                        {n.title}
+                        <ExternalLink className="ml-1 inline h-3 w-3 text-muted-foreground" aria-hidden />
+                      </a>
+                      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {n.source} · {timeAgo(n.published_at)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              Educational terminal — not investment advice.
+            </p>
+          </>
+        )}
+      </div>
+    </TerminalShell>
+  );
+}

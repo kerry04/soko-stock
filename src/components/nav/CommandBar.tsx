@@ -1,10 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { NotificationBell } from "@/components/engagement/NotificationBell";
-import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import { TERMINAL_SECTIONS, isSectionActive } from "./terminal-nav";
 import { CommandPalette } from "./CommandPalette";
@@ -36,7 +33,6 @@ export function StockBrand({ compact = false }: { compact?: boolean }) {
  */
 export function CommandBar() {
   const { pathname } = useLocation();
-  const { user } = useAuth();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   // The palette's own global shortcut dispatches this when it is closed.
@@ -93,35 +89,6 @@ export function CommandBar() {
               </kbd>
             </button>
             <ThemeToggle />
-            {user && <NotificationBell />}
-            {user ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                asChild
-                className="h-8 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground"
-              >
-                <Link to="/profile">Account</Link>
-              </Button>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  asChild
-                  className="hidden h-8 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground sm:inline-flex"
-                >
-                  <Link to="/login">Sign in</Link>
-                </Button>
-                <Button
-                  size="sm"
-                  asChild
-                  className="h-8 bg-success font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-success-foreground hover:bg-success/90"
-                >
-                  <Link to="/signup">Start</Link>
-                </Button>
-              </>
-            )}
           </div>
         </div>
       </header>

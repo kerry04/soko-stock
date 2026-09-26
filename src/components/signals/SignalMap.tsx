@@ -32,10 +32,12 @@ interface TrendRow {
   mentions_1h: number;
 }
 
-interface MarketLink {
-  slug: string;
-  question: string;
-  yes_price: number;
+interface StockLink {
+  ticker: string;
+  name: string;
+  price: number;
+  changePercent: number | null;
+  currencySymbol: string;
 }
 
 export interface CountrySignal {
@@ -136,7 +138,7 @@ export function SignalMap() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [signals, setSignals] = useState<CountrySignal[]>([]);
-  const [markets, setMarkets] = useState<MarketLink[]>([]);
+  const [stocks, setStocks] = useState<StockLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [asOf, setAsOf] = useState<Date | null>(null);
   const [selected, setSelected] = useState<CountrySignal | null>(null);
@@ -157,7 +159,7 @@ export function SignalMap() {
 
   const load = useCallback(async () => {
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-    const [{ data: news }, { data: trends }, { data: mkts }] = await Promise.all([
+    const [{ data: news }, { data: trends }] = await Promise.all([
       supabase
         .from("raw_news_data")
         .select("id, title, url, source, published_at, relevant_keywords, sentiment_score")
@@ -165,11 +167,6 @@ export function SignalMap() {
         .order("published_at", { ascending: false })
         .limit(600),
       supabase.from("trending_keywords").select("keyword, velocity, avg_sentiment, mentions_1h"),
-      supabase
-        .from("markets")
-        .select("slug, question, keywords, yes_price")
-        .eq("status", "open")
-        .limit(60),
     ]);
 
     const articles = ((news ?? []) as Article[]).filter((a) => a.title && a.url);
@@ -183,15 +180,6 @@ export function SignalMap() {
 
     sigs.sort((a, b) => b.score - a.score);
     setSignals(sigs);
-    setMarkets(
-      ((mkts ?? []) as (MarketLink & { keywords: string[] | null; question: string })[]).map(
-        (m) => ({
-          slug: m.slug,
-          question: m.question,
-          yes_price: Number(m.yes_price),
-        }),
-      ),
-    );
     setAsOf(new Date());
     setLoading(false);
   }, []);
@@ -339,16 +327,47 @@ export function SignalMap() {
     return best;
   };
 
-  const linkedMarkets = useMemo(() => {
-    if (!selected) return [];
-    const kws = selected.country.keywords;
-    return markets
-      .filter((m) => {
-        const hay = m.question.toLowerCase();
-        return kws.some((k) => hay.includes(k));
-      })
-      .slice(0, 3);
-  }, [selected, markets]);
+  // Stocks listed in the selected country (via its live exchange, if any).
+  useEffect(() => {
+    if (!selected) {
+      setStocks([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { EXCHANGES } = await import("@/lib/stocks/exchanges");
+        const ex = EXCHANGES.find(
+          (e) => e.countryAlpha2 === selected.country.alpha2 && e.status === "live",
+        );
+        if (!ex) {
+          if (!cancelled) setStocks([]);
+          return;
+        }
+        const res = await fetch(`/api/stocks/board?exchange=${ex.id}`);
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        const rows = (json.rows ?? []) as {
+          ticker: string;
+          name: string;
+          price: number;
+          changePercent: number | null;
+        }[];
+        const top = [...rows]
+          .sort(
+            (a, b) => Math.abs(b.changePercent ?? 0) - Math.abs(a.changePercent ?? 0),
+          )
+          .slice(0, 3)
+          .map((r) => ({ ...r, currencySymbol: json.currencySymbol as string }));
+        if (!cancelled) setStocks(top);
+      } catch {
+        if (!cancelled) setStocks([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
 
   return (
     <div className="relative">
@@ -421,7 +440,7 @@ export function SignalMap() {
 
       {/* Country detail panel */}
       {selected && (
-        <CountryPanel signal={selected} markets={linkedMarkets} onClose={() => setSelected(null)} />
+        <CountryPanel signal={selected} stocks={stocks} onClose={() => setSelected(null)} />
       )}
     </div>
   );
@@ -429,11 +448,11 @@ export function SignalMap() {
 
 function CountryPanel({
   signal,
-  markets,
+  stocks,
   onClose,
 }: {
   signal: CountrySignal;
-  markets: MarketLink[];
+  stocks: StockLink[];
   onClose: () => void;
 }) {
   return (
@@ -523,39 +542,47 @@ function CountryPanel({
         </ul>
       )}
 
-      {markets.length > 0 && (
+      {stocks.length > 0 && (
         <div className="mt-4 border-t border-border/60 pt-4">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Trade this region
+            Listed in this region · biggest movers
           </p>
           <ul className="mt-2 space-y-2">
-            {markets.map((m) => (
+            {stocks.map((s) => (
               <li
-                key={m.slug}
+                key={s.ticker}
                 className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/60 px-3 py-2"
               >
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{m.question}</p>
-                  <p className="num font-mono text-[11px] text-success">
-                    YES {formatPercent(m.yes_price)}
+                  <p className="truncate text-sm font-medium">{s.name}</p>
+                  <p className="num font-mono text-[11px] text-muted-foreground">
+                    {s.currencySymbol}
+                    {s.price.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {s.changePercent != null && (
+                      <span className={s.changePercent >= 0 ? "text-success" : "text-red-500"}>
+                        {" "}
+                        {s.changePercent >= 0 ? "+" : ""}
+                        {s.changePercent.toFixed(2)}%
+                      </span>
+                    )}
                   </p>
                 </div>
                 <Link
-                  to="/markets/$slug"
-                  params={{ slug: m.slug }}
+                  to="/stocks/$ticker"
+                  params={{ ticker: s.ticker }}
                   className="shrink-0 rounded-md bg-success px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-success-foreground hover:bg-success/90"
                 >
-                  Trade
+                  View
                 </Link>
               </li>
             ))}
           </ul>
         </div>
       )}
-      {markets.length === 0 && (
+      {stocks.length === 0 && (
         <p className="mt-4 flex items-center gap-2 border-t border-border/60 pt-4 font-mono text-[11px] text-muted-foreground">
           <Radio className="h-3.5 w-3.5" aria-hidden />
-          No open markets linked to this region yet.
+          No live exchange feed for this region yet.
         </p>
       )}
     </section>

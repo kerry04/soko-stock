@@ -12,7 +12,7 @@ export const Route = createFileRoute("/pulse")({
       { title: "Pulse — Soko Stock" },
       {
         name: "description",
-        content: "The 24-hour signal pulse: top stories, fastest keywords, biggest market movers.",
+        content: "The 24-hour signal pulse: top stories, fastest keywords, biggest stock movers.",
       },
     ],
   }),
@@ -37,11 +37,11 @@ interface Keyword {
 }
 
 interface Mover {
-  market_id: string;
-  slug: string;
-  question: string;
-  delta: number;
-  now: number;
+  ticker: string;
+  name: string;
+  price: number;
+  changePercent: number;
+  currencySymbol: string;
 }
 
 function timeAgo(iso: string): string {
@@ -82,7 +82,7 @@ function PulsePage() {
     (async () => {
       const d24 = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
 
-      const [sRes, kRes, mRes] = await Promise.all([
+      const [sRes, kRes, bRes] = await Promise.all([
         supabase
           .from("raw_news_data")
           .select("id, title, url, source, published_at")
@@ -95,48 +95,30 @@ function PulsePage() {
           .select("keyword, velocity, mentions_1h, growth, avg_sentiment, category")
           .order("velocity", { ascending: false })
           .limit(10),
-        supabase
-          .from("markets")
-          .select("id, slug, question")
-          .eq("status", "open")
-          .order("volume_cents", { ascending: false })
-          .limit(30),
+        fetch("/api/stocks/board?exchange=JSE").then((r) => (r.ok ? r.json() : null)),
       ]);
 
-      let computedMovers: Mover[] = [];
-      const mktRows = (mRes.data ?? []) as { id: string; slug: string; question: string }[];
-      if (mktRows.length > 0) {
-        const { data: ph } = await supabase
-          .from("price_history")
-          .select("market_id, yes_price, recorded_at")
-          .in(
-            "market_id",
-            mktRows.map((m) => m.id),
-          )
-          .gte("recorded_at", d24)
-          .order("recorded_at", { ascending: true });
-        const byMarket: Record<string, number[]> = {};
-        ((ph ?? []) as { market_id: string; yes_price: number }[]).forEach((row) => {
-          const k = row.market_id;
-          if (!byMarket[k]) byMarket[k] = [];
-          byMarket[k].push(Number(row.yes_price));
-        });
-        computedMovers = mktRows
-          .map((m) => {
-            const pts = byMarket[m.id] ?? [];
-            if (pts.length < 2) return null;
-            return {
-              market_id: m.id,
-              slug: m.slug,
-              question: m.question,
-              delta: pts[pts.length - 1] - pts[0],
-              now: pts[pts.length - 1],
-            };
-          })
-          .filter((x): x is Mover => x !== null)
-          .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-          .slice(0, 8);
-      }
+      // Biggest stock movers of the day, from the live board.
+      const computedMovers: Mover[] = [];
+      const boardRows = (bRes?.rows ?? []) as {
+        ticker: string;
+        name: string;
+        price: number;
+        changePercent: number | null;
+      }[];
+      computedMovers.push(
+        ...boardRows
+          .filter((r) => r.changePercent != null)
+          .sort((a, b) => Math.abs(b.changePercent!) - Math.abs(a.changePercent!))
+          .slice(0, 8)
+          .map((r) => ({
+            ticker: r.ticker,
+            name: r.name,
+            price: r.price,
+            changePercent: r.changePercent as number,
+            currencySymbol: bRes.currencySymbol as string,
+          })),
+      );
 
       if (!cancelled) {
         setStories((sRes.data ?? []) as Story[]);
@@ -271,23 +253,27 @@ function PulsePage() {
               </h2>
               {movers.length === 0 ? (
                 <p className="mt-3 text-sm text-muted-foreground">
-                  No markets moved on price in the last 24 hours.
+                  No stock moves to report right now.
                 </p>
               ) : (
                 <ul className="mt-3 space-y-2.5">
                   {movers.map((m) => {
-                    const up = m.delta >= 0;
+                    const up = m.changePercent >= 0;
                     return (
-                      <li key={m.market_id}>
+                      <li key={m.ticker}>
                         <Link
-                          to="/markets/$slug"
-                          params={{ slug: m.slug }}
+                          to="/stocks/$ticker"
+                          params={{ ticker: m.ticker }}
                           className="flex items-center justify-between gap-3 rounded-lg border border-border/50 px-3 py-2 transition-colors hover:bg-accent/40"
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">{m.question}</p>
+                            <p className="truncate text-sm font-medium">{m.name}</p>
                             <p className="num mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                              Now {formatPercent(m.now)}
+                              {m.currencySymbol}
+                              {m.price.toLocaleString("en-ZA", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
                             </p>
                           </div>
                           <span
@@ -301,8 +287,8 @@ function PulsePage() {
                             ) : (
                               <ArrowDownRight className="h-3.5 w-3.5" aria-hidden />
                             )}
-                            {up ? "+" : "−"}
-                            {Math.abs(m.delta * 100).toFixed(1)} pts
+                            {up ? "+" : ""}
+                            {m.changePercent.toFixed(2)}%
                           </span>
                         </Link>
                       </li>
@@ -311,7 +297,7 @@ function PulsePage() {
                 </ul>
               )}
               <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                24h YES-price change on open markets.
+                Biggest daily moves on the JSE board.
               </p>
             </section>
           </div>

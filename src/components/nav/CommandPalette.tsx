@@ -1,7 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
-import { Search, TrendingUp } from "lucide-react";
+import { CandlestickChart, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { TERMINAL_SECTIONS } from "./terminal-nav";
 
@@ -10,27 +9,19 @@ interface PaletteProps {
   onClose: () => void;
 }
 
-interface MarketHit {
-  slug: string;
-  question: string;
+interface StockHit {
+  ticker: string;
+  name: string;
 }
 
-const EXTRA_PAGES = [
-  { label: "Portfolio", to: "/portfolio", hint: "Your positions" },
-  { label: "Wallet", to: "/wallet", hint: "Balance & deposits" },
-  { label: "Profile", to: "/profile", hint: "Account settings" },
-  { label: "Leaderboard", to: "/leaderboard", hint: "Top traders" },
-  { label: "Sign in", to: "/login", hint: "Access your account" },
-];
-
 /**
- * Lightweight ⌘K / Ctrl-K quick switcher: terminal sections, account pages,
- * and live market search. No external deps, keyboard navigable.
+ * Lightweight ⌘K / Ctrl-K quick switcher: terminal sections and stock
+ * search. No external deps, keyboard navigable.
  */
 export function CommandPalette({ open, onClose }: PaletteProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<MarketHit[]>([]);
+  const [stocks, setStocks] = useState<StockHit[]>([]);
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +33,6 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
         if (open) onClose();
         else {
           setQuery("");
-          setHits([]);
           setCursor(0);
           // Open via a custom event so the bar's state stays the source of truth.
           window.dispatchEvent(new CustomEvent("soko:palette-open"));
@@ -56,50 +46,54 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
   useEffect(() => {
     if (open) {
       setQuery("");
-      setHits([]);
       setCursor(0);
       requestAnimationFrame(() => inputRef.current?.focus());
+      // Load the board once per open for local stock search.
+      let cancelled = false;
+      fetch("/api/stocks/board?exchange=JSE")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          if (!cancelled && j?.rows) {
+            setStocks(
+              (j.rows as { ticker: string; name: string }[]).map((r) => ({
+                ticker: r.ticker,
+                name: r.name,
+              })),
+            );
+          }
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
     }
-  }, [open]);
-
-  // Debounced market search.
-  useEffect(() => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setHits([]);
-      return;
-    }
-    const id = setTimeout(async () => {
-      const { data } = await supabase
-        .from("markets")
-        .select("slug, question")
-        .eq("status", "open")
-        .ilike("question", `%${q}%`)
-        .limit(6);
-      setHits(((data ?? []) as MarketHit[]).filter((h) => h.slug && h.question));
-    }, 220);
-    return () => clearTimeout(id);
-  }, [query]);
+  }, [open ]);
 
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const pages = [
-      ...TERMINAL_SECTIONS.map((s) => ({
-        kind: "page" as const,
-        label: s.label,
-        hint: s.hint,
-        to: s.to,
-      })),
-      ...EXTRA_PAGES.map((p) => ({ kind: "page" as const, ...p })),
-    ].filter((p) => !q || p.label.toLowerCase().includes(q) || p.hint.toLowerCase().includes(q));
-    const markets = hits.map((h) => ({
-      kind: "market" as const,
-      label: h.question,
-      hint: "Market",
-      to: `/markets/${h.slug}`,
-    }));
-    return [...pages, ...markets];
-  }, [query, hits]);
+    const pages = TERMINAL_SECTIONS.map((s) => ({
+      kind: "page" as const,
+      label: s.label,
+      hint: s.hint,
+      to: s.to,
+    })).filter((p) => !q || p.label.toLowerCase().includes(q) || p.hint.toLowerCase().includes(q));
+    const stockHits =
+      q.length >= 2
+        ? stocks
+            .filter(
+              (s) =>
+                s.name.toLowerCase().includes(q) || s.ticker.toLowerCase().includes(q),
+            )
+            .slice(0, 6)
+            .map((s) => ({
+              kind: "stock" as const,
+              label: s.name,
+              hint: s.ticker,
+              to: `/stocks/${s.ticker}`,
+            }))
+        : [];
+    return [...pages, ...stockHits];
+  }, [query, stocks]);
 
   useEffect(() => setCursor(0), [items.length]);
 
@@ -141,8 +135,8 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Jump to a section, page, or market…"
-            aria-label="Jump to a section, page, or market"
+            placeholder="Jump to a section or stock…"
+            aria-label="Jump to a section or stock"
             className="h-12 w-full bg-transparent font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           <kbd className="shrink-0 rounded border border-border/70 px-1.5 font-mono text-[10px] text-muted-foreground">
@@ -152,7 +146,7 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
         <ul className="max-h-72 overflow-y-auto py-2" role="listbox" aria-label="Results">
           {items.length === 0 && (
             <li className="px-4 py-6 text-center font-mono text-xs text-muted-foreground">
-              No matches. Try a market keyword.
+              No matches. Try a stock name.
             </li>
           )}
           {items.map((item, i) => (
@@ -166,8 +160,8 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
                   i === cursor ? "bg-accent" : "bg-transparent",
                 )}
               >
-                {item.kind === "market" ? (
-                  <TrendingUp className="h-4 w-4 shrink-0 text-success" aria-hidden />
+                {item.kind === "stock" ? (
+                  <CandlestickChart className="h-4 w-4 shrink-0 text-success" aria-hidden />
                 ) : (
                   <span className="w-4 shrink-0 font-mono text-[10px] text-muted-foreground">
                     ›

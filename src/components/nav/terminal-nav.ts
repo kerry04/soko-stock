@@ -1,4 +1,4 @@
-import { Activity, Globe, Star, TrendingUp } from "lucide-react";
+import { Activity, Globe, Star, CandlestickChart } from "lucide-react";
 
 export interface TerminalSection {
   label: string;
@@ -9,13 +9,13 @@ export interface TerminalSection {
 
 /** The four ops-room sections. Order is the product's spine. */
 export const TERMINAL_SECTIONS: TerminalSection[] = [
-  { label: "Map", to: "/", icon: Globe, hint: "Live signal map" },
-  { label: "Markets", to: "/markets", icon: TrendingUp, hint: "Prediction markets" },
-  { label: "Pulse", to: "/pulse", icon: Activity, hint: "Daily published pulse" },
-  { label: "Watchlist", to: "/watchlist", icon: Star, hint: "Markets you follow" },
+  { label: "Stocks", to: "/", icon: CandlestickChart, hint: "African stock boards" },
+  { label: "Map", to: "/map", icon: Globe, hint: "Live global signal map" },
+  { label: "Pulse", to: "/pulse", icon: Activity, hint: "Market-moving news digest" },
+  { label: "Watchlist", to: "/watchlist", icon: Star, hint: "Stocks you follow" },
 ];
 
 export function isSectionActive(pathname: string, to: string): boolean {
-  if (to === "/") return pathname === "/";
+  if (to === "/") return pathname === "/" || pathname.startsWith("/stocks");
   return pathname === to || pathname.startsWith(to + "/");
 }
