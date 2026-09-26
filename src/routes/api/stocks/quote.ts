@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
+import { getAFQuote } from "@/lib/stocks/africanfinancials.server";
 import { getQuote } from "@/lib/stocks/yahoo.server";
 
 const ALLOWED_RANGES = new Set(["1mo", "3mo", "6mo", "1y", "2y", "5y"]);
@@ -7,6 +8,7 @@ const ALLOWED_RANGES = new Set(["1mo", "3mo", "6mo", "1y", "2y", "5y"]);
 /**
  * GET /api/stocks/quote?ticker=NPN.JO&range=1y
  * Full quote + daily bars for the detail page. Range limited to sane values.
+ * African Financials listings are end-of-day only: quote + stats, no bars.
  */
 export const Route = createFileRoute("/api/stocks/quote")({
   server: {
@@ -21,15 +23,55 @@ export const Route = createFileRoute("/api/stocks/quote")({
             headers: { "content-type": "application/json" },
           });
         }
-        const exchange = Object.values(EXCHANGE_BY_ID).find((e) =>
-          e.tickers.includes(ticker),
+        const exchange = Object.values(EXCHANGE_BY_ID).find(
+          (e) => e.tickers.includes(ticker) || ticker.endsWith(`.${e.id}`),
         );
-        if (!exchange) {
+        if (!exchange || exchange.status !== "live") {
           return new Response(JSON.stringify({ ok: false, error: "unknown ticker" }), {
             status: 404,
             headers: { "content-type": "application/json" },
           });
         }
+
+        if (exchange.source === "africanfinancials") {
+          let q;
+          try {
+            q = await getAFQuote(ticker);
+          } catch {
+            q = null;
+          }
+          if (!q) {
+            return new Response(JSON.stringify({ ok: false, error: "quote unavailable" }), {
+              status: 502,
+              headers: { "content-type": "application/json" },
+            });
+          }
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              ticker: q.ticker,
+              name: q.name,
+              exchange: exchange.id,
+              currencySymbol: exchange.currencySymbol,
+              price: q.price,
+              previousClose: null,
+              change: null,
+              changePercent: q.changePercent,
+              asOf: q.updated,
+              timeNote: exchange.timeNote,
+              bars: [],
+              extras: {
+                sector: q.sector,
+                ytdPercent: q.ytdPercent,
+                volume: q.volume,
+                value: q.value,
+                updated: q.updated,
+              },
+            }),
+            { headers: { "content-type": "application/json" } },
+          );
+        }
+
         const q = await getQuote(ticker, range, "1d");
         if (!q) {
           return new Response(JSON.stringify({ ok: false, error: "quote unavailable" }), {

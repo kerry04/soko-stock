@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
+import { getAFBoard } from "@/lib/stocks/africanfinancials.server";
 import { getBoard } from "@/lib/stocks/yahoo.server";
 
 /**
  * GET /api/stocks/board?exchange=JSE
- * Live board rows for an exchange's constituents. Server fans out to Yahoo
- * (≤6 concurrent) with a 5-min cache — the client makes one call.
+ * Live board rows for an exchange's constituents. Yahoo: server fans out
+ * (≤6 concurrent) with a 5-min cache. African Financials: EOD tables with
+ * a 6h cache. The client makes one call.
  */
 export const Route = createFileRoute("/api/stocks/board")({
   server: {
@@ -20,20 +22,42 @@ export const Route = createFileRoute("/api/stocks/board")({
             headers: { "content-type": "application/json" },
           });
         }
-        const quotes = await getBoard(exchange.tickers);
-        const rows = quotes
-          .filter((q) => q && q.price != null)
-          .map((q) => ({
-            ticker: q!.ticker,
-            name: q!.name,
-            // Convert to display currency (e.g. ZAc → Rand).
-            price: q!.price! / exchange.divisor,
-            previousClose:
-              q!.previousClose != null ? q!.previousClose / exchange.divisor : null,
-            change: q!.change != null ? q!.change / exchange.divisor : null,
-            changePercent: q!.changePercent,
-            asOf: q!.asOf,
-          }));
+        let rows;
+        try {
+          rows =
+            exchange.source === "africanfinancials"
+              ? (await getAFBoard(exchange.id)).map((q) => ({
+                  ticker: q.ticker,
+                  name: q.name,
+                  price: q.price,
+                  previousClose: null,
+                  change: null,
+                  changePercent: q.changePercent,
+                  volume: q.volume,
+                  asOf: q.updated,
+                }))
+              : (
+                  await getBoard(exchange.tickers)
+                )
+                  .filter((q) => q && q.price != null)
+                  .map((q) => ({
+                    ticker: q!.ticker,
+                    name: q!.name,
+                    // Convert to display currency (e.g. ZAc → Rand).
+                    price: q!.price! / exchange.divisor,
+                    previousClose:
+                      q!.previousClose != null ? q!.previousClose / exchange.divisor : null,
+                    change: q!.change != null ? q!.change / exchange.divisor : null,
+                    changePercent: q!.changePercent,
+                    volume: q!.bars[q!.bars.length - 1]?.v ?? null,
+                    asOf: q!.asOf,
+                  }));
+        } catch {
+          return new Response(JSON.stringify({ ok: false, error: "feed unreachable" }), {
+            status: 502,
+            headers: { "content-type": "application/json" },
+          });
+        }
         return new Response(
           JSON.stringify({
             ok: true,

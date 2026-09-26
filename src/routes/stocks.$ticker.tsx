@@ -30,6 +30,14 @@ interface Bar {
   v: number | null;
 }
 
+interface QuoteExtras {
+  sector: string | null;
+  ytdPercent: number | null;
+  volume: number | null;
+  value: number | null;
+  updated: string | null;
+}
+
 interface QuoteResponse {
   ok: boolean;
   ticker: string;
@@ -43,6 +51,7 @@ interface QuoteResponse {
   asOf: string;
   timeNote: string;
   bars: Bar[];
+  extras?: QuoteExtras;
 }
 
 interface NewsHit {
@@ -136,7 +145,10 @@ function StockDetail() {
   const [news, setNews] = useState<NewsHit[]>([]);
   const { ids: watched, toggle } = useWatchlist();
 
-  const exchange = Object.values(EXCHANGE_BY_ID).find((e) => e.tickers.includes(ticker));
+  const exchange = Object.values(EXCHANGE_BY_ID).find(
+    (e) => e.tickers.includes(ticker) || ticker.endsWith(`.${e.id}`),
+  );
+  const hasHistory = (quote?.bars.length ?? 0) > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -296,49 +308,98 @@ function StockDetail() {
               </div>
             </div>
 
-            {/* Range selector */}
-            <div className="mt-4 flex gap-1.5" role="tablist" aria-label="Chart range">
-              {RANGES.map((r) => (
-                <button
-                  key={r.id}
-                  role="tab"
-                  aria-selected={range === r.id}
-                  onClick={() => setRange(r.id)}
-                  className={cn(
-                    "rounded-md px-3 py-1.5 font-mono text-[11px] font-bold",
-                    range === r.id
-                      ? "bg-success/15 text-success"
-                      : "text-muted-foreground hover:bg-card hover:text-foreground",
-                  )}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
+            {/* Range selector + chart, or EOD-only note */}
+            {hasHistory ? (
+              <>
+                <div className="mt-4 flex gap-1.5" role="tablist" aria-label="Chart range">
+                  {RANGES.map((r) => (
+                    <button
+                      key={r.id}
+                      role="tab"
+                      aria-selected={range === r.id}
+                      onClick={() => setRange(r.id)}
+                      className={cn(
+                        "rounded-md px-3 py-1.5 font-mono text-[11px] font-bold",
+                        range === r.id
+                          ? "bg-success/15 text-success"
+                          : "text-muted-foreground hover:bg-card hover:text-foreground",
+                      )}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="mt-2 rounded-xl border border-border/70 bg-card/40 p-3 sm:p-4">
-              <PriceChart bars={quote.bars} sym={sym} up={up} />
-            </div>
+                <div className="mt-2 rounded-xl border border-border/70 bg-card/40 p-3 sm:p-4">
+                  <PriceChart bars={quote.bars} sym={sym} up={up} />
+                </div>
+              </>
+            ) : (
+              <div className="mt-4 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">
+                  End-of-day quote{quote.extras?.updated ? ` · ${quote.extras.updated}` : ""}.
+                </p>
+                <p className="mt-1">
+                  Price history isn't available for this listing yet — the board updates once per
+                  trading day.
+                </p>
+              </div>
+            )}
 
             {/* Stats */}
-            {stats && (
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {[
-                  ["Prev close", stats.prevClose],
-                  ["Day high", stats.dayHigh],
-                  ["Day low", stats.dayLow],
-                  [`${range.toUpperCase()} high`, stats.allHigh],
-                ].map(([label, v]) => (
-                  <div key={label as string} className="rounded-xl border border-border/60 bg-card/40 p-3">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                      {label}
-                    </p>
-                    <p className="num mt-1 font-mono text-sm font-semibold">
-                      {typeof v === "number" ? fmt(v, sym) : "—"}
-                    </p>
-                  </div>
-                ))}
-              </div>
+            {hasHistory ? (
+              stats && (
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    ["Prev close", stats.prevClose],
+                    ["Day high", stats.dayHigh],
+                    ["Day low", stats.dayLow],
+                    [`${range.toUpperCase()} high`, stats.allHigh],
+                  ].map(([label, v]) => (
+                    <div key={label as string} className="rounded-xl border border-border/60 bg-card/40 p-3">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        {label}
+                      </p>
+                      <p className="num mt-1 font-mono text-sm font-semibold">
+                        {typeof v === "number" ? fmt(v, sym) : "—"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : (
+              quote.extras && (
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    ["Sector", quote.extras.sector],
+                    [
+                      "YTD",
+                      quote.extras.ytdPercent != null
+                        ? `${quote.extras.ytdPercent >= 0 ? "+" : ""}${quote.extras.ytdPercent.toFixed(2)}%`
+                        : null,
+                    ],
+                    [
+                      "Volume",
+                      quote.extras.volume != null
+                        ? quote.extras.volume.toLocaleString("en-ZA")
+                        : null,
+                    ],
+                    [
+                      "Value traded",
+                      quote.extras.value != null
+                        ? `${sym}${quote.extras.value.toLocaleString("en-ZA")}`
+                        : null,
+                    ],
+                  ].map(([label, v]) => (
+                    <div key={label as string} className="rounded-xl border border-border/60 bg-card/40 p-3">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        {label}
+                      </p>
+                      <p className="num mt-1 font-mono text-sm font-semibold">{v ?? "—"}</p>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
 
             {/* Why it's moving */}

@@ -16,6 +16,8 @@ export interface Exchange {
   currencySymbol: string;
   /** "live" = real quote feed wired; "soon" = exchange wanted, feed pending. */
   status: "live" | "soon";
+  /** yahoo = per-ticker chart API; africanfinancials = EOD price-list tables. */
+  source: "yahoo" | "africanfinancials";
   tickers: string[];
   /** cents-to-unit divisor: JSE quotes in ZAc (cents), display in Rand. */
   divisor: number;
@@ -32,6 +34,7 @@ export const EXCHANGES: Exchange[] = [
     currency: "ZAR",
     currencySymbol: "R",
     status: "live",
+    source: "yahoo",
     divisor: 100, // Yahoo quotes JSE equities in ZAc (cents)
     timeNote: "Quotes via Yahoo Finance, ~15 min delayed",
     tickers: [
@@ -69,9 +72,10 @@ export const EXCHANGES: Exchange[] = [
     countryAlpha2: "KE",
     currency: "KES",
     currencySymbol: "KSh",
-    status: "soon",
+    status: "live",
+    source: "africanfinancials",
     divisor: 1,
-    timeNote: "Feed pending — no free machine-readable source found yet",
+    timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
   {
@@ -82,9 +86,24 @@ export const EXCHANGES: Exchange[] = [
     countryAlpha2: "NG",
     currency: "NGN",
     currencySymbol: "₦",
-    status: "soon",
+    status: "live",
+    source: "africanfinancials",
     divisor: 1,
-    timeNote: "Feed pending — no free machine-readable source found yet",
+    timeNote: "End-of-day quotes via African Financials",
+    tickers: [],
+  },
+  {
+    id: "GSE",
+    name: "Ghana Stock Exchange",
+    shortName: "GSE",
+    country: "Ghana",
+    countryAlpha2: "GH",
+    currency: "GHS",
+    currencySymbol: "GH₵",
+    status: "live",
+    source: "africanfinancials",
+    divisor: 1,
+    timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
 ];
