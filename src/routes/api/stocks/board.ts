@@ -42,7 +42,7 @@ export const Route = createFileRoute("/api/stocks/board")({
         }
         let rows;
         let wk52: ({ high: number; low: number } | null | undefined)[] = [];
-        let techs: ({ rsi: number; aboveSma50: boolean } | null | undefined)[] = [];
+        let techs: ({ rsi: number; aboveSma50: boolean; relVolume: number | null } | null | undefined)[] = [];
         try {
           if (exchange.source === "africanfinancials") {
             rows = (await getDBBoard(exchange.id)).map((q) => ({
@@ -62,6 +62,7 @@ export const Route = createFileRoute("/api/stocks/board")({
               wk52Low: null,
               rsi: null,
               aboveSma50: null,
+              relVolume: null,
               asOf: q.fetched_at,
             }));
           } else {
@@ -98,6 +99,7 @@ export const Route = createFileRoute("/api/stocks/board")({
                   wk52Low: w?.low != null ? w.low / d : null,
                   rsi: t?.rsi ?? null,
                   aboveSma50: t?.aboveSma50 ?? null,
+                  relVolume: t?.relVolume ?? null,
                   asOf: q!.asOf,
                 };
               });

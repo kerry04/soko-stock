@@ -51,6 +51,8 @@ interface Technicals {
   composite: number;
   label: "Strong Sell" | "Sell" | "Neutral" | "Buy" | "Strong Buy";
   barsUsed: number;
+  /** Latest volume ÷ 20-day average. Null without history. */
+  relVolume: number | null;
 }
 
 interface QuoteResponse {
@@ -216,6 +218,13 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
       "50-day vs 200-day",
       t.goldenCross ? "Golden cross" : "Death cross",
       pill(t.votes.cross),
+    ],
+    [
+      "Volume vs 20-day avg",
+      t.relVolume != null ? `${t.relVolume.toFixed(1)}×` : "—",
+      t.relVolume != null && t.relVolume >= 2
+        ? ["Unusual", "bg-amber-500/15 text-amber-500"]
+        : ["Normal", "bg-muted text-muted-foreground"],
     ],
   ];
 

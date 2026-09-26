@@ -37,6 +37,8 @@ export interface Technicals {
   /** Average vote, -1..1. */
   composite: number;
   label: TechLabel;
+  /** Latest volume ÷ 20-day average (prior 20 sessions). Null without history. */
+  relVolume: number | null;
   barsUsed: number;
 }
 
@@ -76,7 +78,7 @@ function rsiWilder(closes: number[], period = 14): number {
   return 100 - 100 / (1 + avgG / avgL);
 }
 
-function computeTechnicals(closes: number[]): Technicals {
+function computeTechnicals(closes: number[], volumes: (number | null)[]): Technicals {
   const price = closes[closes.length - 1];
   const rsi = rsiWilder(closes, 14);
   const sma50 = smaOf(closes, 50);
@@ -91,6 +93,17 @@ function computeTechnicals(closes: number[]): Technicals {
   const aboveSma50 = price > sma50;
   const aboveSma200 = price > sma200;
   const goldenCross = sma50 > sma200;
+
+  // Unusual volume: latest session vs the average of the prior 20.
+  let relVolume: number | null = null;
+  const latest = volumes[volumes.length - 1];
+  const prior = volumes
+    .slice(-21, -1)
+    .filter((v): v is number => v != null && v > 0);
+  if (latest != null && latest > 0 && prior.length >= 20) {
+    const avg = prior.reduce((a, b) => a + b, 0) / prior.length;
+    if (avg > 0) relVolume = latest / avg;
+  }
 
   const votes = {
     rsi: rsi >= 70 ? -1 : rsi <= 30 ? 1 : 0,
@@ -123,6 +136,7 @@ function computeTechnicals(closes: number[]): Technicals {
     votes,
     composite,
     label,
+    relVolume,
     barsUsed: closes.length,
   };
 }
@@ -138,11 +152,10 @@ export async function getTechnicals(ticker: string): Promise<Technicals | null> 
   let t: Technicals | null = null;
   try {
     const q = await getQuote(ticker, "1y", "1d");
-    const closes = (q?.bars ?? [])
-      .map((b) => b.c)
-      .filter((c): c is number => c != null);
+    const bars = q?.bars ?? [];
+    const closes = bars.map((b) => b.c).filter((c): c is number => c != null);
     // SMA(200) is the hungriest indicator — require it, or say nothing.
-    if (closes.length >= 200) t = computeTechnicals(closes);
+    if (closes.length >= 200) t = computeTechnicals(closes, bars.map((b) => b.v));
   } catch {
     t = null;
   }

@@ -35,6 +35,8 @@ interface BoardRow {
   wk52Low: number | null;
   rsi: number | null;
   aboveSma50: boolean | null;
+  /** Latest volume ÷ 20-day average. Null without history (EOD listings). */
+  relVolume: number | null;
   asOf: string;
 }
 
@@ -62,11 +64,11 @@ function fmtCompactValue(v: number, sym: string): string {
 
 /**
  * One badge slot per row (Robinhood watchlist-density pattern).
- * Priority: 52-week events > RSI extremes > 50-day trend.
+ * Priority: 52-week events > unusual volume > RSI extremes > 50-day trend.
  * EOD-only listings carry no history, so they get no badge.
  */
 function RowBadge({ row }: { row: BoardRow }) {
-  const { price, wk52High, wk52Low, rsi, aboveSma50 } = row;
+  const { price, wk52High, wk52Low, rsi, aboveSma50, relVolume } = row;
 
   if (wk52High != null && wk52Low != null && wk52High > 0) {
     let label: string | null = null;
@@ -102,6 +104,18 @@ function RowBadge({ row }: { row: BoardRow }) {
         </span>
       );
     }
+  }
+
+  // Volume is attention, not direction — amber, never green/red.
+  if (relVolume != null && relVolume >= 2) {
+    return (
+      <span
+        title={`Volume ${relVolume.toFixed(1)}× the 20-day average`}
+        className="ml-2 inline-block rounded bg-amber-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-amber-500"
+      >
+        Vol {relVolume.toFixed(1)}×
+      </span>
+    );
   }
 
   if (rsi != null) {
