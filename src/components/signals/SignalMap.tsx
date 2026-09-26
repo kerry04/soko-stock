@@ -22,6 +22,7 @@ interface Article {
   source: string;
   published_at: string;
   relevant_keywords: string[] | null;
+  sentiment_score: number | null;
 }
 
 interface TrendRow {
@@ -42,6 +43,12 @@ export interface CountrySignal {
   articles: Article[];
   score: number;
   velocity: number;
+  /** 0–100 instability index: volume + negative sentiment + event-theme hits + quakes. */
+  instability: number;
+  /** True when ≥2 independent signal types fire in the same 24h window. */
+  converging: boolean;
+  eventHits: number;
+  quakeHits: number;
 }
 
 function timeAgo(iso: string): string {
@@ -54,7 +61,69 @@ function timeAgo(iso: string): string {
 
 function matchesCountry(a: Article, c: SignalCountry): boolean {
   const hay = `${a.title} ${(a.relevant_keywords ?? []).join(" ")}`.toLowerCase();
-  return c.keywords.some((k) => hay.includes(k));
+  if (c.keywords.some((k) => hay.includes(k))) return true;
+  // USGS quake titles carry place names ("M 5.4 - 69 km ENE of Tadine, New
+  // Caledonia") — fall back to matching the country name itself.
+  if (a.source === "USGS Earthquakes") return hay.includes(c.name.toLowerCase());
+  return false;
+}
+
+const EVENT_SOURCES = new Set(["GDELT Protests", "GDELT Conflict"]);
+
+/**
+ * Per-country instability index (0–100), recomputed live from our own
+ * pipeline. Transparent formula, not a black box:
+ *   volume (24h articles, capped) ............ 40 pts
+ *   negative-sentiment share ................ 30 pts
+ *   coded event hits (protests/conflict) .... 20 pts
+ *   significant quakes (M≥4.5) .............. 10 pts
+ * Converging = ≥2 independent signal types firing in the same window.
+ */
+function scoreCountry(
+  country: SignalCountry,
+  articles: Article[],
+  trendByKw: Map<string, TrendRow>,
+): CountrySignal {
+  const matched = articles.filter((a) => matchesCountry(a, country));
+  let velocity = 0;
+  for (const kw of country.keywords) {
+    const t = trendByKw.get(kw);
+    if (t) velocity += Number(t.velocity) || 0;
+  }
+  const scored = matched.filter((a) => a.sentiment_score != null);
+  const negShare =
+    scored.length > 0
+      ? scored.filter((a) => (a.sentiment_score ?? 0) < -0.2).length / scored.length
+      : 0;
+  const eventHits = matched.filter((a) => EVENT_SOURCES.has(a.source)).length;
+  const quakeHits = matched.filter((a) => a.source === "USGS Earthquakes").length;
+
+  const instability = Math.round(
+    Math.min(1, matched.length / 20) * 40 +
+      negShare * 30 +
+      Math.min(1, eventHits / 3) * 20 +
+      Math.min(1, quakeHits / 2) * 10,
+  );
+  const activeTypes = [
+    matched.length >= 8,
+    negShare >= 0.4 && scored.length >= 3,
+    eventHits > 0,
+    quakeHits > 0,
+  ].filter(Boolean).length;
+  const converging = activeTypes >= 2;
+
+  // Map pulse score: article volume leads, keyword velocity amplifies.
+  const score = matched.length + velocity / 25;
+  return {
+    country,
+    articles: matched.slice(0, 8),
+    score,
+    velocity,
+    instability,
+    converging,
+    eventHits,
+    quakeHits,
+  };
 }
 
 /**
@@ -91,10 +160,10 @@ export function SignalMap() {
     const [{ data: news }, { data: trends }, { data: mkts }] = await Promise.all([
       supabase
         .from("raw_news_data")
-        .select("id, title, url, source, published_at, relevant_keywords")
+        .select("id, title, url, source, published_at, relevant_keywords, sentiment_score")
         .gte("published_at", since)
         .order("published_at", { ascending: false })
-        .limit(400),
+        .limit(600),
       supabase.from("trending_keywords").select("keyword, velocity, avg_sentiment, mentions_1h"),
       supabase
         .from("markets")
@@ -108,18 +177,9 @@ export function SignalMap() {
     const trendByKw = new Map<string, TrendRow>();
     trendRows.forEach((t) => trendByKw.set(t.keyword.toLowerCase(), t));
 
-    const sigs: CountrySignal[] = SIGNAL_COUNTRIES.map((country) => {
-      const matched = articles.filter((a) => matchesCountry(a, country));
-      let velocity = 0;
-      for (const kw of country.keywords) {
-        const t = trendByKw.get(kw);
-        if (t) velocity += Number(t.velocity) || 0;
-      }
-      // Score: article volume leads, keyword velocity amplifies. Transparent
-      // and recomputed live — not a black box.
-      const score = matched.length + velocity / 25;
-      return { country, articles: matched.slice(0, 8), score, velocity };
-    }).filter((s) => s.score > 0);
+    const sigs: CountrySignal[] = SIGNAL_COUNTRIES.map((country) =>
+      scoreCountry(country, articles, trendByKw),
+    ).filter((s) => s.score > 0);
 
     sigs.sort((a, b) => b.score - a.score);
     setSignals(sigs);
@@ -207,9 +267,9 @@ export function SignalMap() {
           const heat = Math.min(1, s.score / maxScore);
           const pulse = reduced ? 0 : 0.25 * Math.sin(t / 700 + px / 40) + 0.25;
           const alpha = 0.45 + heat * 0.5 + pulse * heat;
-          ctx.fillStyle = isDark
-            ? `rgba(34, 197, 94, ${alpha.toFixed(3)})`
-            : `rgba(22, 163, 74, ${alpha.toFixed(3)})`;
+          // Converging countries burn red; the rest pulse green.
+          const rgb = s.converging ? "239, 68, 68" : isDark ? "34, 197, 94" : "22, 163, 74";
+          ctx.fillStyle = `rgba(${rgb}, ${alpha.toFixed(3)})`;
           const rad = r * (1 + heat * 1.6);
           ctx.beginPath();
           ctx.arc(px, py, rad, 0, Math.PI * 2);
@@ -229,9 +289,8 @@ export function SignalMap() {
           const heat = Math.min(1, s.score / maxScore);
           const phase = (t / 2400 + s.country.cx * 7) % 1;
           const rad = (6 + phase * 34) * heat + 4;
-          ctx.strokeStyle = isDark
-            ? `rgba(34, 197, 94, ${(0.5 * (1 - phase) * heat).toFixed(3)})`
-            : `rgba(22, 163, 74, ${(0.5 * (1 - phase) * heat).toFixed(3)})`;
+          const rgb = s.converging ? "239, 68, 68" : isDark ? "34, 197, 94" : "22, 163, 74";
+          ctx.strokeStyle = `rgba(${rgb}, ${(0.5 * (1 - phase) * heat).toFixed(3)})`;
           ctx.lineWidth = 1.2;
           ctx.beginPath();
           ctx.arc(s.country.cx * width, s.country.cy * height, rad, 0, Math.PI * 2);
@@ -348,6 +407,12 @@ export function SignalMap() {
           Live
         </span>
         <span>{signals.length} countries with signal</span>
+        {signals.some((s) => s.converging) && (
+          <span className="inline-flex items-center gap-1.5 text-red-500">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" aria-hidden />
+            {signals.filter((s) => s.converging).length} converging
+          </span>
+        )}
         {asOf && (
           <span>as of {asOf.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
         )}
@@ -388,6 +453,42 @@ function CountryPanel({
             {signal.articles.length} articles · 24h
             {signal.velocity > 0 && ` · velocity +${signal.velocity.toFixed(1)}`}
           </p>
+          <div className="mt-2 flex items-center gap-2">
+            <div
+              className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"
+              role="img"
+              aria-label={`Instability index ${signal.instability} of 100`}
+            >
+              <div
+                className={`h-full rounded-full ${
+                  signal.instability >= 60
+                    ? "bg-red-500"
+                    : signal.instability >= 30
+                      ? "bg-amber-500"
+                      : "bg-success"
+                }`}
+                style={{ width: `${signal.instability}%` }}
+              />
+            </div>
+            <span className="num font-mono text-[10px] text-muted-foreground">
+              instability {signal.instability}/100
+            </span>
+            {signal.converging && (
+              <span className="rounded-full bg-red-500/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-red-500 animate-pulse">
+                Converging
+              </span>
+            )}
+          </div>
+          {(signal.eventHits > 0 || signal.quakeHits > 0) && (
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              {[
+                signal.eventHits > 0 ? `${signal.eventHits} unrest event${signal.eventHits > 1 ? "s" : ""}` : null,
+                signal.quakeHits > 0 ? `${signal.quakeHits} quake${signal.quakeHits > 1 ? "s" : ""} M≥4.5` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
         </div>
         <button
           type="button"
