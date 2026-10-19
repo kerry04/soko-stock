@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyBuy, applySell, START_CASH, EOD_STALE_MS } from "./fill";
+import { applyBuy, applySell, START_CASH, EOD_STALE_MS, isStaleEod } from "./fill";
 
 describe("fill math", () => {
   it("weights avg cost on buy", () => {
@@ -34,5 +34,16 @@ describe("fill math", () => {
 
   it("EOD stale window is 36h", () => {
     expect(EOD_STALE_MS).toBe(36 * 3600 * 1000);
+  });
+
+  it("flags EOD older than 36h as stale", () => {
+    const now = new Date("2026-09-27T12:00:00Z").getTime();
+    expect(isStaleEod("2026-09-25T23:00:00Z", now)).toBe(true);
+    expect(isStaleEod("2026-09-26T12:00:00Z", now)).toBe(false);
+  });
+
+  it("treats unparseable timestamps as stale (never fill blind)", () => {
+    expect(isStaleEod("not-a-date", Date.now())).toBe(true);
+    expect(isStaleEod(null, Date.now())).toBe(true);
   });
 });
