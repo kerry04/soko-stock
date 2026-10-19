@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as PulseRouteImport } from './routes/pulse'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StocksTickerRouteImport } from './routes/stocks.$ticker'
@@ -38,6 +39,11 @@ const TermsRoute = TermsRouteImport.update({
 const PulseRoute = PulseRouteImport.update({
   id: '/pulse',
   path: '/pulse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
@@ -107,6 +113,7 @@ const ApiPublicHooksAnalyzeSentimentRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/map': typeof MapRoute
+  '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/map': typeof MapRoute
+  '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/map': typeof MapRoute
+  '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/map'
+    | '/portfolio'
     | '/pulse'
     | '/terms'
     | '/watchlist'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/map'
+    | '/portfolio'
     | '/pulse'
     | '/terms'
     | '/watchlist'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/map'
+    | '/portfolio'
     | '/pulse'
     | '/terms'
     | '/watchlist'
@@ -213,6 +225,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MapRoute: typeof MapRoute
+  PortfolioRoute: typeof PortfolioRoute
   PulseRoute: typeof PulseRoute
   TermsRoute: typeof TermsRoute
   WatchlistRoute: typeof WatchlistRoute
@@ -249,6 +262,13 @@ declare module '@tanstack/react-router' {
       path: '/pulse'
       fullPath: '/pulse'
       preLoaderRoute: typeof PulseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/map': {
@@ -341,6 +361,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MapRoute: MapRoute,
+  PortfolioRoute: PortfolioRoute,
   PulseRoute: PulseRoute,
   TermsRoute: TermsRoute,
   WatchlistRoute: WatchlistRoute,
