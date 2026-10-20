@@ -6,6 +6,7 @@ import {
   BarChart3,
   ExternalLink,
   Flame,
+  Landmark,
   MessageSquareText,
   Newspaper,
   Radio,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { BandChip, type BandState } from "@/components/macro/BandChip";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pulse")({
@@ -68,6 +70,13 @@ interface BoardRow {
   wk52Low: number | null;
   rsi: number | null;
   relVolume: number | null;
+}
+
+interface MacroStrip {
+  band: BandState | null;
+  cpi: number | null;
+  cbr: number | null;
+  fxUsd: number | null;
 }
 
 type FeedKind =
@@ -133,9 +142,29 @@ function PulsePage() {
   const [movers, setMovers] = useState<Mover[]>([]);
   const [asOf, setAsOf] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
+  const [macro, setMacro] = useState<MacroStrip | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    // Economy strip: its own fetch and try/catch — a macro failure must
+    // never break the signal feed.
+    (async () => {
+      try {
+        const res = await fetch("/api/macro/overview");
+        const json = res.ok ? await res.json() : null;
+        if (!cancelled && json?.ok) {
+          const ind = json.indicators ?? {};
+          setMacro({
+            band: (json.band as BandState | null) ?? null,
+            cpi: ind.cpi_yoy?.value ?? null,
+            cbr: ind.cbr?.value ?? null,
+            fxUsd: ind.fx_usd?.value ?? null,
+          });
+        }
+      } catch {
+        /* absent on failure */
+      }
+    })();
     (async () => {
       const d24 = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
 
@@ -318,6 +347,58 @@ function PulsePage() {
           </div>
         ) : (
           <>
+            {/* Economy strip — one section above the signal list. Absent on failure. */}
+            {macro && (macro.cpi != null || macro.cbr != null || macro.fxUsd != null) && (
+              <section
+                aria-label="Economy snapshot"
+                className="mt-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                    <Landmark className="h-3.5 w-3.5" aria-hidden /> Economy
+                  </h2>
+                  <Link
+                    to="/economy"
+                    className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground underline-offset-4 hover:underline"
+                  >
+                    Full view →
+                  </Link>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+                  {macro.cpi != null && (
+                    <span className="flex items-center gap-2">
+                      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        Inflation
+                      </span>
+                      <span className="font-mono text-lg font-bold tabular-nums">
+                        {macro.cpi.toFixed(2)}%
+                      </span>
+                      <BandChip band={macro.band} />
+                    </span>
+                  )}
+                  {macro.cbr != null && (
+                    <span className="flex items-baseline gap-2">
+                      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        CBR
+                      </span>
+                      <span className="font-mono text-lg font-bold tabular-nums">
+                        {macro.cbr.toFixed(2)}%
+                      </span>
+                    </span>
+                  )}
+                  {macro.fxUsd != null && (
+                    <span className="flex items-baseline gap-2">
+                      <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        KES/USD
+                      </span>
+                      <span className="font-mono text-lg font-bold tabular-nums">
+                        {macro.fxUsd.toFixed(2)}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              </section>
+            )}
             {/* Ranked signal feed */}
             <section
               aria-label="Ranked market signals"
