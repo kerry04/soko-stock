@@ -1,4 +1,4 @@
-import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
+import { EXCHANGE_BY_ID, limitHitFor } from "@/lib/stocks/exchanges";
 import { getDBBoard } from "@/lib/stocks/boards-db.server";
 import { getBoard, get52wkStats, getTechnicals } from "@/lib/stocks/yahoo.server";
 import { getNewsSignals } from "@/lib/stocks/news-signals.server";
@@ -27,6 +27,8 @@ export interface BoardRow {
   relVolume: number | null;
   /** 24h news volume ÷ 30-day daily median, when surging (≥3×, ≥3 articles). */
   newsSurge: number | null;
+  /** Set when the day's move has reached the exchange's daily price band. */
+  limitHit: "up" | "down" | null;
   asOf: string;
 }
 
@@ -96,6 +98,7 @@ export async function getExchangeBoardRows(exchangeId: string): Promise<Exchange
         relVolume: null,
         // Filled by the caller (screener) or their own stock pages.
         newsSurge: null,
+        limitHit: null,
         asOf: q.fetched_at,
       }));
     } else {
@@ -136,6 +139,7 @@ export async function getExchangeBoardRows(exchangeId: string): Promise<Exchange
             relVolume: t?.relVolume ?? null,
             // Surge flags are computed below.
             newsSurge: null,
+            limitHit: null,
             asOf: q!.asOf,
           };
         });
@@ -157,6 +161,13 @@ export async function getExchangeBoardRows(exchangeId: string): Promise<Exchange
       }
     } catch {
       /* news is enrichment — never break the board */
+    }
+  }
+
+  // Limit-hit flags, where the exchange publishes a flat daily band.
+  if (exchange.dailyLimitPct != null) {
+    for (const r of rows) {
+      r.limitHit = limitHitFor(r.changePercent, exchange.dailyLimitPct);
     }
   }
 

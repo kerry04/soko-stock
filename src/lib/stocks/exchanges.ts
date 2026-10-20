@@ -21,6 +21,13 @@ export interface Exchange {
   tickers: string[];
   /** cents-to-unit divisor: JSE quotes in ZAc (cents), display in Rand. */
   divisor: number;
+  /**
+   * Daily price limit in %, where the exchange publishes a single flat
+   * band. Null = no flat band (JSE uses volatility auctions; DSE is
+   * tiered 15/5/2 by market cap) or not yet verified. Never guess one.
+   * Verified 2026-10-20 — see other-markets fact sheet.
+   */
+  dailyLimitPct: number | null;
   timeNote: string;
 }
 
@@ -36,6 +43,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "yahoo",
     divisor: 100, // Yahoo quotes JSE equities in ZAc (cents)
+    dailyLimitPct: null, // volatility auctions — no fixed band
     timeNote: "Quotes via Yahoo Finance, ~15 min delayed",
     tickers: [
       "NPN.JO", // Naspers
@@ -75,6 +83,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: 10,
     timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
@@ -89,6 +98,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: 10,
     timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
@@ -103,6 +113,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: 10,
     timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
@@ -117,6 +128,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
@@ -131,6 +143,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: 10,
     timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
@@ -145,6 +158,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: 25,
     timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
@@ -159,6 +173,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials (listed in thebe, shown in pula)",
     tickers: [],
   },
@@ -173,6 +188,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
@@ -187,6 +203,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials",
     tickers: [],
   },
@@ -201,6 +218,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials (listed in US cents, shown in USD)",
     tickers: [],
   },
@@ -215,6 +233,7 @@ export const EXCHANGES: Exchange[] = [
     status: "live",
     source: "africanfinancials",
     divisor: 1,
+    dailyLimitPct: 15,
     timeNote: "End-of-day quotes via African Financials (listed in ZiG cents, shown in ZiG)",
     tickers: [],
   },
@@ -225,3 +244,16 @@ export const EXCHANGE_BY_ID: Record<string, Exchange> = Object.fromEntries(
 );
 
 export const LIVE_EXCHANGES = EXCHANGES.filter((e) => e.status === "live");
+
+/**
+ * "up" / "down" when a move has reached the exchange's daily band
+ * (within 0.05pt — EOD tables round), else null. Null limit = no call.
+ */
+export function limitHitFor(
+  changePercent: number | null,
+  limitPct: number | null,
+): "up" | "down" | null {
+  if (changePercent == null || limitPct == null) return null;
+  if (Math.abs(changePercent) < limitPct - 0.05) return null;
+  return changePercent >= 0 ? "up" : "down";
+}
