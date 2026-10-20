@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { isMarketRelevant } from "@/lib/news/relevance";
+import { dedupeByTitle } from "@/lib/news/dedupe";
 import { EXCHANGES } from "@/lib/stocks/exchanges";
 import { getDBBoard } from "@/lib/stocks/boards-db.server";
 import { getExchangeBoardRows } from "@/lib/stocks/board-rows.server";
@@ -172,6 +173,7 @@ export async function getNewsWire(): Promise<NewsWireResult> {
 
   // Terminal read of the shared firehose: market-moving stories only.
   all = all.filter((a) => isMarketRelevant(a.title));
+  all = dedupeByTitle(all);
 
   const desks: DeskResult[] = DESKS.map((desk) => {
     const matched = all.filter((a) => desk.patterns.some((re) => re.test(a.title)));

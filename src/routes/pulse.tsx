@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { BandChip, type BandState } from "@/components/macro/BandChip";
 import { isMarketRelevant } from "@/lib/news/relevance";
+import { dedupeByTitle } from "@/lib/news/dedupe";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pulse")({
@@ -312,9 +313,11 @@ function PulsePage() {
       if (!cancelled) {
         setFeed(items);
         setStories(
-          ((sRes.data ?? []) as Story[])
-            .filter((s) => isMarketRelevant(s.title))
-            .slice(0, 10),
+          dedupeByTitle(
+            ((sRes.data ?? []) as Story[]).filter((s) =>
+              isMarketRelevant(s.title),
+            ),
+          ).slice(0, 10),
         );
         setMovers(computedMovers);
         setAsOf(new Date());

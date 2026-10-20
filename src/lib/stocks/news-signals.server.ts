@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { isMarketRelevant } from "@/lib/news/relevance";
+import { dedupeByTitle } from "@/lib/news/dedupe";
 
 /**
  * News-signal engine (Phase 4). All matching and counting is server-side,
@@ -137,11 +138,15 @@ function median(xs: number[]): number {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
-/** Day-bucket index over a trailing window: 0 = oldest day, days−1 = today. */
+/** Day-bucket index over a trailing window: 0 = oldest day, days−1 = today.
+ *  Both timestamps are normalized to UTC calendar dates first — flooring
+ *  raw elapsed time from UTC midnight pushed same-day articles out of
+ *  range and shifted yesterday's stories into the "today" bucket. */
 export function dayIndex(iso: string, days: number, now = new Date()): number {
-  const dayStart = new Date(now);
-  dayStart.setUTCHours(0, 0, 0, 0);
-  const d = Math.floor((dayStart.getTime() - new Date(iso).getTime()) / 86400000);
+  const DAY_MS = 86400000;
+  const utcDayStart = (t: Date) =>
+    Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate());
+  const d = Math.round((utcDayStart(now) - utcDayStart(new Date(iso))) / DAY_MS);
   return days - 1 - d;
 }
 
@@ -198,8 +203,10 @@ const cache = new Map<string, CacheEntry>();
 export async function getNewsSignals(
   tickers: TickerName[],
 ): Promise<TickerNewsSignal[]> {
+  // Names are part of the key: a corrected company name must not be
+  // served the previous name's signals for the rest of the TTL.
   const key = tickers
-    .map((t) => t.ticker)
+    .map((t) => `${t.ticker}:${t.name}`)
     .sort()
     .join(",");
   const hit = cache.get(key);
@@ -226,6 +233,7 @@ export async function getNewsSignals(
 
   // A brand mention in an entertainment story is not a news signal.
   articles = articles.filter((a) => isMarketRelevant(a.title));
+  articles = dedupeByTitle(articles);
 
   // Day buckets: index 0 = oldest day, index 29 = today.
   const dayIndexFor = (iso: string) => dayIndex(iso, WINDOW_DAYS);
@@ -246,9 +254,10 @@ export async function getNewsSignals(
     const surging =
       count24h >= SURGE_MIN_ARTICLES && ratio >= SURGE_MIN_RATIO;
 
-    const last7 = linked
-      .filter((a) => a.published_at >= day7)
-      .slice(0, 15);
+    // Sentiment is computed over the FULL eligible 7-day window; only the
+    // displayed article list is capped.
+    const last7All = linked.filter((a) => a.published_at >= day7);
+    const last7 = last7All.slice(0, 15);
 
     return {
       ticker,
@@ -258,7 +267,7 @@ export async function getNewsSignals(
       medianDaily: Math.round(medianDaily * 10) / 10,
       surgeRatio: surging ? Math.round(ratio * 10) / 10 : null,
       surging,
-      sentiment7d: tiltOf(last7),
+      sentiment7d: tiltOf(last7All),
       articles: last7,
       latestAt: linked[0]?.published_at ?? null,
     };

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import worldDots from "@/data/world-dots.json";
 import { SIGNAL_COUNTRIES, type SignalCountry } from "@/lib/signal-countries";
 import { isMarketRelevant } from "@/lib/news/relevance";
+import { dedupeByTitle } from "@/lib/news/dedupe";
 import { GlobeMap } from "./GlobeMap";
 import { CountryBroadcast } from "./CountryBroadcast";
 
@@ -172,8 +173,10 @@ export function SignalMap() {
       supabase.from("trending_keywords").select("keyword, velocity, avg_sentiment, mentions_1h"),
     ]);
 
-    const articles = ((news ?? []) as Article[]).filter(
-      (a) => a.title && a.url && isMarketRelevant(a.title),
+    const articles = dedupeByTitle(
+      ((news ?? []) as Article[]).filter(
+        (a) => a.title && a.url && isMarketRelevant(a.title),
+      ),
     );
     const trendRows = (trends ?? []) as TrendRow[];
     const trendByKw = new Map<string, TrendRow>();
