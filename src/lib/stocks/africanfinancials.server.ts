@@ -19,21 +19,82 @@ export interface AFRow {
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
 
-const FEEDS: Record<string, { url: string; prefix: string; suffix: string }> = {
+/**
+ * Feed config per exchange. priceDivisor converts AF's quoted unit to the
+ * display currency: Botswana lists in thebe and ZSE in ZiG cents (verified
+ * 2026-10-20 against afx closes: DLTA 3259.57 AF = ZWG 32.5957), VFEX in US
+ * cents. The Value column is already full currency everywhere — only the
+ * price divides.
+ */
+const FEEDS: Record<
+  string,
+  { url: string; prefix: string; suffix: string; priceDivisor: number }
+> = {
   NSE: {
     url: "https://africanfinancials.com/nairobi-securities-exchange-kenya-share-prices/",
     prefix: "ke-",
     suffix: ".NSE",
+    priceDivisor: 1,
   },
   NGX: {
     url: "https://africanfinancials.com/nigerian-stock-exchange-share-prices/",
     prefix: "ng-",
     suffix: ".NGX",
+    priceDivisor: 1,
   },
   GSE: {
     url: "https://africanfinancials.com/ghana-stock-exchange-share-prices/",
     prefix: "gh-",
     suffix: ".GSE",
+    priceDivisor: 1,
+  },
+  DSE: {
+    url: "https://africanfinancials.com/dar-es-salaam-stock-exchange-share-prices/",
+    prefix: "tz-",
+    suffix: ".DSE",
+    priceDivisor: 1,
+  },
+  USE: {
+    url: "https://africanfinancials.com/uganda-securities-exchange-share-prices/",
+    prefix: "ug-",
+    suffix: ".USE",
+    priceDivisor: 1,
+  },
+  LUSE: {
+    url: "https://africanfinancials.com/lusaka-securities-exchange-share-prices/",
+    prefix: "zm-",
+    suffix: ".LUSE",
+    priceDivisor: 1,
+  },
+  BSE: {
+    url: "https://africanfinancials.com/botswana-stock-exchange-share-prices/",
+    prefix: "bw-",
+    suffix: ".BSE",
+    priceDivisor: 100, // thebe → pula
+  },
+  MSE: {
+    url: "https://africanfinancials.com/malawi-stock-exchange-share-prices/",
+    prefix: "mw-",
+    suffix: ".MSE",
+    priceDivisor: 1,
+  },
+  SEM: {
+    url: "https://africanfinancials.com/stock-exchange-of-mauritius-sem-share-prices/",
+    prefix: "mu-",
+    suffix: ".SEM",
+    priceDivisor: 1,
+  },
+  VFEX: {
+    url: "https://africanfinancials.com/victoria-falls-stock-exchange-share-prices/",
+    prefix: "vx-",
+    suffix: ".VFEX",
+    priceDivisor: 100, // US cents → USD
+  },
+  ZSE: {
+    url: "https://africanfinancials.com/zimbabwe-stock-exchange-share-prices/",
+    prefix: "zw-",
+    suffix: ".ZSE",
+    priceDivisor: 100, // ZiG cents → ZWG
   },
 };
 
@@ -92,7 +153,10 @@ async function fetchBoard(code: string): Promise<AFRow[]> {
   }
 }
 
-function parseTable(html: string, feed: { prefix: string; suffix: string }): AFRow[] {
+function parseTable(
+  html: string,
+  feed: { prefix: string; suffix: string; priceDivisor: number },
+): AFRow[] {
   const out: AFRow[] = [];
   const trs = html.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g);
   for (const m of trs) {
@@ -120,7 +184,7 @@ function parseTable(html: string, feed: { prefix: string; suffix: string }): AFR
     out.push({
       ticker,
       name: cells[0],
-      price,
+      price: price / feed.priceDivisor,
       changePercent: num(cells[2]),
       value: int(cells[3]),
       volume: int(cells[4]),

@@ -9,7 +9,23 @@ import json
 import re
 import sys
 
-FEEDS = {"NSE": ("ke-", ".NSE"), "NGX": ("ng-", ".NGX"), "GSE": ("gh-", ".GSE")}
+# (slug prefix, ticker suffix, price divisor). Divisor converts AF's quoted
+# unit to display currency — Botswana thebe, ZSE ZiG cents, VFEX US cents
+# (verified 2026-10-20: AF DLTA 3259.57 = ZWG 32.5957). Value column is
+# already full currency; only price divides.
+FEEDS = {
+    "NSE": ("ke-", ".NSE", 1),
+    "NGX": ("ng-", ".NGX", 1),
+    "GSE": ("gh-", ".GSE", 1),
+    "DSE": ("tz-", ".DSE", 1),
+    "USE": ("ug-", ".USE", 1),
+    "LUSE": ("zm-", ".LUSE", 1),
+    "BSE": ("bw-", ".BSE", 100),
+    "MSE": ("mw-", ".MSE", 1),
+    "SEM": ("mu-", ".SEM", 1),
+    "VFEX": ("vx-", ".VFEX", 100),
+    "ZSE": ("zw-", ".ZSE", 100),
+}
 
 
 def num(s):
@@ -37,7 +53,7 @@ def strip_tags(s):
 
 
 def parse(html, exchange):
-    prefix, suffix = FEEDS[exchange]
+    prefix, suffix, divisor = FEEDS[exchange]
     rows = []
     for m in re.finditer(r"<tr[^>]*>([\s\S]*?)</tr>", html):
         row = m.group(1)
@@ -64,7 +80,7 @@ def parse(html, exchange):
             {
                 "ticker": ticker,
                 "name": cells[0],
-                "price": price,
+                "price": price / divisor,
                 "change_percent": num(cells[2]),
                 "value_traded": integer(cells[3]),
                 "volume": integer(cells[4]),
