@@ -1,6 +1,36 @@
+import { Component, type ReactNode } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { SignalMap } from "@/components/signals/SignalMap";
+
+/** Diagnostic boundary: catches whatever is killing the map subtree and
+ *  prints it in place, so the failure is visible instead of a dead page. */
+class MapErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.16em] text-red-500">
+            Map failed to render
+          </p>
+          <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap font-mono text-[11px] text-foreground">
+            {this.state.error.message}
+            {"\n"}
+            {this.state.error.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 export const Route = createFileRoute("/map")({
   head: () => ({
@@ -29,7 +59,9 @@ function MapPage() {
             The news behind the numbers — instability and converging signals, live.
           </p>
         </div>
-        <SignalMap />
+        <MapErrorBoundary>
+          <SignalMap />
+        </MapErrorBoundary>
       </div>
     </TerminalShell>
   );
