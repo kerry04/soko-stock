@@ -10,6 +10,14 @@ import type { CountrySignal } from "./SignalMap";
  * heat, converging countries burn red and sit higher, rings pulse from the
  * hottest centroids. Clicking a lit country opens the same detail panel.
  * Falls back to the flat map (via onError) if WebGL or the chunk fails.
+ *
+ * DOM contract (load-bearing): globe.gl owns everything inside the host
+ * node — it rewrites that subtree imperatively. React must never render
+ * conditional children inside the host, and must not clear it manually;
+ * React's only job is mounting/removing the host node itself. The loading
+ * overlay lives as a SIBLING of the host for the same reason. Violating
+ * this crashes the page with a removeChild NotFoundError the moment the
+ * overlay unmounts.
  */
 
 interface CountryFeature extends Feature<Polygon | MultiPolygon, { name: string }> {
@@ -79,7 +87,7 @@ export function GlobeMap({
   onSelect: (s: CountrySignal | null) => void;
   onError: (message?: string) => void;
 }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<GlobeApi | null>(null);
   const featuresRef = useRef<CountryFeature[]>([]);
   const signalsRef = useRef(signals);
@@ -127,10 +135,11 @@ export function GlobeMap({
   };
 
   useEffect(() => {
-    const wrap = wrapRef.current;
-    if (!wrap) return;
+    const host = hostRef.current;
+    if (!host) return;
     let cancelled = false;
     let resumeTimer: ReturnType<typeof setTimeout> | undefined;
+    let ro: ResizeObserver | undefined;
 
     // Diagnostic + safety net: globe.gl digests data inside its own
     // animation loop, so a throw there never reaches React. Surface the
@@ -159,7 +168,7 @@ export function GlobeMap({
         })) as CountryFeature[];
 
         const Globe = GlobeCtor as unknown as GlobeFactory;
-        const globe = Globe({ animateIn: true })(wrap);
+        const globe = Globe({ animateIn: true })(host);
         globeRef.current = globe;
 
         const maxScore = () => Math.max(1, ...signalsRef.current.map((s) => s.score));
@@ -208,9 +217,7 @@ export function GlobeMap({
           .onPolygonClick((f) => {
             const s = f.signal;
             if (s) {
-              onSelectRef.current(
-                selectedRef.current?.country.id === s.country.id ? null : s,
-              );
+              onSelectRef.current(selectedRef.current?.country.id === s.country.id ? null : s);
               const { lat, lng } = centroidLatLng(s);
               globe.pointOfView({ lat, lng, altitude: 1.35 }, 900);
             } else {
@@ -218,7 +225,7 @@ export function GlobeMap({
             }
           })
           .onPolygonHover((f) => {
-            wrap.style.cursor = f?.signal ? "pointer" : "grab";
+            host.style.cursor = f?.signal ? "pointer" : "grab";
           })
           .polygonsTransitionDuration(650)
           .ringLat((d) => d.lat)
@@ -250,12 +257,11 @@ export function GlobeMap({
         }
 
         const resize = () => {
-          globe.width(wrap.clientWidth).height(wrap.clientHeight);
+          globe.width(host.clientWidth).height(host.clientHeight);
         };
         resize();
-        const ro = new ResizeObserver(resize);
-        ro.observe(wrap);
-        (wrap as unknown as { __ro?: ResizeObserver }).__ro = ro;
+        ro = new ResizeObserver(resize);
+        ro.observe(host);
 
         syncLayers(globe);
         if (!cancelled) setReady(true);
@@ -270,7 +276,6 @@ export function GlobeMap({
       cancelled = true;
       window.removeEventListener("error", onWindowError);
       if (resumeTimer) clearTimeout(resumeTimer);
-      const ro = (wrap as unknown as { __ro?: ResizeObserver }).__ro;
       ro?.disconnect();
       try {
         globeRef.current?.pauseAnimation();
@@ -279,7 +284,8 @@ export function GlobeMap({
         /* noop */
       }
       globeRef.current = null;
-      wrap.innerHTML = "";
+      // No manual DOM clearing: React removes the host node wholesale on
+      // unmount, and globe's children go with it.
     };
     // Mount once; live data flows through the sync effect below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -293,13 +299,14 @@ export function GlobeMap({
 
   return (
     <div
-      ref={wrapRef}
       className="relative h-[440px] w-full overflow-hidden rounded-xl border border-border/70 bg-[radial-gradient(ellipse_at_center,#0b1220_0%,#020617_72%)] sm:h-[540px]"
       role="img"
       aria-label="3D globe: countries glowing with live news-signal intensity. Drag to spin, click a lit country for headlines."
     >
+      {/* Globe host: globe.gl owns this node's entire subtree. */}
+      <div ref={hostRef} className="absolute inset-0" />
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate-400">
             Spinning up the globe…
           </span>
