@@ -9,9 +9,12 @@ import { cn } from "@/lib/utils";
 
 const EVENT_CLASSES: Record<HeadlineEvent, string> = {
   "profit-warning": "bg-red-500/15 text-red-500",
+  management: "bg-violet-500/15 text-violet-400",
+  enforcement: "bg-orange-500/15 text-orange-400",
   dividend: "bg-success/15 text-success",
   results: "bg-primary/15 text-primary",
   "corporate-action": "bg-sky-500/15 text-sky-400",
+  contract: "bg-teal-500/15 text-teal-400",
   policy: "bg-slate-400/15 text-slate-300",
 };
 

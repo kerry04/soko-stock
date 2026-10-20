@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Flame, Newspaper } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
@@ -39,10 +39,20 @@ interface Desk {
   articles: WireArticle[];
 }
 
+interface HeatItem {
+  ticker: string;
+  name: string;
+  count24h: number;
+  surgeRatio: number | null;
+  surging: boolean;
+  tilt: "positive" | "negative" | "mixed" | null;
+}
+
 interface WireResponse {
   ok: boolean;
   articles: WireArticle[];
   desks: Desk[];
+  heat: HeatItem[];
 }
 
 function timeAgo(iso: string): string {
@@ -144,6 +154,33 @@ function NewsDeskPage() {
             News Desk <span className="text-muted-foreground">· 48h wire</span>
           </h1>
         </div>
+
+        {/* Company heat — the listed names the wire is talking about */}
+        {data && data.heat.length > 0 && (
+          <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label="Most covered companies, last 24 hours">
+            <span className="mr-1 inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+              <Flame className="h-3 w-3 text-amber-500" aria-hidden /> News heat
+            </span>
+            {data.heat.map((h) => (
+              <Link
+                key={h.ticker}
+                to="/stocks/$ticker"
+                params={{ ticker: h.ticker }}
+                title={`${h.name} — ${h.count24h} stories in 24h${h.surging && h.surgeRatio != null ? `, surging ${h.surgeRatio.toFixed(1)}×` : ""}${h.tilt ? `, 7-day tilt ${h.tilt}` : ""}`}
+                className="inline-flex items-center gap-1.5 rounded border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <span className="font-bold text-foreground">{h.ticker.replace(/\.(JO|NSE|NGX|GSE|DSE|USE|LUSE|ZSE|BSE|MSE|SEM|VFEX)$/, "")}</span>
+                <span className="num">{h.count24h}</span>
+                {h.surging && h.surgeRatio != null && (
+                  <span className="font-bold text-amber-500">{h.surgeRatio.toFixed(1)}×</span>
+                )}
+                {h.tilt === "positive" && <span className="text-success" aria-label="positive tilt">▲</span>}
+                {h.tilt === "negative" && <span className="text-red-500" aria-label="negative tilt">▼</span>}
+                {h.tilt === "mixed" && <span className="text-muted-foreground" aria-label="mixed tilt">◆</span>}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* Desk chips */}
         <div className="mb-2 flex flex-wrap items-center gap-2" role="tablist" aria-label="News desks">

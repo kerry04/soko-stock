@@ -9,16 +9,22 @@
 
 export type HeadlineEvent =
   | "profit-warning"
+  | "management"
+  | "enforcement"
   | "dividend"
   | "results"
   | "corporate-action"
+  | "contract"
   | "policy";
 
 export const HEADLINE_EVENT_LABELS: Record<HeadlineEvent, string> = {
   "profit-warning": "Profit warning",
+  management: "Management",
+  enforcement: "Enforcement",
   dividend: "Dividend",
   results: "Results",
   "corporate-action": "Corporate action",
+  contract: "Contract win",
   policy: "Policy & regulation",
 };
 
@@ -32,6 +38,43 @@ const RULES: Array<[HeadlineEvent, string[]]> = [
       "issues warning",
       "warns of",
       "warning on profit",
+    ],
+  ],
+  [
+    "management",
+    [
+      "appoints",
+      "appointed as",
+      "names new",
+      "new chief executive",
+      "new ceo",
+      "acting ceo",
+      "resigns",
+      "resignation",
+      "steps down",
+      "stepping down",
+      "ousted",
+      "sacks",
+      "board appoints",
+    ],
+  ],
+  [
+    "enforcement",
+    [
+      "fined",
+      "fines",
+      "penalty of",
+      "sued",
+      "lawsuit",
+      "court orders",
+      "probe into",
+      "investigates",
+      "fraud",
+      "graft",
+      "licence revoked",
+      "license revoked",
+      "charged with",
+      "arrested over",
     ],
   ],
   [
@@ -95,6 +138,25 @@ const RULES: Array<[HeadlineEvent, string[]]> = [
       "stake in",
       "sells stake",
       "buys stake",
+    ],
+  ],
+  [
+    "contract",
+    [
+      "wins contract",
+      "awarded contract",
+      "awards contract",
+      "awarded tender",
+      "awards tender",
+      "tender award",
+      "wins tender",
+      "secures contract",
+      "bags contract",
+      "signs deal",
+      "inks deal",
+      "deal to build",
+      "deal to supply",
+      "contract worth",
     ],
   ],
   [

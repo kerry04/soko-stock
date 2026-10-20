@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { isMarketRelevant } from "@/lib/news/relevance";
 
 /**
  * News-signal engine (Phase 4). All matching and counting is server-side,
@@ -148,7 +149,7 @@ export const SURGE_MIN_ARTICLES = 3;
 export const SURGE_MIN_RATIO = 3;
 export { median };
 
-function tiltOf(articles: NewsArticle[]): SentimentTilt {
+export function tiltOf(articles: NewsArticle[]): SentimentTilt {
   let pos = 0,
     neg = 0,
     neu = 0,
@@ -209,7 +210,7 @@ export async function getNewsSignals(
   const day7 = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
 
   // PostgREST caps a single response at 1000 rows — paginate the window.
-  const articles: NewsArticle[] = [];
+  let articles: NewsArticle[] = [];
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await client()
@@ -222,6 +223,9 @@ export async function getNewsSignals(
     articles.push(...((data ?? []) as NewsArticle[]));
     if ((data ?? []).length < PAGE) break;
   }
+
+  // A brand mention in an entertainment story is not a news signal.
+  articles = articles.filter((a) => isMarketRelevant(a.title));
 
   // Day buckets: index 0 = oldest day, index 29 = today.
   const dayIndexFor = (iso: string) => dayIndex(iso, WINDOW_DAYS);

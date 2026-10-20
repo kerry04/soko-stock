@@ -1,5 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
+import { isMarketRelevant } from "@/lib/news/relevance";
+import { EXCHANGES } from "@/lib/stocks/exchanges";
+import { getDBBoard } from "@/lib/stocks/boards-db.server";
+import { getExchangeBoardRows } from "@/lib/stocks/board-rows.server";
 import {
+  compileMatchers,
+  stockKeywords,
+  tiltOf,
+  titleMatches,
   dayIndex,
   median,
   SURGE_MIN_ARTICLES,
@@ -106,10 +114,24 @@ export interface DeskResult {
   articles: NewsArticle[];
 }
 
+export interface HeatItem {
+  ticker: string;
+  name: string;
+  /** Stories in the last 24h mentioning this company. */
+  count24h: number;
+  /** count24h ÷ 30-day daily median — set only when surging. */
+  surgeRatio: number | null;
+  surging: boolean;
+  /** 7-day headline sentiment tilt. */
+  tilt: "positive" | "negative" | "mixed" | null;
+}
+
 export interface NewsWireResult {
   /** Newest first, last 48 hours (cap 150). */
   articles: NewsArticle[];
   desks: DeskResult[];
+  /** Most-covered listed companies in the last 24h (top 8). */
+  heat: HeatItem[];
   asOf: string;
 }
 
@@ -132,8 +154,9 @@ export async function getNewsWire(): Promise<NewsWireResult> {
   const since = new Date(Date.now() - WINDOW_DAYS * 86400 * 1000).toISOString();
   const wireSince = new Date(Date.now() - WIRE_HOURS * 3600 * 1000).toISOString();
   const day24 = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+  const day7 = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
 
-  const all: NewsArticle[] = [];
+  let all: NewsArticle[] = [];
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await client()
@@ -146,6 +169,9 @@ export async function getNewsWire(): Promise<NewsWireResult> {
     all.push(...((data ?? []) as NewsArticle[]));
     if ((data ?? []).length < PAGE) break;
   }
+
+  // Terminal read of the shared firehose: market-moving stories only.
+  all = all.filter((a) => isMarketRelevant(a.title));
 
   const desks: DeskResult[] = DESKS.map((desk) => {
     const matched = all.filter((a) => desk.patterns.some((re) => re.test(a.title)));
@@ -170,9 +196,56 @@ export async function getNewsWire(): Promise<NewsWireResult> {
     };
   });
 
+  // Company heat over the same filtered window: which listed names the
+  // wire is actually talking about, with surge + sentiment context.
+  const companies: { ticker: string; name: string }[] = [];
+  for (const ex of EXCHANGES) {
+    if (ex.source !== "africanfinancials" || ex.status !== "live") continue;
+    try {
+      const rows = await getDBBoard(ex.id);
+      for (const r of rows) companies.push({ ticker: r.ticker, name: r.name });
+    } catch {
+      /* heat is enrichment — a failed board never breaks the wire */
+    }
+  }
+  try {
+    const jse = await getExchangeBoardRows("JSE");
+    for (const r of jse.rows) companies.push({ ticker: r.ticker, name: r.name });
+  } catch {
+    /* enrichment only */
+  }
+
+  const heat: HeatItem[] = companies
+    .map((c) => {
+      const matchers = compileMatchers(stockKeywords(c.name));
+      const matched = all.filter((a) => titleMatches(a.title, matchers));
+      const count24h = matched.filter((a) => a.published_at >= day24).length;
+      if (count24h === 0) return null;
+      const dailyCounts = new Array<number>(WINDOW_DAYS).fill(0);
+      for (const a of matched) {
+        const i = dayIndex(a.published_at, WINDOW_DAYS);
+        if (i >= 0 && i < WINDOW_DAYS) dailyCounts[i]++;
+      }
+      const medianDaily = median(dailyCounts);
+      const ratio = count24h / Math.max(medianDaily, 1);
+      const surging = count24h >= SURGE_MIN_ARTICLES && ratio >= SURGE_MIN_RATIO;
+      return {
+        ticker: c.ticker,
+        name: c.name,
+        count24h,
+        surgeRatio: surging ? Math.round(ratio * 10) / 10 : null,
+        surging,
+        tilt: tiltOf(matched.filter((a) => a.published_at >= day7)).tilt,
+      } satisfies HeatItem;
+    })
+    .filter((h): h is HeatItem => h != null)
+    .sort((a, b) => b.count24h - a.count24h || (b.surgeRatio ?? 0) - (a.surgeRatio ?? 0))
+    .slice(0, 8);
+
   const result: NewsWireResult = {
     articles: all.filter((a) => a.published_at >= wireSince).slice(0, 150),
     desks,
+    heat,
     asOf: new Date().toISOString(),
   };
   cache = { at: Date.now(), result };

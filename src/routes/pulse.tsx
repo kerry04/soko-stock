@@ -16,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { BandChip, type BandState } from "@/components/macro/BandChip";
+import { isMarketRelevant } from "@/lib/news/relevance";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pulse")({
@@ -175,7 +176,7 @@ function PulsePage() {
           .eq("processed", true)
           .gte("published_at", d24)
           .order("published_at", { ascending: false })
-          .limit(10),
+          .limit(40),
         fetch("/api/stocks/news-signals?exchange=JSE").then((r) =>
           r.ok ? r.json() : null,
         ),
@@ -310,7 +311,11 @@ function PulsePage() {
 
       if (!cancelled) {
         setFeed(items);
-        setStories((sRes.data ?? []) as Story[]);
+        setStories(
+          ((sRes.data ?? []) as Story[])
+            .filter((s) => isMarketRelevant(s.title))
+            .slice(0, 10),
+        );
         setMovers(computedMovers);
         setAsOf(new Date());
         setLoading(false);

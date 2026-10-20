@@ -33,3 +33,21 @@ describe("classifyHeadline", () => {
     expect(classifyHeadline("Harambee Stars name squad for AFCON qualifiers")).toBeNull();
   });
 });
+
+describe("classifyHeadline — expanded taxonomy", () => {
+  it("classifies management changes above results noise", () => {
+    expect(classifyHeadline("Safaricom appoints new chief executive")).toBe("management");
+    expect(classifyHeadline("KCB Group CEO resigns after two years")).toBe("management");
+    expect(classifyHeadline("Board appoints acting CEO as profit dips")).toBe("management");
+  });
+
+  it("classifies enforcement", () => {
+    expect(classifyHeadline("CMA fines broker Sh10m over market abuse")).toBe("enforcement");
+    expect(classifyHeadline("EACC probes graft at county water firm")).toBe("enforcement");
+  });
+
+  it("classifies contract wins", () => {
+    expect(classifyHeadline("Bamburi wins contract to supply cement for expressway")).toBe("contract");
+    expect(classifyHeadline("Kenya Power awards tender for smart meters")).toBe("contract");
+  });
+});
