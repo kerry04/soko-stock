@@ -9,41 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WatchlistRouteImport } from './routes/watchlist'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as PulseRouteImport } from './routes/pulse'
-import { Route as PortfolioRouteImport } from './routes/portfolio'
-import { Route as MapRouteImport } from './routes/map'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MapRouteImport } from './routes/map'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as PulseRouteImport } from './routes/pulse'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as StocksTickerRouteImport } from './routes/stocks.$ticker'
-import { Route as ApiStocksQuoteRouteImport } from './routes/api/stocks/quote'
-import { Route as ApiStocksNewsSignalsRouteImport } from './routes/api/stocks/news-signals'
-import { Route as ApiStocksBoardRouteImport } from './routes/api/stocks/board'
-import { Route as ApiPaperPortfolioRouteImport } from './routes/api/paper/portfolio'
 import { Route as ApiPaperOrdersRouteImport } from './routes/api/paper/orders'
-import { Route as ApiPublicHooksSignalsRouteImport } from './routes/api/public/hooks/signals'
-import { Route as ApiPublicHooksScrapeNewsRouteImport } from './routes/api/public/hooks/scrape-news'
-import { Route as ApiPublicHooksComputeTrendsRouteImport } from './routes/api/public/hooks/compute-trends'
+import { Route as ApiPaperPortfolioRouteImport } from './routes/api/paper/portfolio'
+import { Route as ApiStocksBoardRouteImport } from './routes/api/stocks/board'
+import { Route as ApiStocksNewsSignalsRouteImport } from './routes/api/stocks/news-signals'
+import { Route as ApiStocksQuoteRouteImport } from './routes/api/stocks/quote'
 import { Route as ApiPublicHooksAnalyzeSentimentRouteImport } from './routes/api/public/hooks/analyze-sentiment'
+import { Route as ApiPublicHooksComputeTrendsRouteImport } from './routes/api/public/hooks/compute-trends'
+import { Route as ApiPublicHooksScrapeNewsRouteImport } from './routes/api/public/hooks/scrape-news'
+import { Route as ApiPublicHooksSignalsRouteImport } from './routes/api/public/hooks/signals'
 
-const WatchlistRoute = WatchlistRouteImport.update({
-  id: '/watchlist',
-  path: '/watchlist',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PulseRoute = PulseRouteImport.update({
-  id: '/pulse',
-  path: '/pulse',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PortfolioRoute = PortfolioRouteImport.update({
-  id: '/portfolio',
-  path: '/portfolio',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapRoute = MapRouteImport.update({
@@ -51,9 +36,24 @@ const MapRoute = MapRouteImport.update({
   path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PulseRoute = PulseRouteImport.update({
+  id: '/pulse',
+  path: '/pulse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WatchlistRoute = WatchlistRouteImport.update({
+  id: '/watchlist',
+  path: '/watchlist',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StocksTickerRoute = StocksTickerRouteImport.update({
@@ -61,19 +61,9 @@ const StocksTickerRoute = StocksTickerRouteImport.update({
   path: '/stocks/$ticker',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiStocksQuoteRoute = ApiStocksQuoteRouteImport.update({
-  id: '/api/stocks/quote',
-  path: '/api/stocks/quote',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiStocksNewsSignalsRoute = ApiStocksNewsSignalsRouteImport.update({
-  id: '/api/stocks/news-signals',
-  path: '/api/stocks/news-signals',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiStocksBoardRoute = ApiStocksBoardRouteImport.update({
-  id: '/api/stocks/board',
-  path: '/api/stocks/board',
+const ApiPaperOrdersRoute = ApiPaperOrdersRouteImport.update({
+  id: '/api/paper/orders',
+  path: '/api/paper/orders',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPaperPortfolioRoute = ApiPaperPortfolioRouteImport.update({
@@ -81,20 +71,25 @@ const ApiPaperPortfolioRoute = ApiPaperPortfolioRouteImport.update({
   path: '/api/paper/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPaperOrdersRoute = ApiPaperOrdersRouteImport.update({
-  id: '/api/paper/orders',
-  path: '/api/paper/orders',
+const ApiStocksBoardRoute = ApiStocksBoardRouteImport.update({
+  id: '/api/stocks/board',
+  path: '/api/stocks/board',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksSignalsRoute = ApiPublicHooksSignalsRouteImport.update({
-  id: '/api/public/hooks/signals',
-  path: '/api/public/hooks/signals',
+const ApiStocksNewsSignalsRoute = ApiStocksNewsSignalsRouteImport.update({
+  id: '/api/stocks/news-signals',
+  path: '/api/stocks/news-signals',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicHooksScrapeNewsRoute =
-  ApiPublicHooksScrapeNewsRouteImport.update({
-    id: '/api/public/hooks/scrape-news',
-    path: '/api/public/hooks/scrape-news',
+const ApiStocksQuoteRoute = ApiStocksQuoteRouteImport.update({
+  id: '/api/stocks/quote',
+  path: '/api/stocks/quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksAnalyzeSentimentRoute =
+  ApiPublicHooksAnalyzeSentimentRouteImport.update({
+    id: '/api/public/hooks/analyze-sentiment',
+    path: '/api/public/hooks/analyze-sentiment',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksComputeTrendsRoute =
@@ -103,12 +98,17 @@ const ApiPublicHooksComputeTrendsRoute =
     path: '/api/public/hooks/compute-trends',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksAnalyzeSentimentRoute =
-  ApiPublicHooksAnalyzeSentimentRouteImport.update({
-    id: '/api/public/hooks/analyze-sentiment',
-    path: '/api/public/hooks/analyze-sentiment',
+const ApiPublicHooksScrapeNewsRoute =
+  ApiPublicHooksScrapeNewsRouteImport.update({
+    id: '/api/public/hooks/scrape-news',
+    path: '/api/public/hooks/scrape-news',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicHooksSignalsRoute = ApiPublicHooksSignalsRouteImport.update({
+  id: '/api/public/hooks/signals',
+  path: '/api/public/hooks/signals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -243,32 +243,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/watchlist': {
-      id: '/watchlist'
-      path: '/watchlist'
-      fullPath: '/watchlist'
-      preLoaderRoute: typeof WatchlistRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pulse': {
-      id: '/pulse'
-      path: '/pulse'
-      fullPath: '/pulse'
-      preLoaderRoute: typeof PulseRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/portfolio': {
-      id: '/portfolio'
-      path: '/portfolio'
-      fullPath: '/portfolio'
-      preLoaderRoute: typeof PortfolioRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/map': {
@@ -278,11 +257,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pulse': {
+      id: '/pulse'
+      path: '/pulse'
+      fullPath: '/pulse'
+      preLoaderRoute: typeof PulseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/watchlist': {
+      id: '/watchlist'
+      path: '/watchlist'
+      fullPath: '/watchlist'
+      preLoaderRoute: typeof WatchlistRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/stocks/$ticker': {
@@ -292,25 +292,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StocksTickerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/stocks/quote': {
-      id: '/api/stocks/quote'
-      path: '/api/stocks/quote'
-      fullPath: '/api/stocks/quote'
-      preLoaderRoute: typeof ApiStocksQuoteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/stocks/news-signals': {
-      id: '/api/stocks/news-signals'
-      path: '/api/stocks/news-signals'
-      fullPath: '/api/stocks/news-signals'
-      preLoaderRoute: typeof ApiStocksNewsSignalsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/stocks/board': {
-      id: '/api/stocks/board'
-      path: '/api/stocks/board'
-      fullPath: '/api/stocks/board'
-      preLoaderRoute: typeof ApiStocksBoardRouteImport
+    '/api/paper/orders': {
+      id: '/api/paper/orders'
+      path: '/api/paper/orders'
+      fullPath: '/api/paper/orders'
+      preLoaderRoute: typeof ApiPaperOrdersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/paper/portfolio': {
@@ -320,25 +306,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPaperPortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/paper/orders': {
-      id: '/api/paper/orders'
-      path: '/api/paper/orders'
-      fullPath: '/api/paper/orders'
-      preLoaderRoute: typeof ApiPaperOrdersRouteImport
+    '/api/stocks/board': {
+      id: '/api/stocks/board'
+      path: '/api/stocks/board'
+      fullPath: '/api/stocks/board'
+      preLoaderRoute: typeof ApiStocksBoardRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/signals': {
-      id: '/api/public/hooks/signals'
-      path: '/api/public/hooks/signals'
-      fullPath: '/api/public/hooks/signals'
-      preLoaderRoute: typeof ApiPublicHooksSignalsRouteImport
+    '/api/stocks/news-signals': {
+      id: '/api/stocks/news-signals'
+      path: '/api/stocks/news-signals'
+      fullPath: '/api/stocks/news-signals'
+      preLoaderRoute: typeof ApiStocksNewsSignalsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/scrape-news': {
-      id: '/api/public/hooks/scrape-news'
-      path: '/api/public/hooks/scrape-news'
-      fullPath: '/api/public/hooks/scrape-news'
-      preLoaderRoute: typeof ApiPublicHooksScrapeNewsRouteImport
+    '/api/stocks/quote': {
+      id: '/api/stocks/quote'
+      path: '/api/stocks/quote'
+      fullPath: '/api/stocks/quote'
+      preLoaderRoute: typeof ApiStocksQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/analyze-sentiment': {
+      id: '/api/public/hooks/analyze-sentiment'
+      path: '/api/public/hooks/analyze-sentiment'
+      fullPath: '/api/public/hooks/analyze-sentiment'
+      preLoaderRoute: typeof ApiPublicHooksAnalyzeSentimentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/compute-trends': {
@@ -348,11 +341,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksComputeTrendsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/analyze-sentiment': {
-      id: '/api/public/hooks/analyze-sentiment'
-      path: '/api/public/hooks/analyze-sentiment'
-      fullPath: '/api/public/hooks/analyze-sentiment'
-      preLoaderRoute: typeof ApiPublicHooksAnalyzeSentimentRouteImport
+    '/api/public/hooks/scrape-news': {
+      id: '/api/public/hooks/scrape-news'
+      path: '/api/public/hooks/scrape-news'
+      fullPath: '/api/public/hooks/scrape-news'
+      preLoaderRoute: typeof ApiPublicHooksScrapeNewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/signals': {
+      id: '/api/public/hooks/signals'
+      path: '/api/public/hooks/signals'
+      fullPath: '/api/public/hooks/signals'
+      preLoaderRoute: typeof ApiPublicHooksSignalsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
