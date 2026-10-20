@@ -9,6 +9,7 @@ import {
   Star,
 } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { TradeTicket } from "@/components/paper/TradeTicket";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
@@ -782,6 +783,16 @@ function StockDetail() {
                 </div>
               )
             )}
+
+            <TradeTicket
+              ticker={ticker}
+              price={quote.price}
+              currencySymbol={sym}
+              eod={!hasHistory}
+              asOf={quote.asOf}
+              eodLabel={quote.extras?.updated ?? null}
+              timeNote={quote.timeNote}
+            />
 
             <SignalWire signal={news} updatedAt={newsAt} name={quote.name} />
 
