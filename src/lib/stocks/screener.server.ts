@@ -13,6 +13,7 @@ import { getNewsSignals } from "@/lib/stocks/news-signals.server";
 export type ScreenId =
   | "gainers"
   | "losers"
+  | "limit-hits"
   | "52wk-high"
   | "52wk-low"
   | "rsi-oversold"
@@ -37,19 +38,21 @@ export const SCREENS: ScreenDef[] = [
   { id: "rsi-overbought", label: "RSI overbought", hint: "RSI ≥ 70" },
   { id: "gainers", label: "Big gainers", hint: "Day change ≥ +2%" },
   { id: "losers", label: "Big losers", hint: "Day change ≤ −2%" },
+  { id: "limit-hits", label: "Limit hits", hint: "At the exchange's daily price band" },
   { id: "uptrend", label: "Above 50-day", hint: "Price above the 50-day average" },
   { id: "downtrend", label: "Below 50-day", hint: "Price below the 50-day average" },
 ];
 
 type RowLike = Pick<
   BoardRow,
-  "price" | "changePercent" | "wk52High" | "wk52Low" | "rsi" | "aboveSma50" | "relVolume" | "newsSurge"
+  "price" | "changePercent" | "wk52High" | "wk52Low" | "rsi" | "aboveSma50" | "relVolume" | "newsSurge" | "limitHit"
 >;
 
 /** Screen predicates — the single source the server counts with. */
 export const SCREEN_MATCHERS: Record<ScreenId, (r: RowLike) => boolean> = {
   gainers: (r) => r.changePercent != null && r.changePercent >= 2,
   losers: (r) => r.changePercent != null && r.changePercent <= -2,
+  "limit-hits": (r) => r.limitHit != null,
   "52wk-high": (r) => r.wk52High != null && r.price >= 0.99 * r.wk52High,
   "52wk-low": (r) => r.wk52Low != null && r.price <= 1.01 * r.wk52Low,
   "rsi-oversold": (r) => r.rsi != null && r.rsi <= 30,

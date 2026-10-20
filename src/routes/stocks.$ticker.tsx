@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { TradeTicket } from "@/components/paper/TradeTicket";
+import { EventBadge } from "@/components/stocks/badges";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
@@ -424,8 +425,11 @@ function SignalWire({
                     aria-hidden
                   />
                 </a>
-                <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                  {n.source} · {timeAgo(n.published_at)}
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                  <span>
+                    {n.source} · {timeAgo(n.published_at)}
+                  </span>
+                  <EventBadge title={n.title} className="normal-case tracking-[0.1em]" />
                 </p>
               </div>
             </li>

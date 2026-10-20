@@ -39,6 +39,8 @@ interface BoardRow {
   relVolume: number | null;
   /** 24h news volume ÷ 30-day daily median, when surging (≥3×, ≥3 articles). */
   newsSurge: number | null;
+  /** Set when the day's move has reached the exchange's daily price band. */
+  limitHit: "up" | "down" | null;
   asOf: string;
 }
 
@@ -70,7 +72,22 @@ function fmtCompactValue(v: number, sym: string): string {
  * EOD-only listings carry no history, so they get no badge.
  */
 function RowBadge({ row }: { row: BoardRow }) {
-  const { price, wk52High, wk52Low, rsi, aboveSma50, relVolume, newsSurge } = row;
+  const { price, wk52High, wk52Low, rsi, aboveSma50, relVolume, newsSurge, limitHit } = row;
+
+  // A limit hit is the day's defining fact — it outranks every other badge.
+  if (limitHit) {
+    return (
+      <span
+        title={limitHit === "up" ? "At the daily limit up" : "At the daily limit down"}
+        className={cn(
+          "ml-2 inline-block rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
+          limitHit === "up" ? "bg-success/15 text-success" : "bg-red-500/15 text-red-500",
+        )}
+      >
+        Limit {limitHit === "up" ? "↑" : "↓"}
+      </span>
+    );
+  }
 
   if (wk52High != null && wk52Low != null && wk52High > 0) {
     let label: string | null = null;

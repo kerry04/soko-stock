@@ -60,6 +60,38 @@ export const DESKS: DeskDef[] = [
     hint: "Tea, coffee, maize, sugar, food prices",
     patterns: [/\btea\b/i, /coffee/i, /maize/i, /sugar/i, /agricultur/i, /food\s+prices?/i, /drought/i],
   },
+  {
+    id: "results",
+    label: "Results & Dividends",
+    hint: "Earnings, profit warnings, dividend declarations — the event desk",
+    patterns: [
+      /dividend/i,
+      /profit\s+warning/i,
+      /net\s+profit/i,
+      /profit\s+after\s+tax/i,
+      /profit\s+(rises|jumps|surges|drops|falls|grows)/i,
+      /earnings\s+(rise|jump|fall|drop)/i,
+      /(half|full)[-\s]year\s+results/i,
+      /quarterly\s+results/i,
+      /posts\s+(a\s+)?(profit|loss)/i,
+      /loss\s+(widens|narrows)/i,
+    ],
+  },
+  {
+    id: "policy",
+    label: "Policy & Regulation",
+    hint: "CMA, regulators, treasury and market rules",
+    patterns: [
+      /capital\s+markets\s+authority/i,
+      /\bcma\b/i,
+      /regulat(or|ion|ory)/i,
+      /\btreasury\b/i,
+      /finance\s+bill/i,
+      /rate\s+(cut|hike)/i,
+      /\bsec\s+approves\b/i,
+      /gazette/i,
+    ],
+  },
 ];
 
 export interface DeskResult {

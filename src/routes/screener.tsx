@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus, SlidersHorizontal } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { LimitChip } from "@/components/stocks/badges";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/screener")({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/screener")({
 type ScreenId =
   | "gainers"
   | "losers"
+  | "limit-hits"
   | "52wk-high"
   | "52wk-low"
   | "rsi-oversold"
@@ -42,6 +44,7 @@ interface ScreenerRow {
   rsi: number | null;
   relVolume: number | null;
   newsSurge: number | null;
+  limitHit: "up" | "down" | null;
   screens: ScreenId[];
   asOf: string;
 }
@@ -239,7 +242,10 @@ function ScreenerPage() {
                       <td className="px-3 py-2 text-xs text-muted-foreground">{r.exchange}</td>
                       <td className="px-3 py-2 text-right">{fmtPrice(r.price, r.currencySymbol)}</td>
                       <td className="px-3 py-2 text-right">
-                        <Change v={r.changePercent} />
+                        <span className="inline-flex items-center gap-1.5">
+                          <Change v={r.changePercent} />
+                          {r.limitHit && <LimitChip hit={r.limitHit} />}
+                        </span>
                       </td>
                       <td className="px-3 py-2">
                         {pos == null ? (

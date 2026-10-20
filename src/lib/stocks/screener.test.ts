@@ -10,6 +10,7 @@ const base = {
   aboveSma50: null,
   relVolume: null,
   newsSurge: null,
+  limitHit: null,
 } satisfies Parameters<(typeof SCREEN_MATCHERS)["gainers"]>[0];
 
 describe("SCREEN_MATCHERS", () => {
@@ -56,3 +57,11 @@ type _RowCheck = Parameters<(typeof SCREEN_MATCHERS)["gainers"]>[0] extends Pick
   : never;
 const _check: _RowCheck = true;
 void _check;
+
+describe("limit-hits matcher", () => {
+  it("matches only rows carrying a limit flag", () => {
+    expect(SCREEN_MATCHERS["limit-hits"]({ ...base, limitHit: "up" })).toBe(true);
+    expect(SCREEN_MATCHERS["limit-hits"]({ ...base, limitHit: "down" })).toBe(true);
+    expect(SCREEN_MATCHERS["limit-hits"]({ ...base, limitHit: null })).toBe(false);
+  });
+});

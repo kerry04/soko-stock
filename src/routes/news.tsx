@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Flame, Newspaper } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { EventBadge } from "@/components/stocks/badges";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/news")({
@@ -86,8 +87,11 @@ function ArticleRow({ a }: { a: WireArticle }) {
         >
           {a.title}
         </a>
-        <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-          {a.source} · {timeAgo(a.published_at)}
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 font-mono text-[11px] text-muted-foreground">
+          <span>
+            {a.source} · {timeAgo(a.published_at)}
+          </span>
+          <EventBadge title={a.title} />
         </p>
       </div>
     </li>
