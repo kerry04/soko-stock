@@ -22,6 +22,8 @@ describe("isMarketRelevant — drops (real junk from the live wire)", () => {
     "NOCK Deputy Barnaba Korir among 25 sportmen and women honoured in Mashujaa celebrations",
     "\"We're hoping for the best\": Jaguar brings in NACADA to rehabilitate actor Onyi",
     "“Bora tuelewe”: Bungoma mum's cheeky graduation post for PP2 son amuses Kenyans",
+    "Ronaldo handed Sh38,000 fine, 30-day suspension after Portugal walkout",
+    "\"I'm 47 years fresh\": Ne-Yo lands in Kenya ahead of his first headline show",
   ];
   it.each(drops)("drops: %s", (t) => expect(isMarketRelevant(t)).toBe(false));
 });
@@ -42,6 +44,7 @@ describe("isMarketRelevant — keeps (market-moving or borderline)", () => {
     "MPs plan to stop election results livestreaming in legal change",
     "Ruto announces plan to scale up National Internship Programme to 50,000 slots",
     "EACC arrests county official over Sh12m graft",
+    "CMA fines broker Sh10m over market abuse",
     "Safaricom appoints new chief executive officer",
     "KCB issues profit warning as earnings fall",
     "Kenya races to upgrade stadiums ahead of AFCON 2027 — Sh9bn construction tender opens", // keep-gate wins: tender

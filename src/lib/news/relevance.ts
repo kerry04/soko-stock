@@ -40,8 +40,11 @@ const KEEP_PATTERNS: RegExp[] = [
   /power\s*(tariff|bills?|prices?)/i, /electricity/i,
   // Corporate & governance
   /\bceo\b/i, /appoint/i, /\bresign/i, /acqui/i, /merger/i, /takeover/i,
-  /graft/i, /corruption/i, /\beacc\b/i, /fraud/i, /\bfine[ds]?\b/i,
-  /regulat/i, /\bcma\b/i, /court\s*orders?/i,
+  /graft/i, /corruption/i, /\beacc\b/i, /fraud/i,
+  // A fine keeps a story only at corporate scale or from a regulator —
+  // a footballer's Sh38,000 disciplinary fine is sports news.
+  /(fine[ds]?|penalt\w+)\b[^.]{0,45}(million|billion|trillion)/i,
+  /regulat/i, /\bcma\b/i, /\bkra\b/i, /court\s*orders?/i,
   // Jobs & programmes
   /\bjobs?\b/i, /internship\s*programme/i, /employment/i, /salary|wages?/i,
   // Risk that moves markets
@@ -66,7 +69,7 @@ const DROP_PATTERNS: RegExp[] = [
   // Entertainment & showbiz
   /\bsinger\b/i, /\bmusician\b/i, /\brapper\b/i, /\bcomedian\b/i,
   /\bactress\b/i, /\bactor\b/i, /celebrity/i, /showbiz/i, /concert/i,
-  /\bvaping\b/i, /\bstage\b/i, /world\s*tour/i,
+  /headline\s+show/i, /\bvaping\b/i, /\bstage\b/i, /world\s*tour/i,
   // Sports
   /afcon/i, /world\s*cup/i, /premier\s*league/i, /champions\s*league/i,
   /stadium/i, /striker/i, /midfielder/i, /goalkeeper/i, /athlete/i,
