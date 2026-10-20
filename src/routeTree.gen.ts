@@ -10,19 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EconomyRouteImport } from './routes/economy'
 import { Route as MapRouteImport } from './routes/map'
+import { Route as NewsRouteImport } from './routes/news'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PulseRouteImport } from './routes/pulse'
+import { Route as ScreenerRouteImport } from './routes/screener'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as StocksTickerRouteImport } from './routes/stocks.$ticker'
+import { Route as ApiMacroOverviewRouteImport } from './routes/api/macro/overview'
 import { Route as ApiPaperOrdersRouteImport } from './routes/api/paper/orders'
 import { Route as ApiPaperPortfolioRouteImport } from './routes/api/paper/portfolio'
 import { Route as ApiStocksBoardRouteImport } from './routes/api/stocks/board'
 import { Route as ApiStocksNewsSignalsRouteImport } from './routes/api/stocks/news-signals'
+import { Route as ApiStocksNewsWireRouteImport } from './routes/api/stocks/news-wire'
 import { Route as ApiStocksQuoteRouteImport } from './routes/api/stocks/quote'
+import { Route as ApiStocksScreenerRouteImport } from './routes/api/stocks/screener'
 import { Route as ApiPublicHooksAnalyzeSentimentRouteImport } from './routes/api/public/hooks/analyze-sentiment'
 import { Route as ApiPublicHooksComputeTrendsRouteImport } from './routes/api/public/hooks/compute-trends'
+import { Route as ApiPublicHooksIngestMacroRouteImport } from './routes/api/public/hooks/ingest-macro'
 import { Route as ApiPublicHooksScrapeNewsRouteImport } from './routes/api/public/hooks/scrape-news'
 import { Route as ApiPublicHooksSignalsRouteImport } from './routes/api/public/hooks/signals'
 
@@ -31,9 +38,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EconomyRoute = EconomyRouteImport.update({
+  id: '/economy',
+  path: '/economy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MapRoute = MapRouteImport.update({
   id: '/map',
   path: '/map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortfolioRoute = PortfolioRouteImport.update({
@@ -44,6 +61,11 @@ const PortfolioRoute = PortfolioRouteImport.update({
 const PulseRoute = PulseRouteImport.update({
   id: '/pulse',
   path: '/pulse',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScreenerRoute = ScreenerRouteImport.update({
+  id: '/screener',
+  path: '/screener',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -59,6 +81,11 @@ const WatchlistRoute = WatchlistRouteImport.update({
 const StocksTickerRoute = StocksTickerRouteImport.update({
   id: '/stocks/$ticker',
   path: '/stocks/$ticker',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMacroOverviewRoute = ApiMacroOverviewRouteImport.update({
+  id: '/api/macro/overview',
+  path: '/api/macro/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPaperOrdersRoute = ApiPaperOrdersRouteImport.update({
@@ -81,9 +108,19 @@ const ApiStocksNewsSignalsRoute = ApiStocksNewsSignalsRouteImport.update({
   path: '/api/stocks/news-signals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStocksNewsWireRoute = ApiStocksNewsWireRouteImport.update({
+  id: '/api/stocks/news-wire',
+  path: '/api/stocks/news-wire',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStocksQuoteRoute = ApiStocksQuoteRouteImport.update({
   id: '/api/stocks/quote',
   path: '/api/stocks/quote',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStocksScreenerRoute = ApiStocksScreenerRouteImport.update({
+  id: '/api/stocks/screener',
+  path: '/api/stocks/screener',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicHooksAnalyzeSentimentRoute =
@@ -96,6 +133,12 @@ const ApiPublicHooksComputeTrendsRoute =
   ApiPublicHooksComputeTrendsRouteImport.update({
     id: '/api/public/hooks/compute-trends',
     path: '/api/public/hooks/compute-trends',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicHooksIngestMacroRoute =
+  ApiPublicHooksIngestMacroRouteImport.update({
+    id: '/api/public/hooks/ingest-macro',
+    path: '/api/public/hooks/ingest-macro',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicHooksScrapeNewsRoute =
@@ -112,56 +155,77 @@ const ApiPublicHooksSignalsRoute = ApiPublicHooksSignalsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/economy': typeof EconomyRoute
   '/map': typeof MapRoute
+  '/news': typeof NewsRoute
   '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
+  '/screener': typeof ScreenerRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
+  '/api/macro/overview': typeof ApiMacroOverviewRoute
   '/api/paper/orders': typeof ApiPaperOrdersRoute
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
+  '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
+  '/api/stocks/screener': typeof ApiStocksScreenerRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
+  '/api/public/hooks/ingest-macro': typeof ApiPublicHooksIngestMacroRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/economy': typeof EconomyRoute
   '/map': typeof MapRoute
+  '/news': typeof NewsRoute
   '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
+  '/screener': typeof ScreenerRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
+  '/api/macro/overview': typeof ApiMacroOverviewRoute
   '/api/paper/orders': typeof ApiPaperOrdersRoute
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
+  '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
+  '/api/stocks/screener': typeof ApiStocksScreenerRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
+  '/api/public/hooks/ingest-macro': typeof ApiPublicHooksIngestMacroRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/economy': typeof EconomyRoute
   '/map': typeof MapRoute
+  '/news': typeof NewsRoute
   '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
+  '/screener': typeof ScreenerRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
+  '/api/macro/overview': typeof ApiMacroOverviewRoute
   '/api/paper/orders': typeof ApiPaperOrdersRoute
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
+  '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
+  '/api/stocks/screener': typeof ApiStocksScreenerRoute
   '/api/public/hooks/analyze-sentiment': typeof ApiPublicHooksAnalyzeSentimentRoute
   '/api/public/hooks/compute-trends': typeof ApiPublicHooksComputeTrendsRoute
+  '/api/public/hooks/ingest-macro': typeof ApiPublicHooksIngestMacroRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
 }
@@ -169,74 +233,102 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/economy'
     | '/map'
+    | '/news'
     | '/portfolio'
     | '/pulse'
+    | '/screener'
     | '/terms'
     | '/watchlist'
     | '/stocks/$ticker'
+    | '/api/macro/overview'
     | '/api/paper/orders'
     | '/api/paper/portfolio'
     | '/api/stocks/board'
     | '/api/stocks/news-signals'
+    | '/api/stocks/news-wire'
     | '/api/stocks/quote'
+    | '/api/stocks/screener'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
+    | '/api/public/hooks/ingest-macro'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/economy'
     | '/map'
+    | '/news'
     | '/portfolio'
     | '/pulse'
+    | '/screener'
     | '/terms'
     | '/watchlist'
     | '/stocks/$ticker'
+    | '/api/macro/overview'
     | '/api/paper/orders'
     | '/api/paper/portfolio'
     | '/api/stocks/board'
     | '/api/stocks/news-signals'
+    | '/api/stocks/news-wire'
     | '/api/stocks/quote'
+    | '/api/stocks/screener'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
+    | '/api/public/hooks/ingest-macro'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
   id:
     | '__root__'
     | '/'
+    | '/economy'
     | '/map'
+    | '/news'
     | '/portfolio'
     | '/pulse'
+    | '/screener'
     | '/terms'
     | '/watchlist'
     | '/stocks/$ticker'
+    | '/api/macro/overview'
     | '/api/paper/orders'
     | '/api/paper/portfolio'
     | '/api/stocks/board'
     | '/api/stocks/news-signals'
+    | '/api/stocks/news-wire'
     | '/api/stocks/quote'
+    | '/api/stocks/screener'
     | '/api/public/hooks/analyze-sentiment'
     | '/api/public/hooks/compute-trends'
+    | '/api/public/hooks/ingest-macro'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EconomyRoute: typeof EconomyRoute
   MapRoute: typeof MapRoute
+  NewsRoute: typeof NewsRoute
   PortfolioRoute: typeof PortfolioRoute
   PulseRoute: typeof PulseRoute
+  ScreenerRoute: typeof ScreenerRoute
   TermsRoute: typeof TermsRoute
   WatchlistRoute: typeof WatchlistRoute
   StocksTickerRoute: typeof StocksTickerRoute
+  ApiMacroOverviewRoute: typeof ApiMacroOverviewRoute
   ApiPaperOrdersRoute: typeof ApiPaperOrdersRoute
   ApiPaperPortfolioRoute: typeof ApiPaperPortfolioRoute
   ApiStocksBoardRoute: typeof ApiStocksBoardRoute
   ApiStocksNewsSignalsRoute: typeof ApiStocksNewsSignalsRoute
+  ApiStocksNewsWireRoute: typeof ApiStocksNewsWireRoute
   ApiStocksQuoteRoute: typeof ApiStocksQuoteRoute
+  ApiStocksScreenerRoute: typeof ApiStocksScreenerRoute
   ApiPublicHooksAnalyzeSentimentRoute: typeof ApiPublicHooksAnalyzeSentimentRoute
   ApiPublicHooksComputeTrendsRoute: typeof ApiPublicHooksComputeTrendsRoute
+  ApiPublicHooksIngestMacroRoute: typeof ApiPublicHooksIngestMacroRoute
   ApiPublicHooksScrapeNewsRoute: typeof ApiPublicHooksScrapeNewsRoute
   ApiPublicHooksSignalsRoute: typeof ApiPublicHooksSignalsRoute
 }
@@ -250,11 +342,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/economy': {
+      id: '/economy'
+      path: '/economy'
+      fullPath: '/economy'
+      preLoaderRoute: typeof EconomyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/map': {
       id: '/map'
       path: '/map'
       fullPath: '/map'
       preLoaderRoute: typeof MapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portfolio': {
@@ -269,6 +375,13 @@ declare module '@tanstack/react-router' {
       path: '/pulse'
       fullPath: '/pulse'
       preLoaderRoute: typeof PulseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/screener': {
+      id: '/screener'
+      path: '/screener'
+      fullPath: '/screener'
+      preLoaderRoute: typeof ScreenerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -290,6 +403,13 @@ declare module '@tanstack/react-router' {
       path: '/stocks/$ticker'
       fullPath: '/stocks/$ticker'
       preLoaderRoute: typeof StocksTickerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/macro/overview': {
+      id: '/api/macro/overview'
+      path: '/api/macro/overview'
+      fullPath: '/api/macro/overview'
+      preLoaderRoute: typeof ApiMacroOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/paper/orders': {
@@ -320,11 +440,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStocksNewsSignalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stocks/news-wire': {
+      id: '/api/stocks/news-wire'
+      path: '/api/stocks/news-wire'
+      fullPath: '/api/stocks/news-wire'
+      preLoaderRoute: typeof ApiStocksNewsWireRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stocks/quote': {
       id: '/api/stocks/quote'
       path: '/api/stocks/quote'
       fullPath: '/api/stocks/quote'
       preLoaderRoute: typeof ApiStocksQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stocks/screener': {
+      id: '/api/stocks/screener'
+      path: '/api/stocks/screener'
+      fullPath: '/api/stocks/screener'
+      preLoaderRoute: typeof ApiStocksScreenerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/analyze-sentiment': {
@@ -339,6 +473,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/hooks/compute-trends'
       fullPath: '/api/public/hooks/compute-trends'
       preLoaderRoute: typeof ApiPublicHooksComputeTrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/ingest-macro': {
+      id: '/api/public/hooks/ingest-macro'
+      path: '/api/public/hooks/ingest-macro'
+      fullPath: '/api/public/hooks/ingest-macro'
+      preLoaderRoute: typeof ApiPublicHooksIngestMacroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/scrape-news': {
@@ -360,19 +501,26 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EconomyRoute: EconomyRoute,
   MapRoute: MapRoute,
+  NewsRoute: NewsRoute,
   PortfolioRoute: PortfolioRoute,
   PulseRoute: PulseRoute,
+  ScreenerRoute: ScreenerRoute,
   TermsRoute: TermsRoute,
   WatchlistRoute: WatchlistRoute,
   StocksTickerRoute: StocksTickerRoute,
+  ApiMacroOverviewRoute: ApiMacroOverviewRoute,
   ApiPaperOrdersRoute: ApiPaperOrdersRoute,
   ApiPaperPortfolioRoute: ApiPaperPortfolioRoute,
   ApiStocksBoardRoute: ApiStocksBoardRoute,
   ApiStocksNewsSignalsRoute: ApiStocksNewsSignalsRoute,
+  ApiStocksNewsWireRoute: ApiStocksNewsWireRoute,
   ApiStocksQuoteRoute: ApiStocksQuoteRoute,
+  ApiStocksScreenerRoute: ApiStocksScreenerRoute,
   ApiPublicHooksAnalyzeSentimentRoute: ApiPublicHooksAnalyzeSentimentRoute,
   ApiPublicHooksComputeTrendsRoute: ApiPublicHooksComputeTrendsRoute,
+  ApiPublicHooksIngestMacroRoute: ApiPublicHooksIngestMacroRoute,
   ApiPublicHooksScrapeNewsRoute: ApiPublicHooksScrapeNewsRoute,
   ApiPublicHooksSignalsRoute: ApiPublicHooksSignalsRoute,
 }
