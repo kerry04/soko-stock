@@ -43,3 +43,6 @@ supabase/.temp/
 *.sw?
 .vercel
 .env*
+
+__pycache__/
+*.tsbuildinfo

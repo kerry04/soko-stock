@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatPercent } from "@/lib/format";
 import worldDots from "@/data/world-dots.json";
 import { SIGNAL_COUNTRIES, type SignalCountry } from "@/lib/signal-countries";
+import { GlobeMap } from "./GlobeMap";
 
 interface WorldDotsData {
   cols: number;
@@ -142,6 +143,7 @@ export function SignalMap() {
   const [loading, setLoading] = useState(true);
   const [asOf, setAsOf] = useState<Date | null>(null);
   const [selected, setSelected] = useState<CountrySignal | null>(null);
+  const [view, setView] = useState<"globe" | "flat">("globe");
   const [hovered, setHovered] = useState<CountrySignal | null>(null);
   const [tipPos, setTipPos] = useState<{ x: number; y: number } | null>(null);
   const signalsRef = useRef<CountrySignal[]>([]);
@@ -371,8 +373,16 @@ export function SignalMap() {
 
   return (
     <div className="relative">
-      <div
-        ref={wrapRef}
+      {view === "globe" ? (
+        <GlobeMap
+          signals={signals}
+          selected={selected}
+          onSelect={setSelected}
+          onError={() => setView("flat")}
+        />
+      ) : (
+        <div
+          ref={wrapRef}
         className="relative w-full cursor-crosshair overflow-hidden rounded-xl border border-border/70 bg-card/30"
       >
         <canvas
@@ -417,7 +427,8 @@ export function SignalMap() {
             </span>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Legend / status strip */}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
@@ -435,7 +446,37 @@ export function SignalMap() {
         {asOf && (
           <span>as of {asOf.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
         )}
-        <span className="ml-auto hidden sm:inline">Click a lit country for headlines</span>
+        <span className="ml-auto inline-flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setView("globe")}
+            aria-pressed={view === "globe"}
+            className={`rounded border px-2 py-0.5 uppercase tracking-[0.14em] ${
+              view === "globe"
+                ? "border-success/50 bg-success/10 text-foreground"
+                : "border-border/70 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Globe
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("flat")}
+            aria-pressed={view === "flat"}
+            className={`rounded border px-2 py-0.5 uppercase tracking-[0.14em] ${
+              view === "flat"
+                ? "border-success/50 bg-success/10 text-foreground"
+                : "border-border/70 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Flat
+          </button>
+        </span>
+        <span className="hidden sm:inline">
+          {view === "globe"
+            ? "Drag to spin · click a lit country"
+            : "Click a lit country for headlines"}
+        </span>
       </div>
 
       {/* Country detail panel */}
