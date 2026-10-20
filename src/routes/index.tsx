@@ -41,6 +41,10 @@ interface BoardRow {
   newsSurge: number | null;
   /** Set when the day's move has reached the exchange's daily price band. */
   limitHit: "up" | "down" | null;
+  /** Liquidity tier within this board (value-traded quartiles). */
+  liquidity: "liquid" | "active" | "thin";
+  /** ≥5% move on a thin counter with no news surge behind it. */
+  speculation: boolean;
   asOf: string;
 }
 
@@ -72,7 +76,7 @@ function fmtCompactValue(v: number, sym: string): string {
  * EOD-only listings carry no history, so they get no badge.
  */
 function RowBadge({ row }: { row: BoardRow }) {
-  const { price, wk52High, wk52Low, rsi, aboveSma50, relVolume, newsSurge, limitHit } = row;
+  const { price, wk52High, wk52Low, rsi, aboveSma50, relVolume, newsSurge, limitHit, liquidity, speculation } = row;
 
   // A limit hit is the day's defining fact — it outranks every other badge.
   if (limitHit) {
@@ -85,6 +89,18 @@ function RowBadge({ row }: { row: BoardRow }) {
         )}
       >
         Limit {limitHit === "up" ? "↑" : "↓"}
+      </span>
+    );
+  }
+
+  // Speculation signature next: a big move with nothing underneath it.
+  if (speculation) {
+    return (
+      <span
+        title="Big move on thin trading with no matching news — classic speculation signature"
+        className="ml-2 inline-block rounded bg-warning/20 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-warning"
+      >
+        Spec?
       </span>
     );
   }
@@ -126,7 +142,9 @@ function RowBadge({ row }: { row: BoardRow }) {
   }
 
   // News surge is attention without a direction — blue, never green/red.
-  if (newsSurge != null) {
+  // Thin counters are gated out: on a name that barely trades, a surge
+  // ratio is arithmetic noise, not a signal.
+  if (newsSurge != null && liquidity !== "thin") {
     return (
       <span
         title={`News volume ${newsSurge.toFixed(1)}× the 30-day daily pace`}
@@ -137,8 +155,8 @@ function RowBadge({ row }: { row: BoardRow }) {
     );
   }
 
-  // Volume is attention, not direction — amber, never green/red.
-  if (relVolume != null && relVolume >= 2) {
+  // Volume is attention, not direction — amber, never green/red. Also gated on thin counters.
+  if (relVolume != null && relVolume >= 2 && liquidity !== "thin") {
     return (
       <span
         title={`Volume ${relVolume.toFixed(1)}× the 20-day average`}

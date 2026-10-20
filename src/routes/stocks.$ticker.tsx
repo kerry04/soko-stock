@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { TradeTicket } from "@/components/paper/TradeTicket";
-import { EventBadge } from "@/components/stocks/badges";
+import { EventBadge, LimitChip } from "@/components/stocks/badges";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
@@ -66,6 +66,12 @@ interface QuoteResponse {
   previousClose: number | null;
   change: number | null;
   changePercent: number | null;
+  /** Board-relative context: liquidity tier, speculation signature, limit hit. */
+  board?: {
+    liquidity: "liquid" | "active" | "thin";
+    speculation: boolean;
+    limitHit: "up" | "down" | null;
+  } | null;
   asOf: string;
   timeNote: string;
   bars: Bar[];
@@ -632,6 +638,11 @@ function StockDetail() {
                 <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                   {quote.ticker} · {exchange?.name ?? quote.exchange}
                 </p>
+                {quote.board?.limitHit && (
+                  <p className="mt-1.5">
+                    <LimitChip hit={quote.board.limitHit} />
+                  </p>
+                )}
               </div>
               <div className="text-right">
                 <p className="num font-mono text-3xl font-bold">
@@ -666,6 +677,19 @@ function StockDetail() {
                 <p className="mt-1 font-mono text-[10px] text-muted-foreground">{quote.timeNote}</p>
               </div>
             </div>
+
+            {quote.board?.speculation ? (
+              <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs leading-relaxed text-warning">
+                Speculation signature: a large move on thin trading with no matching news
+                behind it. Moves like this often reverse — the terminal flags them, it does
+                not chase them.
+              </p>
+            ) : quote.board?.liquidity === "thin" ? (
+              <p className="mt-3 font-mono text-[11px] text-muted-foreground">
+                Thin counter — this name trades lightly, so its signals are noisy and its
+                price can jump on a single order.
+              </p>
+            ) : null}
 
             {/* Range selector + chart, or EOD-only note */}
             {hasHistory ? (

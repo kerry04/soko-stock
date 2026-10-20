@@ -1,7 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { getDBQuote } from "@/lib/stocks/boards-db.server";
+import { getExchangeBoardRows } from "@/lib/stocks/board-rows.server";
 import { getQuote, getTechnicals } from "@/lib/stocks/yahoo.server";
+
+/** Board-relative context for one ticker (liquidity tier, speculation, limit) — best-effort. */
+async function boardContext(exchangeId: string, ticker: string) {
+  try {
+    const board = await getExchangeBoardRows(exchangeId);
+    const row = board.rows.find((r) => r.ticker === ticker);
+    return row
+      ? { liquidity: row.liquidity, speculation: row.speculation, limitHit: row.limitHit }
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 const ALLOWED_RANGES = new Set(["1mo", "3mo", "6mo", "1y", "2y", "5y"]);
 
@@ -47,6 +61,7 @@ export const Route = createFileRoute("/api/stocks/quote")({
             });
           }
           const price = Number(q.price);
+          const board = await boardContext(exchange.id, ticker);
           return new Response(
             JSON.stringify({
               ok: true,
@@ -55,6 +70,7 @@ export const Route = createFileRoute("/api/stocks/quote")({
               exchange: exchange.id,
               currencySymbol: exchange.currencySymbol,
               price,
+              board,
               previousClose: null,
               change: null,
               changePercent:
@@ -75,9 +91,10 @@ export const Route = createFileRoute("/api/stocks/quote")({
           );
         }
 
-        const [q, tech] = await Promise.all([
+        const [q, tech, board] = await Promise.all([
           getQuote(ticker, range, "1d"),
           getTechnicals(ticker),
+          boardContext(exchange.id, ticker),
         ]);
         if (!q) {
           return new Response(JSON.stringify({ ok: false, error: "quote unavailable" }), {
@@ -98,6 +115,7 @@ export const Route = createFileRoute("/api/stocks/quote")({
             change: q.change != null ? q.change / d : null,
             changePercent: q.changePercent,
             asOf: q.asOf,
+            board,
             timeNote: exchange.timeNote,
             bars: q.bars.map((b) => ({
               t: b.t,

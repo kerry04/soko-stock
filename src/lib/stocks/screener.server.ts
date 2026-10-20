@@ -1,5 +1,5 @@
 import { EXCHANGES } from "@/lib/stocks/exchanges";
-import { getExchangeBoardRows, type BoardRow } from "@/lib/stocks/board-rows.server";
+import { getExchangeBoardRows, isSpeculative, type BoardRow } from "@/lib/stocks/board-rows.server";
 import { getNewsSignals } from "@/lib/stocks/news-signals.server";
 
 /**
@@ -102,6 +102,8 @@ export async function getScreener(): Promise<ScreenerResult> {
         const byTicker = new Map(signals.map((s) => [s.ticker, s]));
         for (const r of board.rows) {
           r.newsSurge = byTicker.get(r.ticker)?.surgeRatio ?? null;
+          // News is final now — recompute the speculation signature.
+          r.speculation = isSpeculative(r);
         }
       } catch {
         /* enrichment only */
