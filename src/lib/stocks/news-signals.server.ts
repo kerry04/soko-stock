@@ -136,8 +136,17 @@ function median(xs: number[]): number {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
+/** Day-bucket index over a trailing window: 0 = oldest day, days−1 = today. */
+export function dayIndex(iso: string, days: number, now = new Date()): number {
+  const dayStart = new Date(now);
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const d = Math.floor((dayStart.getTime() - new Date(iso).getTime()) / 86400000);
+  return days - 1 - d;
+}
+
 export const SURGE_MIN_ARTICLES = 3;
 export const SURGE_MIN_RATIO = 3;
+export { median };
 
 function tiltOf(articles: NewsArticle[]): SentimentTilt {
   let pos = 0,
@@ -215,14 +224,7 @@ export async function getNewsSignals(
   }
 
   // Day buckets: index 0 = oldest day, index 29 = today.
-  const dayStart = new Date();
-  dayStart.setUTCHours(0, 0, 0, 0);
-  const dayIndex = (iso: string) => {
-    const d = Math.floor(
-      (dayStart.getTime() - new Date(iso).getTime()) / 86400000,
-    );
-    return WINDOW_DAYS - 1 - d;
-  };
+  const dayIndexFor = (iso: string) => dayIndex(iso, WINDOW_DAYS);
 
   const signals: TickerNewsSignal[] = tickers.map(({ ticker, name }) => {
     const keywords = stockKeywords(name);
@@ -231,7 +233,7 @@ export async function getNewsSignals(
 
     const dailyCounts = new Array<number>(WINDOW_DAYS).fill(0);
     for (const a of linked) {
-      const i = dayIndex(a.published_at);
+      const i = dayIndexFor(a.published_at);
       if (i >= 0 && i < WINDOW_DAYS) dailyCounts[i]++;
     }
     const count24h = linked.filter((a) => a.published_at >= day24).length;
