@@ -1,0 +1,1 @@
+{"crons":[{"path":"/api/public/hooks/ingest-macro","schedule":"0 4 * * *"}]}
