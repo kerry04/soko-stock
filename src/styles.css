@@ -257,6 +257,12 @@
 @utility bg-gradient-primary {
   background: var(--gradient-primary);
 }
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
 @utility shadow-glow {
   box-shadow: var(--shadow-glow);
 }

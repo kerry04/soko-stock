@@ -493,6 +493,50 @@ export function SignalMap() {
         </span>
       </div>
 
+      {/* Country rail — every lit country as a plain button. The reliable
+          way into the broadcast: 3D hit-testing on a spinning globe can
+          swallow clicks as drags, a button never does. */}
+      {signals.length > 0 && (
+        <div
+          className="scrollbar-none mt-3 flex gap-1.5 overflow-x-auto pb-1"
+          role="group"
+          aria-label="Countries with signal — open a broadcast"
+        >
+          {[...signals]
+            .sort((a, b) => b.articles.length - a.articles.length)
+            .map((s) => {
+              const isSel = selected?.country.id === s.country.id;
+              return (
+                <button
+                  key={s.country.id}
+                  type="button"
+                  aria-pressed={isSel}
+                  onClick={() =>
+                    setSelected((prev) => (prev?.country.id === s.country.id ? null : s))
+                  }
+                  className={`flex shrink-0 items-center gap-2 rounded-md border px-2.5 py-1.5 font-mono text-[11px] transition-colors ${
+                    isSel
+                      ? "border-primary/60 bg-primary/10 text-foreground"
+                      : "border-border/70 bg-card/40 text-muted-foreground hover:border-border hover:text-foreground"
+                  }`}
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${s.converging ? "bg-red-500" : "bg-success"} animate-pulse`}
+                    aria-hidden
+                  />
+                  <span className="font-bold uppercase tracking-[0.12em]">{s.country.name}</span>
+                  <span className="num text-muted-foreground">{s.articles.length} · 24h</span>
+                  {s.converging && (
+                    <span className="font-bold uppercase tracking-[0.12em] text-red-500">
+                      Converging
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+        </div>
+      )}
+
       {/* Country broadcast pop-up (click a lit country, either view) */}
       {selected && (
         <CountryBroadcast signal={selected} stocks={stocks} onClose={() => setSelected(null)} />
