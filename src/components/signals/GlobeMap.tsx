@@ -77,7 +77,7 @@ export function GlobeMap({
   signals: CountrySignal[];
   selected: CountrySignal | null;
   onSelect: (s: CountrySignal | null) => void;
-  onError: () => void;
+  onError: (message?: string) => void;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const globeRef = useRef<GlobeApi | null>(null);
@@ -85,35 +85,45 @@ export function GlobeMap({
   const signalsRef = useRef(signals);
   const selectedRef = useRef(selected);
   const onSelectRef = useRef(onSelect);
+  const onErrorRef = useRef(onError);
   signalsRef.current = signals;
   selectedRef.current = selected;
   onSelectRef.current = onSelect;
+  onErrorRef.current = onError;
   const [ready, setReady] = useState(false);
 
   // Build / update the polygon + ring layers from the live signals.
+  // Hard-wrapped: globe.gl applies data inside its own animation digest,
+  // so an accessor throw escapes the mount try/catch and would take the
+  // whole page down via the router error boundary. Any failure here must
+  // degrade to the flat map, never crash.
   const syncLayers = (globe: GlobeApi) => {
-    const sigs = signalsRef.current;
-    const maxScore = Math.max(1, ...sigs.map((s) => s.score));
-    const byId = new Map(sigs.map((s) => [s.country.id, s]));
-    const features = featuresRef.current.map((f) => ({
-      ...f,
-      signal: byId.get(String(f.id)) ?? null,
-    }));
-    featuresRef.current = features;
-    globe.polygonsData(features);
+    try {
+      const sigs = signalsRef.current;
+      const maxScore = Math.max(1, ...sigs.map((s) => s.score));
+      const byId = new Map(sigs.map((s) => [s.country.id, s]));
+      const features = featuresRef.current.map((f) => ({
+        ...f,
+        signal: byId.get(String(f.id)) ?? null,
+      }));
+      featuresRef.current = features;
+      globe.polygonsData(features);
 
-    const heat = (s: CountrySignal) => Math.min(1, s.score / maxScore);
-    const ringSignals = [
-      ...sigs.filter((s) => s.converging),
-      ...sigs.filter((s) => !s.converging),
-    ].slice(0, 6);
-    globe.ringsData(
-      ringSignals.map((s) => ({
-        ...centroidLatLng(s),
-        color: s.converging ? "rgba(239, 68, 68, 0.9)" : "rgba(34, 197, 94, 0.85)",
-        maxRadius: 3 + heat(s) * 5,
-      })),
-    );
+      const heat = (s: CountrySignal) => Math.min(1, s.score / maxScore);
+      const ringSignals = [
+        ...sigs.filter((s) => s.converging),
+        ...sigs.filter((s) => !s.converging),
+      ].slice(0, 6);
+      globe.ringsData(
+        ringSignals.map((s) => ({
+          ...centroidLatLng(s),
+          color: s.converging ? "rgba(239, 68, 68, 0.9)" : "rgba(34, 197, 94, 0.85)",
+          maxRadius: 3 + heat(s) * 5,
+        })),
+      );
+    } catch (e) {
+      onErrorRef.current(e instanceof Error ? e.message : String(e));
+    }
   };
 
   useEffect(() => {
@@ -121,6 +131,14 @@ export function GlobeMap({
     if (!wrap) return;
     let cancelled = false;
     let resumeTimer: ReturnType<typeof setTimeout> | undefined;
+
+    // Diagnostic + safety net: globe.gl digests data inside its own
+    // animation loop, so a throw there never reaches React. Surface the
+    // first one through the same fallback path instead of a dead page.
+    const onWindowError = (ev: ErrorEvent) => {
+      if (ev.message) onErrorRef.current(ev.message);
+    };
+    window.addEventListener("error", onWindowError);
 
     (async () => {
       try {
@@ -241,13 +259,16 @@ export function GlobeMap({
 
         syncLayers(globe);
         if (!cancelled) setReady(true);
-      } catch {
-        if (!cancelled) onError();
+      } catch (err) {
+        if (!cancelled) {
+          onErrorRef.current(err instanceof Error ? err.message : String(err));
+        }
       }
     })();
 
     return () => {
       cancelled = true;
+      window.removeEventListener("error", onWindowError);
       if (resumeTimer) clearTimeout(resumeTimer);
       const ro = (wrap as unknown as { __ro?: ResizeObserver }).__ro;
       ro?.disconnect();

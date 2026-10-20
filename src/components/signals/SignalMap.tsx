@@ -144,6 +144,7 @@ export function SignalMap() {
   const [asOf, setAsOf] = useState<Date | null>(null);
   const [selected, setSelected] = useState<CountrySignal | null>(null);
   const [view, setView] = useState<"globe" | "flat">("globe");
+  const [globeError, setGlobeError] = useState<string | null>(null);
   const [hovered, setHovered] = useState<CountrySignal | null>(null);
   const [tipPos, setTipPos] = useState<{ x: number; y: number } | null>(null);
   const signalsRef = useRef<CountrySignal[]>([]);
@@ -378,7 +379,10 @@ export function SignalMap() {
           signals={signals}
           selected={selected}
           onSelect={setSelected}
-          onError={() => setView("flat")}
+          onError={(msg) => {
+            setGlobeError(msg ?? "unknown globe error");
+            setView("flat");
+          }}
         />
       ) : (
         <div
@@ -437,6 +441,11 @@ export function SignalMap() {
           Live
         </span>
         <span>{signals.length} countries with signal</span>
+        {globeError && (
+          <span className="normal-case tracking-normal text-red-500">
+            globe unavailable ({globeError}) — showing flat map
+          </span>
+        )}
         {signals.some((s) => s.converging) && (
           <span className="inline-flex items-center gap-1.5 text-red-500">
             <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" aria-hidden />
