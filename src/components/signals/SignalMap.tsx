@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
-import { ExternalLink, Globe2, Radio } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatPercent } from "@/lib/format";
 import worldDots from "@/data/world-dots.json";
 import { SIGNAL_COUNTRIES, type SignalCountry } from "@/lib/signal-countries";
 import { GlobeMap } from "./GlobeMap";
+import { CountryBroadcast } from "./CountryBroadcast";
 
 interface WorldDotsData {
   cols: number;
@@ -16,7 +15,7 @@ interface WorldDotsData {
 
 const DOTS = worldDots as WorldDotsData;
 
-interface Article {
+export interface Article {
   id: string;
   title: string;
   url: string;
@@ -33,7 +32,7 @@ interface TrendRow {
   mentions_1h: number;
 }
 
-interface StockLink {
+export interface StockLink {
   ticker: string;
   name: string;
   price: number;
@@ -488,153 +487,10 @@ export function SignalMap() {
         </span>
       </div>
 
-      {/* Country detail panel */}
+      {/* Country broadcast pop-up (click a lit country, either view) */}
       {selected && (
-        <CountryPanel signal={selected} stocks={stocks} onClose={() => setSelected(null)} />
+        <CountryBroadcast signal={selected} stocks={stocks} onClose={() => setSelected(null)} />
       )}
     </div>
-  );
-}
-
-function CountryPanel({
-  signal,
-  stocks,
-  onClose,
-}: {
-  signal: CountrySignal;
-  stocks: StockLink[];
-  onClose: () => void;
-}) {
-  return (
-    <section
-      aria-label={`${signal.country.name} signals`}
-      className="mt-3 rounded-xl border border-border/70 bg-card/60 p-4 sm:p-5"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Globe2 className="h-4 w-4 text-success" aria-hidden />
-            <h3 className="font-mono text-sm font-bold uppercase tracking-[0.18em]">
-              {signal.country.name}
-            </h3>
-          </div>
-          <p className="num mt-1 font-mono text-[11px] text-muted-foreground">
-            {signal.articles.length} articles · 24h
-            {signal.velocity > 0 && ` · velocity +${signal.velocity.toFixed(1)}`}
-          </p>
-          <div className="mt-2 flex items-center gap-2">
-            <div
-              className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"
-              role="img"
-              aria-label={`Instability index ${signal.instability} of 100`}
-            >
-              <div
-                className={`h-full rounded-full ${
-                  signal.instability >= 60
-                    ? "bg-red-500"
-                    : signal.instability >= 30
-                      ? "bg-amber-500"
-                      : "bg-success"
-                }`}
-                style={{ width: `${signal.instability}%` }}
-              />
-            </div>
-            <span className="num font-mono text-[10px] text-muted-foreground">
-              instability {signal.instability}/100
-            </span>
-            {signal.converging && (
-              <span className="rounded-full bg-red-500/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-red-500 animate-pulse">
-                Converging
-              </span>
-            )}
-          </div>
-          {(signal.eventHits > 0 || signal.quakeHits > 0) && (
-            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-              {[
-                signal.eventHits > 0 ? `${signal.eventHits} unrest event${signal.eventHits > 1 ? "s" : ""}` : null,
-                signal.quakeHits > 0 ? `${signal.quakeHits} quake${signal.quakeHits > 1 ? "s" : ""} M≥4.5` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close panel"
-          className="rounded-md px-2 py-1 font-mono text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          ✕
-        </button>
-      </div>
-
-      {signal.articles.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No signals tracked here yet.</p>
-      ) : (
-        <ul className="mt-3 space-y-2.5">
-          {signal.articles.slice(0, 5).map((a) => (
-            <li key={a.id} className="group">
-              <a
-                href={a.url}
-                target="_blank"
-                rel="noreferrer"
-                className="block text-sm leading-snug text-foreground group-hover:underline"
-              >
-                {a.title}
-                <ExternalLink className="ml-1 inline h-3 w-3 text-muted-foreground" aria-hidden />
-              </a>
-              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                {a.source} · {timeAgo(a.published_at)}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {stocks.length > 0 && (
-        <div className="mt-4 border-t border-border/60 pt-4">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-            Listed in this region · biggest movers
-          </p>
-          <ul className="mt-2 space-y-2">
-            {stocks.map((s) => (
-              <li
-                key={s.ticker}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-background/60 px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium">{s.name}</p>
-                  <p className="num font-mono text-[11px] text-muted-foreground">
-                    {s.currencySymbol}
-                    {s.price.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    {s.changePercent != null && (
-                      <span className={s.changePercent >= 0 ? "text-success" : "text-red-500"}>
-                        {" "}
-                        {s.changePercent >= 0 ? "+" : ""}
-                        {s.changePercent.toFixed(2)}%
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <Link
-                  to="/stocks/$ticker"
-                  params={{ ticker: s.ticker }}
-                  className="shrink-0 rounded-md bg-success px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-success-foreground hover:bg-success/90"
-                >
-                  View
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {stocks.length === 0 && (
-        <p className="mt-4 flex items-center gap-2 border-t border-border/60 pt-4 font-mono text-[11px] text-muted-foreground">
-          <Radio className="h-3.5 w-3.5" aria-hidden />
-          No live exchange feed for this region yet.
-        </p>
-      )}
-    </section>
   );
 }
