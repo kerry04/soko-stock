@@ -74,6 +74,7 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
     const pages = TERMINAL_SECTIONS.map((s) => ({
       kind: "page" as const,
       label: s.label,
+      code: s.code,
       hint: s.hint,
       to: s.to,
     })).filter((p) => !q || p.label.toLowerCase().includes(q) || p.hint.toLowerCase().includes(q));
@@ -88,6 +89,7 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
             .map((s) => ({
               kind: "stock" as const,
               label: s.name,
+              code: "",
               hint: s.ticker,
               to: `/stocks/${s.ticker}`,
             }))
@@ -160,13 +162,15 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
                   i === cursor ? "bg-accent" : "bg-transparent",
                 )}
               >
-                {item.kind === "stock" ? (
-                  <CandlestickChart className="h-4 w-4 shrink-0 text-success" aria-hidden />
-                ) : (
-                  <span className="w-4 shrink-0 font-mono text-[10px] text-muted-foreground">
-                    ›
-                  </span>
-                )}
+                <span className="flex w-9 shrink-0 items-center">
+                  {item.kind === "stock" ? (
+                    <CandlestickChart className="h-4 w-4 text-success" aria-hidden />
+                  ) : (
+                    <span className="font-mono text-[9px] font-bold tracking-wider text-primary">
+                      {item.code}
+                    </span>
+                  )}
+                </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-foreground">{item.label}</span>
                   <span className="block truncate font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">

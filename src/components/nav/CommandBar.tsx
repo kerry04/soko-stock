@@ -1,6 +1,6 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/utils";
 import { TERMINAL_SECTIONS, isSectionActive } from "./terminal-nav";
@@ -19,9 +19,99 @@ export function StockBrand({ compact = false }: { compact?: boolean }) {
           compact ? "text-xs" : "text-sm",
         )}
       >
-        SOKO<span className="text-success">_STOCK</span>
+        SOKO<span className="text-primary">_STOCK</span>
       </span>
     </Link>
+  );
+}
+
+interface DirectoryEntry {
+  ticker: string;
+  name: string;
+  exchange: string;
+}
+
+/**
+ * Bloomberg-style command line: type a function code (ECO, MAP, SCRN…)
+ * or a ticker / company name and hit Enter. Tickers resolve against the
+ * full directory (all exchanges), loaded lazily on first focus. A query
+ * that matches nothing hands off to the ⌘K palette.
+ */
+function CommandLine({ onOpenPalette }: { onOpenPalette: () => void }) {
+  const navigate = useNavigate();
+  const [value, setValue] = useState("");
+  const [directory, setDirectory] = useState<DirectoryEntry[] | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const loadDirectory = () => {
+    if (directory) return;
+    fetch("/api/stocks/directory")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (j?.stocks) setDirectory(j.stocks as DirectoryEntry[]);
+      })
+      .catch(() => {});
+  };
+
+  const submit = () => {
+    const q = value.trim();
+    if (!q) return;
+    const upper = q.toUpperCase();
+    const section = TERMINAL_SECTIONS.find(
+      (s) => s.code === upper || s.label.toUpperCase() === upper,
+    );
+    if (section) {
+      setValue("");
+      inputRef.current?.blur();
+      navigate({ to: section.to });
+      return;
+    }
+    const base = (t: string) => t.split(".")[0].toUpperCase();
+    const dir = directory ?? [];
+    const hit =
+      dir.find((d) => d.ticker.toUpperCase() === upper || base(d.ticker) === upper) ??
+      dir.find((d) => base(d.ticker).startsWith(upper)) ??
+      dir.find((d) => d.name.toLowerCase().includes(q.toLowerCase()));
+    if (hit) {
+      setValue("");
+      inputRef.current?.blur();
+      navigate({ to: `/stocks/${hit.ticker}` });
+      return;
+    }
+    onOpenPalette();
+  };
+
+  return (
+    <form
+      role="search"
+      aria-label="Terminal command line"
+      className="hidden min-w-0 flex-1 items-center justify-center px-3 lg:flex"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
+      <div className="flex h-8 w-full max-w-sm items-center gap-2 rounded-md border border-border/70 bg-card/40 px-2.5 transition-colors focus-within:border-primary/60">
+        <span className="font-mono text-xs font-black text-primary" aria-hidden>
+          &gt;
+        </span>
+        <input
+          ref={inputRef}
+          value={value}
+          onFocus={loadDirectory}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") inputRef.current?.blur();
+          }}
+          placeholder="SCOM · ECO · MTN…"
+          aria-label="Command line: ticker or function code"
+          className="w-full bg-transparent font-mono text-[11px] uppercase tracking-[0.14em] text-foreground placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none"
+        />
+        <kbd className="shrink-0 rounded border border-border/70 bg-background px-1 font-mono text-[9px] text-muted-foreground">
+          ↵
+        </kbd>
+      </div>
+    </form>
   );
 }
 
@@ -59,14 +149,17 @@ export function CommandBar() {
                   aria-current={active ? "page" : undefined}
                   className={cn(
                     "relative rounded px-3 py-2 font-mono text-[11px] font-medium uppercase tracking-[0.18em] transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60",
-                    active ? "text-success" : "text-muted-foreground hover:text-foreground",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
+                  <span className="mr-1.5 hidden font-bold text-primary/80 xl:inline" aria-hidden>
+                    {s.code}
+                  </span>
                   {s.label}
                   {active && (
                     <span
-                      className="absolute inset-x-3 -bottom-[9px] h-0.5 bg-success"
+                      className="absolute inset-x-3 -bottom-[9px] h-0.5 bg-primary"
                       aria-hidden
                     />
                   )}
@@ -75,12 +168,14 @@ export function CommandBar() {
             })}
           </nav>
 
+          <CommandLine onOpenPalette={() => setPaletteOpen(true)} />
+
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
               aria-label="Quick switcher (Ctrl+K)"
-              className="hidden h-8 items-center gap-2 rounded-md border border-border/70 bg-card/40 px-2.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60 sm:inline-flex"
+              className="hidden h-8 items-center gap-2 rounded-md border border-border/70 bg-card/40 px-2.5 font-mono text-[11px] text-muted-foreground transition-colors hover:border-border hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 sm:inline-flex"
             >
               <Search className="h-3.5 w-3.5" aria-hidden />
               <span className="hidden lg:inline">Jump to…</span>

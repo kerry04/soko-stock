@@ -23,6 +23,7 @@ import { Route as ApiMacroOverviewRouteImport } from './routes/api/macro/overvie
 import { Route as ApiPaperOrdersRouteImport } from './routes/api/paper/orders'
 import { Route as ApiPaperPortfolioRouteImport } from './routes/api/paper/portfolio'
 import { Route as ApiStocksBoardRouteImport } from './routes/api/stocks/board'
+import { Route as ApiStocksDirectoryRouteImport } from './routes/api/stocks/directory'
 import { Route as ApiStocksNewsSignalsRouteImport } from './routes/api/stocks/news-signals'
 import { Route as ApiStocksNewsWireRouteImport } from './routes/api/stocks/news-wire'
 import { Route as ApiStocksQuoteRouteImport } from './routes/api/stocks/quote'
@@ -103,6 +104,11 @@ const ApiStocksBoardRoute = ApiStocksBoardRouteImport.update({
   path: '/api/stocks/board',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStocksDirectoryRoute = ApiStocksDirectoryRouteImport.update({
+  id: '/api/stocks/directory',
+  path: '/api/stocks/directory',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStocksNewsSignalsRoute = ApiStocksNewsSignalsRouteImport.update({
   id: '/api/stocks/news-signals',
   path: '/api/stocks/news-signals',
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/api/paper/orders': typeof ApiPaperOrdersRoute
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/directory': typeof ApiStocksDirectoryRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/api/paper/orders': typeof ApiPaperOrdersRoute
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/directory': typeof ApiStocksDirectoryRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/api/paper/orders': typeof ApiPaperOrdersRoute
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
+  '/api/stocks/directory': typeof ApiStocksDirectoryRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/api/paper/orders'
     | '/api/paper/portfolio'
     | '/api/stocks/board'
+    | '/api/stocks/directory'
     | '/api/stocks/news-signals'
     | '/api/stocks/news-wire'
     | '/api/stocks/quote'
@@ -271,6 +281,7 @@ export interface FileRouteTypes {
     | '/api/paper/orders'
     | '/api/paper/portfolio'
     | '/api/stocks/board'
+    | '/api/stocks/directory'
     | '/api/stocks/news-signals'
     | '/api/stocks/news-wire'
     | '/api/stocks/quote'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/api/paper/orders'
     | '/api/paper/portfolio'
     | '/api/stocks/board'
+    | '/api/stocks/directory'
     | '/api/stocks/news-signals'
     | '/api/stocks/news-wire'
     | '/api/stocks/quote'
@@ -322,6 +334,7 @@ export interface RootRouteChildren {
   ApiPaperOrdersRoute: typeof ApiPaperOrdersRoute
   ApiPaperPortfolioRoute: typeof ApiPaperPortfolioRoute
   ApiStocksBoardRoute: typeof ApiStocksBoardRoute
+  ApiStocksDirectoryRoute: typeof ApiStocksDirectoryRoute
   ApiStocksNewsSignalsRoute: typeof ApiStocksNewsSignalsRoute
   ApiStocksNewsWireRoute: typeof ApiStocksNewsWireRoute
   ApiStocksQuoteRoute: typeof ApiStocksQuoteRoute
@@ -433,6 +446,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStocksBoardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stocks/directory': {
+      id: '/api/stocks/directory'
+      path: '/api/stocks/directory'
+      fullPath: '/api/stocks/directory'
+      preLoaderRoute: typeof ApiStocksDirectoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stocks/news-signals': {
       id: '/api/stocks/news-signals'
       path: '/api/stocks/news-signals'
@@ -514,6 +534,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPaperOrdersRoute: ApiPaperOrdersRoute,
   ApiPaperPortfolioRoute: ApiPaperPortfolioRoute,
   ApiStocksBoardRoute: ApiStocksBoardRoute,
+  ApiStocksDirectoryRoute: ApiStocksDirectoryRoute,
   ApiStocksNewsSignalsRoute: ApiStocksNewsSignalsRoute,
   ApiStocksNewsWireRoute: ApiStocksNewsWireRoute,
   ApiStocksQuoteRoute: ApiStocksQuoteRoute,
