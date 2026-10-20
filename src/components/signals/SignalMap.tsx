@@ -204,7 +204,12 @@ export function SignalMap() {
   }, [load]);
 
   // ── Canvas rendering ──────────────────────────────────────────────
+  // Deps include `view`: when the flat canvas (re)mounts via the toggle,
+  // this must run again — signal data alone doesn't change on a toggle,
+  // and without the re-run the canvas stayed blank until the next
+  // 5-minute refresh.
   useEffect(() => {
+    if (view !== "flat") return;
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
     if (!canvas || !wrap) return;
@@ -308,8 +313,9 @@ export function SignalMap() {
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-    // Rebuild dot colors when signals change by re-running the effect.
-  }, [signals, countryIdxById]);
+    // Rebuild dot colors when signals change (or the flat view remounts)
+    // by re-running the effect.
+  }, [signals, countryIdxById, view]);
 
   const pickCountry = (clientX: number, clientY: number) => {
     const canvas = canvasRef.current;
