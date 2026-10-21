@@ -201,7 +201,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials",
-    tz: "Africa/Lilongwe",
+    tz: "Africa/Blantyre",
     tickers: [],
   },
   {
