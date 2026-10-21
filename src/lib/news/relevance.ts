@@ -78,6 +78,11 @@ const DROP_PATTERNS: RegExp[] = [
   /\bcricket\b/i, /ronaldo/i, /messi/i, /mbapp/i, /arsenal/i,
   /chelsea/i, /manchester\s+(united|city)/i, /liverpool/i,
   /\bsport(s|men|women|sperson)?\b/i,
+  // US sports — the international firehose (Fox Latest et al.) carries
+  // them; the football-only list above let a World Series preview onto
+  // the live wire on 2026-10-21.
+  /world\s*series/i, /baseball/i, /super\s*bowl/i,
+  /\bnfl\b/i, /\bnba\b/i, /\bmlb\b/i, /\bnhl\b/i,
   // Crime blotter & accidents (incident reports, not graft — graft keeps above)
   /shot\s+(dead|after)/i, /set\s+ablaze/i, /decomposed\s+body/i,
   /body\s+found/i, /found\s+dead/i, /dies\s+after\s+falling/i,

@@ -121,6 +121,32 @@ describe("fetchFeedArticles", () => {
     await expect(fetchFeedArticles(feed, okDoc(NOT_A_FEED))).resolves.toEqual([]);
     warn.mockRestore();
   });
+
+  it("drops a feed's sports and viral items, keeps its markets and politics items", async () => {
+    // The two junk shapes are the ones seen live on the wire from the Fox
+    // News firehose on 2026-10-21: a baseball preview and a viral video.
+    const mixed = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel>
+<title>Test Wire</title>
+<item><title>World Series preview: Why the Milwaukee Brewers are the team to beat</title>
+<link>https://example.com/sport</link>
+<pubDate>Wed, 22 Oct 2026 12:00:00 GMT</pubDate></item>
+<item><title>Video of elephant calf splashing in mud goes viral, melts hearts online</title>
+<link>https://example.com/viral</link>
+<pubDate>Wed, 22 Oct 2026 11:30:00 GMT</pubDate></item>
+<item><title>Nigeria central bank holds benchmark rate, cites easing inflation</title>
+<link>https://example.com/markets</link>
+<pubDate>Wed, 22 Oct 2026 11:00:00 GMT</pubDate></item>
+<item><title>Parliament passes finance bill after stormy debate on new taxes</title>
+<link>https://example.com/politics</link>
+<pubDate>Wed, 22 Oct 2026 10:00:00 GMT</pubDate></item>
+</channel></rss>`;
+    const out = await fetchFeedArticles(feed, okDoc(mixed));
+    expect(out.map((a) => a.title)).toEqual([
+      "Nigeria central bank holds benchmark rate, cites easing inflation",
+      "Parliament passes finance bill after stormy debate on new taxes",
+    ]);
+  });
 });
 
 describe("fetchAllFeeds", () => {

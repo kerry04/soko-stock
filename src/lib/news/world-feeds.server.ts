@@ -1,5 +1,6 @@
 import { fetchDoc, parseRss, type FetchedDoc } from "@/lib/server/news/ingestors";
 import { dedupeByTitle } from "@/lib/news/dedupe";
+import { isMarketRelevant } from "@/lib/news/relevance";
 import type { NewsArticle } from "@/lib/stocks/news-signals.server";
 import type { DeskResult } from "@/lib/stocks/news-wire.server";
 
@@ -19,6 +20,9 @@ import type { DeskResult } from "@/lib/stocks/news-wire.server";
  *  - These items are for READING. They are merged into the news wire's
  *    article list and region desks only — never into per-stock signal
  *    matching (news-signals.server.ts stays pipeline-only).
+ *  - Every item passes the same market-relevance filter as the pipeline
+ *    (lib/news/relevance): general-news firehoses — Fox Latest above all —
+ *    carry sports, celebrity and viral filler that a stock terminal drops.
  *  - A dead, slow or malformed feed degrades to "skip" with a console
  *    warning naming the feed. It never fails or hangs the wire.
  *  - Headline + link only, in the publisher's own feed words.
@@ -181,7 +185,11 @@ export async function fetchFeedArticles(
       console.warn(`[world-feeds] ${feed.name} skipped: no items parsed (not a feed?)`);
       return [];
     }
+    // Same relevance gate the pipeline articles pass upstream: a world
+    // feed's sports/celebrity/viral items never reach the wire or desks.
+    // Filtering before the cap means a noisy feed's cap counts real news.
     return items
+      .filter((a) => isMarketRelevant(a.title))
       .map((a) => ({
         id: worldArticleId(a.url),
         title: a.title,

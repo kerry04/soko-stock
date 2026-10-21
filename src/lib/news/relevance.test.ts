@@ -25,6 +25,9 @@ describe("isMarketRelevant — drops (real junk from the live wire)", () => {
     "Ronaldo handed Sh38,000 fine, 30-day suspension after Portugal walkout",
     "\"I'm 47 years fresh\": Ne-Yo lands in Kenya ahead of his first headline show",
     "David Lee Roth net worth 2026: Van Halen and solo music success",
+    // From the world wire (Fox News firehose), 2026-10-21 — US sports are
+    // not in the football-family patterns above.
+    "World Series preview: Why the Milwaukee Brewers are the team to beat",
   ];
   it.each(drops)("drops: %s", (t) => expect(isMarketRelevant(t)).toBe(false));
 });
