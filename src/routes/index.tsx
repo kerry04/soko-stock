@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { DataTable, type DataTableColumn } from "@/components/ui/table";
 import { EXCHANGES, LIVE_EXCHANGES, type Exchange } from "@/lib/stocks/exchanges";
 import { fmtCompactValue, fmtPrice, timeAgo } from "@/lib/stocks/format";
+import { compileMatchers, stockKeywords, titleMatches } from "@/lib/news/matching";
+import { classifyHeadline } from "@/lib/news/events";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
 
@@ -231,8 +233,28 @@ function StocksBoard() {
     return { adv, dec, flat, counted: adv + dec + flat };
   }, [board]);
 
-  const lead = wire?.articles[0] ?? null;
-  const secondary = wire?.articles.slice(1, 4) ?? [];
+  // The lead is an editorial pick, not just the newest story: the first
+  // wire article that names a company the wire is tracking (the heat
+  // set, matched with the shared engine) or carries a classified market
+  // event. Falls back to the newest story when nothing qualifies, so
+  // the front page never renders empty.
+  const leadPick = useMemo(() => {
+    const arts = wire?.articles ?? [];
+    if (arts.length === 0) return { lead: null, secondary: [] as typeof arts };
+    const matchers = (wire?.heat ?? []).map((h) =>
+      compileMatchers(stockKeywords(h.name)),
+    );
+    const qualifies = (title: string) =>
+      matchers.some((m) => titleMatches(title, m)) ||
+      classifyHeadline(title) != null;
+    const idx = arts.findIndex((a) => qualifies(a.title));
+    const leadIdx = idx >= 0 ? idx : 0;
+    return {
+      lead: arts[leadIdx],
+      secondary: arts.filter((_, i) => i !== leadIdx).slice(0, 3),
+    };
+  }, [wire]);
+  const { lead, secondary } = leadPick;
   const leadDesk = lead
     ? wire?.desks.find((d) => d.articles.some((a) => a.id === lead.id))
     : undefined;

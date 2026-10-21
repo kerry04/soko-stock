@@ -61,6 +61,7 @@ const KEEP_PATTERNS: RegExp[] = [
 const FORMAT_DROP_PATTERNS: RegExp[] = [
   /siblings:/i, /getting\s+to\s+know/i, /:\s*all\s+about/i,
   /^who\s+is\s/i, /net\s+worth\s+of/i, /biography/i,
+  /net\s+worth\s*(in\s+)?\d{4}/i, /net\s+worth\s*:/i,
   /new\s+song/i, /\balbum\b/i, /telenovela/i, /reality\s+(show|star)/i,
   /red\s+carpet/i,
 ];

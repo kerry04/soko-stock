@@ -24,6 +24,7 @@ describe("isMarketRelevant — drops (real junk from the live wire)", () => {
     "“Bora tuelewe”: Bungoma mum's cheeky graduation post for PP2 son amuses Kenyans",
     "Ronaldo handed Sh38,000 fine, 30-day suspension after Portugal walkout",
     "\"I'm 47 years fresh\": Ne-Yo lands in Kenya ahead of his first headline show",
+    "David Lee Roth net worth 2026: Van Halen and solo music success",
   ];
   it.each(drops)("drops: %s", (t) => expect(isMarketRelevant(t)).toBe(false));
 });
@@ -48,6 +49,7 @@ describe("isMarketRelevant — keeps (market-moving or borderline)", () => {
     "Safaricom appoints new chief executive officer",
     "KCB issues profit warning as earnings fall",
     "Kenya races to upgrade stadiums ahead of AFCON 2027 — Sh9bn construction tender opens", // keep-gate wins: tender
+    "Dangote net worth jumps as refinery shares rally", // net-worth phrase, market story — format patterns must not swallow it
   ];
   it.each(keeps)("keeps: %s", (t) => expect(isMarketRelevant(t)).toBe(true));
 });
