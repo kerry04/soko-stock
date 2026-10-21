@@ -119,7 +119,7 @@ export const Route = createFileRoute("/api/paper/orders")({
           }
 
           // Ensure portfolio, load position.
-          await sb.from("paper_portfolios").upsert(
+          const { error: seedErr } = await sb.from("paper_portfolios").upsert(
             {
               user_id: userId,
               currency: exchange.currency,
@@ -128,12 +128,20 @@ export const Route = createFileRoute("/api/paper/orders")({
             },
             { onConflict: "user_id,currency", ignoreDuplicates: true },
           );
-          const { data: pfRow } = await sb
+          if (seedErr) {
+            console.error("paper: portfolio seed failed", seedErr);
+            return json({ ok: false, error: "portfolio_unavailable" }, 500);
+          }
+          const { data: pfRow, error: pfErr } = await sb
             .from("paper_portfolios")
             .select("cash")
             .eq("user_id", userId)
             .eq("currency", exchange.currency)
             .single();
+          if (pfErr || !pfRow) {
+            console.error("paper: portfolio load failed", pfErr);
+            return json({ ok: false, error: "portfolio_unavailable" }, 500);
+          }
           const cash = Number((pfRow as unknown as { cash: number }).cash);
           const { data: posRow } = await sb
             .from("paper_positions")
@@ -221,7 +229,8 @@ export const Route = createFileRoute("/api/paper/orders")({
             cash: newCash,
             position: { qty: newQty, avg: newAvg },
           });
-        } catch {
+        } catch (e) {
+          console.error("paper: order failed", e);
           return json({ ok: false, error: "fill_failed" }, 500);
         }
       },
