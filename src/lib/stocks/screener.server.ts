@@ -30,15 +30,15 @@ export interface ScreenDef {
 }
 
 export const SCREENS: ScreenDef[] = [
-  { id: "news-surge", label: "News surge", hint: "24h stories ≥3× the 30-day daily pace, ≥3 stories" },
+  { id: "news-surge", label: "News surge", hint: "24h stories at least 3× the usual daily rate, and at least 3 stories" },
   { id: "volume-surge", label: "Unusual volume", hint: "Latest volume ≥2× the 20-day average" },
   { id: "52wk-high", label: "52-week high zone", hint: "Within 1% of the 52-week high" },
   { id: "52wk-low", label: "52-week low zone", hint: "Within 1% of the 52-week low" },
-  { id: "rsi-oversold", label: "RSI oversold", hint: "RSI ≤ 30" },
-  { id: "rsi-overbought", label: "RSI overbought", hint: "RSI ≥ 70" },
+  { id: "rsi-oversold", label: "Momentum oversold (RSI)", hint: "Momentum score under 30 — the price has fallen fast and far" },
+  { id: "rsi-overbought", label: "Momentum overbought (RSI)", hint: "Momentum score over 70 — the price has risen fast and far" },
   { id: "gainers", label: "Big gainers", hint: "Day change ≥ +2%" },
   { id: "losers", label: "Big losers", hint: "Day change ≤ −2%" },
-  { id: "limit-hits", label: "Limit hits", hint: "At the exchange's daily price band" },
+  { id: "limit-hits", label: "Limit hits", hint: "Hit the most the exchange allows a price to move in one day" },
   { id: "uptrend", label: "Above 50-day", hint: "Price above the 50-day average" },
   { id: "downtrend", label: "Below 50-day", hint: "Price below the 50-day average" },
 ];

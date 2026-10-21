@@ -96,7 +96,7 @@ function CommandLine({ onOpenPalette }: { onOpenPalette: () => void }) {
           onKeyDown={(e) => {
             if (e.key === "Escape") inputRef.current?.blur();
           }}
-          placeholder="SCOM · ECO · MTN…"
+          placeholder="Type a company or ticker — try Safaricom"
           aria-label="Command line: ticker or function code"
           className="w-full bg-transparent font-mono text-[11px] uppercase tracking-[0.14em] text-foreground placeholder:normal-case placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none"
         />

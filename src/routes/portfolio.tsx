@@ -73,14 +73,14 @@ const positionColumns: DataTableColumn<PositionRow>[] = [
   },
   {
     key: "board",
-    header: "Board",
+    header: "Latest price",
     numeric: true,
     render: (p) => (
       <div className="flex flex-col items-end gap-1">
         <span>{money(p.board)}</span>
         {p.delayed && (
           <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-primary">
-            EOD delayed
+            Yesterday&apos;s close
           </span>
         )}
         {p.asOf && (
@@ -93,7 +93,7 @@ const positionColumns: DataTableColumn<PositionRow>[] = [
   },
   {
     key: "pnl",
-    header: "P&L",
+    header: "Profit / loss",
     numeric: true,
     render: (p) => {
       const pnl = p.board != null ? (p.board - p.avg) * p.qty : null;
@@ -164,7 +164,7 @@ function Portfolio() {
         <PageHeader
           slug="PORT · Paper portfolio"
           title="Paper portfolio"
-          description="Virtual cash only — educational terminal, not investment advice."
+          description="Practise buying and selling with virtual cash. No real money and nothing at risk — this is where you learn to trade before you open a real account."
         />
 
         {authLoading && <SkeletonBlock className="h-40" />}

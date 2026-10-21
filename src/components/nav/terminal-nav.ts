@@ -13,8 +13,8 @@ export interface TerminalSection {
 export const TERMINAL_SECTIONS: TerminalSection[] = [
   { label: "Start", code: "STRT", to: "/start", icon: Rocket, hint: "The path to your first share" },
   { label: "Stocks", code: "STK", to: "/", icon: CandlestickChart, hint: "African stock boards" },
-  { label: "Screener", code: "SCRN", to: "/screener", icon: SlidersHorizontal, hint: "Signal scans across every board" },
-  { label: "News", code: "NEWS", to: "/news", icon: Newspaper, hint: "The 48h wire and topic desks" },
+  { label: "Screener", code: "SCRN", to: "/screener", icon: SlidersHorizontal, hint: "Filter stocks by what they did today" },
+  { label: "News", code: "NEWS", to: "/news", icon: Newspaper, hint: "Headlines from the last 48 hours, by topic" },
   { label: "Map", code: "MAP", to: "/map", icon: Globe, hint: "Live global signal map" },
   { label: "Pulse", code: "PLS", to: "/pulse", icon: Activity, hint: "Market-moving news digest" },
   { label: "Economy", code: "ECO", to: "/economy", icon: Landmark, hint: "Inflation, rates & shilling" },

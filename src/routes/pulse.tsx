@@ -32,7 +32,7 @@ export const Route = createFileRoute("/pulse")({
       { title: "Pulse — Soko Stock" },
       {
         name: "description",
-        content: "Ranked market signals: news surges, sentiment tilts, 52-week events, RSI extremes, unusual volume.",
+        content: "What is moving today, biggest first: companies suddenly in the news, prices at their highest or lowest in a year, and shares changing hands far more than usual.",
       },
     ],
   }),
@@ -213,8 +213,8 @@ function PulsePage() {
             kind: "news-surge",
             ticker: s.ticker,
             name,
-            headline: `${name} news volume ${s.surgeRatio.toFixed(1)}× its 30-day pace`,
-            detail: `${s.count24h} linked stories in 24h · baseline ${s.medianDaily}/day`,
+            headline: `${name} news volume ${s.surgeRatio.toFixed(1)}× its usual rate`,
+            detail: `${s.count24h} stories in 24h · usually ${s.medianDaily}/day`,
             score: s.surgeRatio * (1 + Math.log10(Math.max(1, s.count24h))),
             at: s.latestAt,
           });
@@ -226,8 +226,8 @@ function PulsePage() {
             kind: "sentiment",
             ticker: s.ticker,
             name,
-            headline: `${name} headlines tilt ${t.tilt} this week`,
-            detail: `${t.pos} positive · ${t.neg} negative (scored articles)`,
+            headline: `${name} coverage mostly ${t.tilt} this week`,
+            detail: `${t.pos} positive · ${t.neg} negative stories scored`,
             score: 3,
             at: s.latestAt,
           });
@@ -268,7 +268,7 @@ function PulsePage() {
             ticker: r.ticker,
             name: r.name,
             headline: `${r.name} RSI ${r.rsi.toFixed(0)} — overbought`,
-            detail: "RSI(14) above 70",
+            detail: "Momentum score above 70 — the price has risen fast and far",
             score: 4,
             at: null,
           });
@@ -279,7 +279,7 @@ function PulsePage() {
             ticker: r.ticker,
             name: r.name,
             headline: `${r.name} RSI ${r.rsi.toFixed(0)} — oversold`,
-            detail: "RSI(14) below 30",
+            detail: "Momentum score under 30 — the price has fallen fast and far",
             score: 4,
             at: null,
           });
@@ -291,7 +291,7 @@ function PulsePage() {
             ticker: r.ticker,
             name: r.name,
             headline: `${r.name} trading ${r.relVolume.toFixed(1)}× average volume`,
-            detail: "Latest session vs 20-day average",
+            detail: "Today's trading vs its 20-day average",
             score: r.relVolume * 1.2,
             at: null,
           });
@@ -340,7 +340,7 @@ function PulsePage() {
         <PageHeader
           slug="PLS · Signal feed"
           title="Pulse"
-          description="Ranked market signals — news surges, sentiment tilts, 52-week events, RSI extremes and unusual volume, ordered by intensity."
+          description="What is moving today, biggest first: companies suddenly in the news, prices at their highest or lowest in a year, and shares changing hands far more than usual."
           actions={
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
               {asOf ? `As of ${fmtTime(asOf.toISOString())}` : loading ? "Loading…" : "No data"}
@@ -385,7 +385,7 @@ function PulsePage() {
                   {macro.cbr != null && (
                     <span className="flex items-baseline gap-2">
                       <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                        CBR
+                        Central bank rate
                       </span>
                       <span className="num font-mono text-lg font-bold tabular-nums">
                         {macro.cbr.toFixed(2)}%
@@ -415,7 +415,7 @@ function PulsePage() {
             >
               <PanelHeader>
                 <PanelTitle className="flex items-center gap-2">
-                  <Zap className="h-3.5 w-3.5" aria-hidden /> Signals, ranked
+                  <Zap className="h-3.5 w-3.5" aria-hidden /> Today&apos;s signals, biggest first
                 </PanelTitle>
               </PanelHeader>
               {feed.length === 0 ? (
@@ -423,7 +423,7 @@ function PulsePage() {
                   tone="empty"
                   className="border-none py-4"
                   title="No strong signals right now"
-                  message="The feed updates as the news pipeline and the market move."
+                  message="This list fills up as news and prices move during the day."
                 />
               ) : (
                 <ol>
@@ -468,8 +468,8 @@ function PulsePage() {
                 </ol>
               )}
               <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                Ranked by signal intensity. Facts from the live pipeline and
-                market data — not recommendations.
+                Ordered by how unusual each item is. Everything here is counted
+                from news and prices — none of it is a recommendation.
               </p>
             </Panel>
 
@@ -485,7 +485,7 @@ function PulsePage() {
                   <StateBlock
                     tone="empty"
                     className="border-none py-4"
-                    message="No processed stories in the last 24 hours."
+                    message="No stories in the last 24 hours."
                   />
                 ) : (
                   <ol>

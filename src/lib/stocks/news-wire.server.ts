@@ -78,7 +78,7 @@ export const DESKS: DeskDef[] = [
   {
     id: "results",
     label: "Results & Dividends",
-    hint: "Earnings, profit warnings, dividend declarations — the event desk",
+    hint: "Earnings, profit warnings, dividend declarations",
     patterns: [
       /dividend/i,
       /profit\s+warning/i,

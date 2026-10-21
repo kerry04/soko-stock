@@ -432,7 +432,7 @@ export function SignalMap() {
         )}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/40">
-            <StateBlock tone="loading" title="Tuning frequencies…" className="border-none px-0 py-0" />
+            <StateBlock tone="loading" title="Loading the map…" className="border-none px-0 py-0" />
           </div>
         )}
         </div>
@@ -444,7 +444,7 @@ export function SignalMap() {
           <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" aria-hidden />
           Live
         </span>
-        <span>{signals.length} countries with signal</span>
+        <span>{signals.length} countries in the news</span>
         {globeError && (
           <span className="normal-case tracking-normal text-destructive">
             globe unavailable ({globeError}) — showing flat map
@@ -453,7 +453,7 @@ export function SignalMap() {
         {signals.some((s) => s.converging) && (
           <span className="inline-flex items-center gap-1.5 text-destructive">
             <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" aria-hidden />
-            {signals.filter((s) => s.converging).length} converging
+            {signals.filter((s) => s.converging).length} with several kinds of trouble at once
           </span>
         )}
         {asOf && (
@@ -481,7 +481,7 @@ export function SignalMap() {
         <div
           className="scrollbar-none mt-3 flex gap-1.5 overflow-x-auto pb-1"
           role="group"
-          aria-label="Countries with signal — open a broadcast"
+          aria-label="Countries in the news — open a broadcast"
         >
           {[...signals]
             .sort((a, b) => b.articles.length - a.articles.length)
@@ -504,7 +504,7 @@ export function SignalMap() {
                   <span className="num text-muted-foreground">{s.articles.length} · 24h</span>
                   {s.converging && (
                     <span className="font-bold uppercase tracking-[0.12em] text-destructive">
-                      Converging
+                      Several kinds of trouble at once
                     </span>
                   )}
                 </Chip>

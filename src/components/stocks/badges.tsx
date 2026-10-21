@@ -36,7 +36,7 @@ export function EventBadge({ title, className }: { title: string; className?: st
   );
 }
 
-/** Limit-hit chip for a board row at its exchange's daily price band. */
+/** Limit-hit chip for a board row at the most the exchange allows a price to move in one day. */
 export function LimitChip({ hit, className }: { hit: "up" | "down"; className?: string }) {
   return (
     <span
@@ -104,7 +104,7 @@ export function NewsSurgeChip({
 }) {
   return (
     <span
-      title={title ?? `News volume ${ratio.toFixed(1)}× the 30-day daily pace`}
+      title={title ?? `News volume ${ratio.toFixed(1)}× the usual daily rate`}
       className={cn(
         "inline-block rounded bg-sky-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-sky-400",
         className,
@@ -182,14 +182,14 @@ export function BoardRowBadge({ row }: { row: BoardRowSignal }) {
     return <LimitChip hit={limitHit} className="ml-2" />;
   }
 
-  // Speculation signature next: a big move with nothing underneath it.
+  // Speculation next: a big move with nothing underneath it.
   if (speculation) {
     return (
       <SignalChip
-        title="Big move on thin trading with no matching news — classic speculation signature"
+        title="A big move on very little trading, with no news behind it"
         className="bg-warning/20 text-warning"
       >
-        Spec?
+        Big move, no news
       </SignalChip>
     );
   }
@@ -199,20 +199,20 @@ export function BoardRowBadge({ row }: { row: BoardRowSignal }) {
     let cls = "";
     let short = "";
     if (price >= wk52High) {
-      label = "New 52wk high";
-      short = "52WK HI";
+      label = "New year high";
+      short = "Year high";
       cls = "bg-success/15 text-success";
     } else if (price <= wk52Low) {
-      label = "New 52wk low";
-      short = "52WK LO";
+      label = "New year low";
+      short = "Year low";
       cls = "bg-destructive/15 text-destructive";
     } else if (price >= wk52High * 0.97) {
-      label = "Near 52wk high";
-      short = "≈HI";
+      label = "Near year high";
+      short = "Near year high";
       cls = "bg-success/10 text-success/80";
     } else if (price <= wk52Low * 1.03) {
-      label = "Near 52wk low";
-      short = "≈LO";
+      label = "Near year low";
+      short = "Near year low";
       cls = "bg-destructive/10 text-destructive/80";
     }
     if (label) {
@@ -228,7 +228,7 @@ export function BoardRowBadge({ row }: { row: BoardRowSignal }) {
   if (newsSurge != null && liquidity !== "thin") {
     return (
       <SignalChip
-        title={`News volume ${newsSurge.toFixed(1)}× the 30-day daily pace`}
+        title={`News volume ${newsSurge.toFixed(1)}× the usual daily rate`}
         className="bg-sky-500/15 text-sky-400"
       >
         News {newsSurge.toFixed(1)}×
@@ -240,10 +240,10 @@ export function BoardRowBadge({ row }: { row: BoardRowSignal }) {
   if (relVolume != null && relVolume >= 2 && liquidity !== "thin") {
     return (
       <SignalChip
-        title={`Volume ${relVolume.toFixed(1)}× the 20-day average`}
+        title={`Volume ${relVolume.toFixed(1)}× its 20-day average`}
         className="bg-primary/15 text-primary"
       >
-        Vol {relVolume.toFixed(1)}×
+        Volume {relVolume.toFixed(1)}× usual
       </SignalChip>
     );
   }
@@ -252,20 +252,20 @@ export function BoardRowBadge({ row }: { row: BoardRowSignal }) {
     if (rsi >= 70) {
       return (
         <SignalChip
-          title={`RSI ${rsi.toFixed(0)} — overbought`}
+          title={`Momentum score ${rsi.toFixed(0)} of 100 — the price has risen fast and far ('overbought')`}
           className="bg-destructive/15 text-destructive"
         >
-          RSI hot
+          Momentum high
         </SignalChip>
       );
     }
     if (rsi <= 30) {
       return (
         <SignalChip
-          title={`RSI ${rsi.toFixed(0)} — oversold`}
+          title={`Momentum score ${rsi.toFixed(0)} of 100 — the price has fallen fast and far ('oversold')`}
           className="bg-success/15 text-success"
         >
-          RSI cold
+          Momentum low
         </SignalChip>
       );
     }
@@ -279,7 +279,7 @@ export function BoardRowBadge({ row }: { row: BoardRowSignal }) {
           aboveSma50 ? "bg-success/10 text-success/80" : "bg-destructive/10 text-destructive/80"
         }
       >
-        {aboveSma50 ? "▲50d" : "▼50d"}
+        {aboveSma50 ? "Above 50-day avg" : "Below 50-day avg"}
       </SignalChip>
     );
   }

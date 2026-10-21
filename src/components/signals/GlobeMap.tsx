@@ -264,7 +264,7 @@ export function GlobeMap({
               s.converging ? "--color-destructive" : "--color-success"
             }) 65%, transparent);border-radius:4px;padding:6px 9px;color:var(--color-popover-foreground)">
               <div style="font-weight:700;letter-spacing:0.14em;text-transform:uppercase">${name}</div>
-              <div style="color:var(${s.converging ? "--color-destructive" : "--color-success"});margin-top:2px">${s.articles.length} articles · 24h · instability ${s.instability}/100${s.converging ? " · CONVERGING" : ""}</div>
+              <div style="color:var(${s.converging ? "--color-destructive" : "--color-success"});margin-top:2px">${s.articles.length} articles · 24h · bad news ${s.instability}/100${s.converging ? " · several kinds of trouble at once" : ""}</div>
             </div>`;
           })
           .onPolygonClick((f, ev) => {

@@ -264,13 +264,13 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
         : ["Neutral", "bg-muted text-muted-foreground"];
 
   const rows: [string, string, [string, string]][] = [
-    [`RSI (14)`, t.rsi.toFixed(1), pill(t.votes.rsi)],
-    ["MACD (12, 26, 9)", t.macdBullish ? "Bullish" : "Bearish", pill(t.votes.macd)],
+    [`Momentum (RSI)`, t.rsi.toFixed(1), pill(t.votes.rsi)],
+    ["Trend (MACD)", t.macdBullish ? "Bullish" : "Bearish", pill(t.votes.macd)],
     [`Price vs 50-day ${fmt(t.sma50, sym)}`, t.aboveSma50 ? "Above" : "Below", pill(t.votes.vs50)],
     [`Price vs 200-day ${fmt(t.sma200, sym)}`, t.aboveSma200 ? "Above" : "Below", pill(t.votes.vs200)],
     [
-      "50-day vs 200-day",
-      t.goldenCross ? "Golden cross" : "Death cross",
+      "50-day vs 200-day average",
+      t.goldenCross ? "Golden cross — 50-day above 200-day" : "Death cross — 50-day below 200-day",
       pill(t.votes.cross),
     ],
     [
@@ -286,8 +286,14 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
     <Panel padding="md" aria-label="Technical signals">
       <PanelHeader>
         <PanelTitle>Technical signals</PanelTitle>
-        <p className="font-mono text-[10px] text-muted-foreground">{t.barsUsed}d of history</p>
+        <p className="font-mono text-[10px] text-muted-foreground">from {t.barsUsed} days of prices</p>
       </PanelHeader>
+      <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+        Five simple checks on this stock&apos;s recent prices: is it trending up or
+        down, and has it moved unusually far, unusually fast? Each check votes Buy,
+        Sell or Neutral. It is a summary of patterns in past prices — not advice,
+        and not a prediction.
+      </p>
 
       <div className="mt-1 flex flex-col items-center sm:flex-row sm:gap-6">
         <div className="w-full max-w-[240px]">
@@ -342,14 +348,20 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
         </ul>
       </div>
 
-      <p className="mt-3 border-t border-border/50 pt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
-        Pattern from delayed daily data — not a recommendation.
+      <p className="mt-3 border-t border-border/50 pt-2 text-[11px] leading-relaxed text-muted-foreground">
+        RSI is a momentum score from 0 to 100. Above 70 means the price has risen
+        fast and far (&lsquo;overbought&rsquo;); under 30, fallen fast and far
+        (&lsquo;oversold&rsquo;).
+      </p>
+      <p className="mt-2 border-t border-border/50 pt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+        Worked out from daily prices, about 15 minutes behind the market. Patterns
+        in past prices do not predict future prices.
       </p>
     </Panel>
   );
 }
 
-/** Headline sentiment, news surge, and 7-day tilt for one stock. */
+/** Headline sentiment, news surge, and 7-day coverage lean for one stock. */
 function SignalWire({
   signal,
   updatedAt,
@@ -362,27 +374,27 @@ function SignalWire({
   const s = signal?.sentiment7d;
   const tiltLabel =
     s?.tilt === "positive"
-      ? "Positive tilt"
+      ? "mostly positive"
       : s?.tilt === "negative"
-        ? "Negative tilt"
+        ? "mostly negative"
         : s?.tilt === "mixed"
-          ? "Mixed"
+          ? "mixed"
           : null;
   return (
     <section aria-label="Related news signals">
       <FolioHeader
-        title="Signal wire"
+        title="News about this company"
         right={
           signal?.surging && signal.surgeRatio != null ? (
             <NewsSurgeChip
               ratio={signal.surgeRatio}
-              title={`${signal.count24h} linked stories in 24h vs a ${signal.medianDaily}/day 30-day pace`}
+              title={`${signal.count24h} stories in 24h vs a usual ${signal.medianDaily} stories a day`}
             />
           ) : undefined
         }
       />
       <p className="text-sm text-muted-foreground">
-        Headlines mentioning {name} from our global news pipeline.
+        Recent headlines that mention {name}.
         {updatedAt != null && (
           <span className="font-mono text-[11px]">
             {" "}
@@ -393,14 +405,14 @@ function SignalWire({
 
       {tiltLabel && s && (
         <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-          7-day sentiment:{" "}
+          Last 7 days:{" "}
           <span
             className={cn(
               s.tilt === "positive" && "text-success",
               s.tilt === "negative" && "text-destructive",
             )}
           >
-            {tiltLabel}
+            {tiltLabel} coverage
           </span>{" "}
           · {s.pos} positive · {s.neg} negative · {s.neu} neutral
         </p>
@@ -447,8 +459,9 @@ function SignalWire({
         </ul>
       )}
       <p className="mt-3 font-mono text-[10px] leading-relaxed text-muted-foreground">
-        Dots show per-article sentiment where scored. Surge compares the last
-        24 hours against this stock's own 30-day daily pace.
+        Dots show per-article sentiment where scored. &lsquo;Surge&rsquo; means the
+        last 24 hours had far more stories than this stock&apos;s usual daily count
+        over the past 30 days.
       </p>
     </section>
   );
@@ -865,7 +878,7 @@ function StockDetail() {
           to="/"
           className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
         >
-          ← Boards
+          ← All stocks
         </Link>
 
         {loading && (
@@ -943,14 +956,13 @@ function StockDetail() {
 
             {quote.board?.speculation ? (
               <p className="mb-4 border-l-2 border-warning bg-warning/10 px-3 py-2 text-xs leading-relaxed text-warning">
-                Speculation signature: a large move on thin trading with no matching news
-                behind it. Moves like this often reverse — the terminal flags them, it does
-                not chase them.
+                Careful: this price jumped on very little trading, and no news explains
+                it. Moves like this often fall back just as fast.
               </p>
             ) : quote.board?.liquidity === "thin" ? (
               <p className="mb-4 font-mono text-[11px] text-muted-foreground">
-                Thin counter — this name trades lightly, so its signals are noisy and its
-                price can jump on a single order.
+                This stock is bought and sold very little. Its price can jump on a
+                single order, so treat a big move with care.
               </p>
             ) : null}
 
@@ -1006,11 +1018,11 @@ function StockDetail() {
                       </p>
                     </Panel>
                     <Panel padding="md">
-                      <PanelTitle>Technical signals · History building</PanelTitle>
+                      <PanelTitle>Technical signals — still collecting prices</PanelTitle>
                       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        Signals like RSI, moving averages, and volume patterns need daily price
-                        history. We're recording this listing's closes every trading day — signals
-                        unlock automatically once there's enough to compute them honestly.
+                        We record this stock&apos;s closing price every trading day. These
+                        signals need months of daily prices, so they will appear here once
+                        enough days have built up.
                       </p>
                     </Panel>
                   </>
@@ -1084,10 +1096,6 @@ function StockDetail() {
                 <SignalWire signal={news} updatedAt={newsAt} name={quote.name} />
               </div>
             </div>
-
-            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              Educational terminal — not investment advice.
-            </p>
           </>
         )}
       </PageContainer>

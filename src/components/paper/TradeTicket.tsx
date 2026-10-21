@@ -13,7 +13,7 @@ const FRIENDLY: Record<string, string> = {
   insufficient_shares: "You don't hold that many shares.",
   invalid_qty: "Enter a whole number of shares.",
   quote_unavailable: "Quote unavailable right now — try again shortly.",
-  stale_eod: "This board is stale (no fresh close). Trading reopens on the next ingest.",
+  stale_eod: "This exchange's prices are out of date — trading is paused until fresh prices arrive.",
   exchange_not_live: "This market isn't tradeable yet.",
   login_required: "Your session expired — log in again.",
   invalid_token: "Your session expired — log in again.",
@@ -120,13 +120,13 @@ export function TradeTicket({
         </p>
         {eod ? (
           <span
-            title={asOf ? `Last close ingested ${asOf}` : "End-of-day price"}
+            title={asOf ? `Last close recorded ${asOf}` : "End-of-day price"}
             className={cn(
               "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em]",
               stale ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary",
             )}
           >
-            {stale ? "EOD stale" : `EOD · last close ${eodLabel ?? ""}`.trim()}
+            {stale ? "Prices out of date" : `End of day · last close ${eodLabel ?? ""}`.trim()}
           </span>
         ) : (
           <span
@@ -144,8 +144,8 @@ export function TradeTicket({
         </p>
       ) : stale ? (
         <p className="mt-3 text-sm text-muted-foreground">
-          This board hasn&apos;t published a fresh close in over 36 hours. Trading reopens on the
-          next ingest — your virtual cash is safe.
+          This exchange has not published fresh prices in over 36 hours, so trading
+          is paused until it does. Your virtual cash is safe.
         </p>
       ) : (
         <>
@@ -202,8 +202,8 @@ export function TradeTicket({
         </p>
       )}
       <p className="mt-3 border-t border-border/50 pt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
-        Virtual cash only — not investment advice.
-        {eod ? " EOD fills at the last published close." : " Fills at the displayed quote."}
+        This is a practice trade with virtual cash.
+        {eod ? " It fills at the last published closing price." : " It fills at the displayed quote."}
       </p>
     </Panel>
   );

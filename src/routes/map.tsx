@@ -38,7 +38,7 @@ export const Route = createFileRoute("/map")({
       {
         name: "description",
         content:
-          "Live world signal map: news intensity, instability index, and converging signals per country.",
+          "A live world map of where the news is worst — tap a country to read its top stories and see its local stocks.",
       },
       { property: "og:title", content: "Signal Map — Soko Stock" },
     ],
@@ -51,9 +51,9 @@ function MapPage() {
     <TerminalShell>
       <PageContainer className="py-4 sm:py-6">
         <PageHeader
-          slug="MAP · Signal atlas"
+          slug="MAP · World news map"
           title="Global signal map"
-          description="The news behind the numbers — instability and converging signals, live."
+          description="A world map of where the news is worst. Countries glow brighter the more bad news mentions them — protests, conflict, disasters, crime. Tap a country to read its top stories."
         />
         <div className="grid items-start gap-4 xl:grid-cols-[380px_minmax(0,1fr)]">
           <SessionRing />

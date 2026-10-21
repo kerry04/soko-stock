@@ -8,7 +8,7 @@ export const Route = createFileRoute("/terms")({
       {
         name: "description",
         content:
-          "Soko Stock is a free educational market terminal. Not investment advice.",
+          "What Soko Stock is and is not: a free site for learning how stock markets work, with practice trading in virtual cash. Real-money trading happens through licensed brokers.",
       },
     ],
   }),
@@ -22,9 +22,11 @@ function TermsPage() {
         <h1 className="text-2xl font-bold tracking-tight">Disclaimer</h1>
         <div className="space-y-4 text-sm leading-relaxed text-muted-foreground">
           <p>
-            Soko Stock is a free, read-only market terminal for education and research.
-            There are no accounts, no deposits, no trading, and no order execution on
-            this site.
+            Soko Stock is a free site for learning how stock markets work. You can
+            follow prices on twelve African exchanges and practise buying and selling
+            with virtual cash — that is called paper trading, and no real money moves.
+            You cannot trade real money here yet. When real trading arrives, it will
+            be through a licensed broker, and this page will say so.
           </p>
           <p>
             Prices are indicative and may be delayed. Quotes come from third-party
@@ -39,8 +41,8 @@ function TermsPage() {
             predict future results.
           </p>
           <p>
-            News signals shown alongside stocks are automatically matched headlines
-            from our news pipeline, not editorial analysis. They describe what the
+            News items shown alongside stocks are headlines matched automatically
+            from the outlets we follow, not editorial analysis. They describe what the
             world is reporting, not what will happen to a price.
           </p>
           <p>

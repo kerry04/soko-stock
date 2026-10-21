@@ -104,11 +104,11 @@ export function SessionRing() {
   };
 
   return (
-    <Panel variant="folio" padding="md" aria-label="Session ring: local time and data state for every live exchange">
+    <Panel variant="folio" padding="md" aria-label="Exchange times: local time and data state for every live exchange">
       <PanelHeader>
-        <PanelTitle>Session ring</PanelTitle>
+        <PanelTitle>Exchange times</PanelTitle>
         <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-          24H · Local time + data state
+          Local time at each exchange
         </span>
       </PanelHeader>
       <PanelContent>
@@ -181,7 +181,7 @@ export function SessionRing() {
                   r={3.2}
                   className={e.state === "LIVE" ? "fill-primary" : "fill-muted-foreground"}
                 >
-                  <title>{`${e.ex.shortName} · ${e.time} local · ${e.state}`}</title>
+                  <title>{`${e.ex.shortName} · ${e.time} local · ${e.state === "LIVE" ? "live — updates through the day" : "end of day — one price a day"}`}</title>
                 </circle>
                 <text
                   x={lx}
@@ -230,11 +230,11 @@ export function SessionRing() {
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
-            Live · Yahoo feed
+            Live — price updates through the day
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" aria-hidden />
-            EOD · End-of-day boards
+            End of day — one price a day, after the exchange closes
           </span>
         </div>
 
@@ -252,11 +252,11 @@ export function SessionRing() {
               <span className="num text-foreground">{e.time}</span>
               <span
                 className={cn(
-                  "w-8 shrink-0 text-right font-bold",
+                  "shrink-0 text-right font-bold",
                   e.state === "LIVE" ? "text-primary" : "text-muted-foreground",
                 )}
               >
-                {e.state}
+                {e.state === "LIVE" ? "Live" : "End of day"}
               </span>
             </li>
           ))}

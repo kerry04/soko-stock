@@ -81,7 +81,7 @@ function fmtNum(v: number | null, digits = 2): string {
 function PendingBadge() {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
-      <BadgeAlert className="h-3 w-3" aria-hidden /> pending verification
+      <BadgeAlert className="h-3 w-3" aria-hidden /> not yet checked
     </span>
   );
 }
@@ -330,7 +330,7 @@ function EconomyPage() {
         ) : !hasAny ? (
           <StateBlock
             tone="empty"
-            message="No macro data ingested yet — inflation, rates and FX will appear here once the pipeline runs its first cycle."
+            message="No economy figures yet. Inflation, interest rates and the shilling's exchange rate will appear here as soon as the first figures are published."
           />
         ) : (
           <>
@@ -446,10 +446,6 @@ function EconomyPage() {
                 </div>
               </Panel>
             </div>
-
-            <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              Educational terminal — not investment advice.
-            </p>
           </>
         )}
       </PageContainer>

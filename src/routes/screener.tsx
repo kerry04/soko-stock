@@ -20,7 +20,7 @@ export const Route = createFileRoute("/screener")({
       {
         name: "description",
         content:
-          "Scan African equities by live signal: 52-week zones, RSI extremes, unusual volume, news surges.",
+          "Filter African stocks by what they did today: biggest gains and losses, prices near a one-year high or low, and shares in the news far more than usual.",
       },
     ],
   }),
@@ -144,7 +144,7 @@ function ScreenerPage() {
     },
     {
       key: "exchange",
-      header: "Exch",
+      header: "Exchange",
       render: (r) => <span className="text-xs text-muted-foreground">{r.exchange}</span>,
     },
     {
@@ -166,7 +166,7 @@ function ScreenerPage() {
     },
     {
       key: "range52",
-      header: "52wk range",
+      header: "Position in 1-year range",
       render: (r) => {
         const pos = wk52Pos(r);
         if (pos == null) return <span className="text-xs text-muted-foreground">—</span>;
@@ -188,7 +188,7 @@ function ScreenerPage() {
     },
     {
       key: "rsi",
-      header: "RSI",
+      header: "Momentum (RSI)",
       numeric: true,
       render: (r) =>
         r.rsi == null ? (
@@ -201,7 +201,7 @@ function ScreenerPage() {
     },
     {
       key: "relVolume",
-      header: "Rel vol",
+      header: "Volume vs usual",
       numeric: true,
       render: (r) =>
         r.relVolume == null ? (
@@ -228,7 +228,11 @@ function ScreenerPage() {
   return (
     <TerminalShell>
       <PageContainer className="py-4 sm:py-6">
-        <PageHeader slug="SCRN · Signal scans" title="Screener" />
+        <PageHeader
+          slug="SCRN · Signal scans"
+          title="Screener"
+          description="A screener filters every listed stock by a rule — biggest gainers, prices near a one-year high, unusually heavy trading — so you can find candidates without reading every board."
+        />
 
         {/* Screen chips */}
         <div className="mb-2 flex flex-wrap items-center gap-2" aria-label="Screens">
@@ -286,8 +290,14 @@ function ScreenerPage() {
         )}
 
         <p className="mt-3 text-xs text-muted-foreground">
-          Technicals (RSI, 52-week, volume) need price history — JSE today. EOD listings (NSE/NGX/GSE)
-          match day-move and news screens only until daily snapshots accumulate.
+          Some screens need months of daily prices. Today only Johannesburg has that
+          history, so Nairobi, Lagos and Accra stocks appear only in the day-move and
+          news screens. That will change as we record more daily prices.
+        </p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          RSI is a momentum score from 0 to 100. Above 70 means the price has risen
+          fast and far (&lsquo;overbought&rsquo;); under 30, fallen fast and far
+          (&lsquo;oversold&rsquo;).
         </p>
       </PageContainer>
     </TerminalShell>

@@ -19,7 +19,7 @@ export const Route = createFileRoute("/news")({
       {
         name: "description",
         content:
-          "The 48-hour news wire plus topic desks that flag when a story rate surges past its own baseline.",
+          "The newest market headlines from African and international outlets, grouped by topic.",
       },
     ],
   }),
@@ -124,23 +124,23 @@ function HeatRail({ heat }: { heat: HeatItem[] }) {
             <Link
               to="/stocks/$ticker"
               params={{ ticker: h.ticker }}
-              title={`${h.name} — ${h.count24h} stories in 24h${h.surging && h.surgeRatio != null ? `, surging ${h.surgeRatio.toFixed(1)}×` : ""}${h.tilt ? `, 7-day tilt ${h.tilt}` : ""}`}
+              title={`${h.name} — ${h.count24h} stories in 24h${h.surging && h.surgeRatio != null ? `, surging ${h.surgeRatio.toFixed(1)}×` : ""}${h.tilt ? `, coverage over the last 7 days mostly ${h.tilt}` : ""}`}
               className="font-mono text-[12px] font-bold text-foreground hover:underline"
             >
               {h.ticker.replace(/\.(JO|NSE|NGX|GSE|DSE|USE|LUSE|ZSE|BSE|MSE|SEM|VFEX)$/, "")}
             </Link>
             {h.tilt === "positive" && (
-              <span className="text-success" aria-label="positive tilt">
+              <span className="text-success" aria-label="mostly positive coverage in the last 7 days">
                 ▲
               </span>
             )}
             {h.tilt === "negative" && (
-              <span className="text-destructive" aria-label="negative tilt">
+              <span className="text-destructive" aria-label="mostly negative coverage in the last 7 days">
                 ▼
               </span>
             )}
             {h.tilt === "mixed" && (
-              <span className="text-muted-foreground" aria-label="mixed tilt">
+              <span className="text-muted-foreground" aria-label="mixed coverage in the last 7 days">
                 ◆
               </span>
             )}
@@ -218,9 +218,9 @@ function NewsDeskPage() {
       : desk
         ? `${desk.label} — ${desk.count24h} in 24h${
             desk.surging && desk.surgeRatio != null
-              ? ` · ${desk.surgeRatio.toFixed(1)}× pace`
+              ? ` · ${desk.surgeRatio.toFixed(1)}× the usual rate`
               : desk.medianDaily > 0
-                ? ` · baseline ${desk.medianDaily}/day`
+                ? ` · usually ${desk.medianDaily}/day`
                 : ""
           }`
         : "The wire";
@@ -231,7 +231,7 @@ function NewsDeskPage() {
         <PageHeader
           slug="NEWS · The wire"
           title="News Desk"
-          description="Newest market-moving headlines across the pipeline, cut into topic desks that flag when a desk's story rate surges past its own baseline."
+          description="The newest market headlines from African and international outlets, grouped by topic. A flame next to a topic means it is getting far more stories than usual."
         />
 
         {/* Desk chips — the section index, in the one Chip dialect */}
@@ -256,7 +256,7 @@ function NewsDeskPage() {
               onClick={() => setActive(d.id)}
               title={
                 d.medianDaily > 0
-                  ? `${d.hint} — ${d.count24h} stories in 24h (baseline ${d.medianDaily}/day)`
+                  ? `${d.hint} — ${d.count24h} stories in 24h (usually ${d.medianDaily}/day)`
                   : `${d.hint} — ${d.count24h} stories in 24h`
               }
             >
@@ -271,7 +271,7 @@ function NewsDeskPage() {
         {desk ? (
           <p className="mb-3 text-xs text-muted-foreground">
             {desk.hint} — {desk.count24h} stories in 24h
-            {desk.medianDaily > 0 && <> vs {desk.medianDaily}/day baseline</>}
+            {desk.medianDaily > 0 && <> · usually {desk.medianDaily}/day</>}
             {desk.surging && desk.surgeRatio != null && (
               <span className="ml-1 font-bold text-primary">
                 · surging {desk.surgeRatio.toFixed(1)}×
@@ -280,7 +280,9 @@ function NewsDeskPage() {
           </p>
         ) : (
           <p className="mb-3 text-xs text-muted-foreground">
-            Newest headlines across the pipeline. A flame on a desk means its story rate is surging past its own 30-day baseline.
+            Newest headlines first. A flame next to a topic means it is getting far
+            more stories than usual — 3.2× means 3.2 times the usual number of
+            stories per day.
           </p>
         )}
 
@@ -301,7 +303,7 @@ function NewsDeskPage() {
                 tone="empty"
                 message={
                   active === "all"
-                    ? "No stories in the last 48 hours — the pipeline may be between cycles."
+                    ? "No stories in the last 48 hours. Check back in a few minutes — new headlines arrive through the day."
                     : "No stories on this desk in the last 48 hours."
                 }
               />
@@ -324,7 +326,7 @@ function NewsDeskPage() {
 
         <p className="mt-3 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
           <ExternalLink className="h-3 w-3" aria-hidden />
-          Headlines link out to the outlet. Scores are pipeline VADER; hollow dots are not scored yet.
+          Headlines open at the outlet that published them. The coloured dot shows whether coverage of a story reads mostly positive (green) or negative (red); a hollow dot means the story has not been scored yet.
         </p>
       </PageContainer>
     </TerminalShell>

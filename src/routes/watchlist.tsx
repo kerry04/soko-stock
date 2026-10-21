@@ -15,7 +15,7 @@ export const Route = createFileRoute("/watchlist")({
   head: () => ({
     meta: [
       { title: "Watchlist — Soko Stock" },
-      { name: "description", content: "Stocks you're watching on the Soko Stock terminal." },
+      { name: "description", content: "Stocks you're following — and can practise trading from any stock page." },
     ],
   }),
   component: WatchlistPage,

@@ -21,13 +21,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Soko Stock — African Stock Terminal" },
+      { title: "Soko Stock — African stock prices and practice trading" },
       {
         name: "description",
         content:
-          "Live African stock boards — Johannesburg, Nairobi, Lagos — wired to global news signals.",
+          "Follow stock prices on twelve African exchanges — Johannesburg, Nairobi, Lagos and nine more — practise trading with virtual cash, and read the news moving each market.",
       },
-      { property: "og:title", content: "Soko Stock — African Stock Terminal" },
+      { property: "og:title", content: "Soko Stock — African stock prices and practice trading" },
     ],
   }),
   component: StocksBoard,
@@ -281,7 +281,7 @@ function StocksBoard() {
   ];
   if (board && breadth.counted > 0) {
     slugParts.push(
-      `${exchange.shortName} breadth ▲ ${breadth.adv} · ▼ ${breadth.dec} · — ${breadth.flat}`,
+      `${exchange.shortName}: ${breadth.adv} up · ${breadth.dec} down · ${breadth.flat} unchanged`,
     );
   }
 
@@ -380,7 +380,7 @@ function StocksBoard() {
         <PageHeader
           slug={slugParts.join(" · ")}
           title="The Soko Wire"
-          description="Twelve African exchanges on one board — end-of-day ledgers and delayed live quotes, every line tied to the news that moved it."
+          description="Prices from twelve African stock exchanges on one page. Johannesburg updates through the day, about 15 minutes behind the market. The other eleven update once a day, after each exchange closes. Tap any company to see its prices and the news that mentions it."
         />
 
         {/* Lead story + most-covered rail, from the news wire. Enrichment
@@ -442,6 +442,11 @@ function StocksBoard() {
                     ))}
                   </ul>
                 )}
+                <p className="mt-3 border-t border-border/60 pt-2 text-[11px] leading-relaxed text-muted-foreground">
+                  The coloured dot shows whether coverage of a story reads mostly
+                  positive (green) or negative (red); a hollow dot means the story
+                  has not been scored yet.
+                </p>
               </Panel>
 
               <Panel variant="plain" padding="md">
@@ -471,17 +476,17 @@ function StocksBoard() {
                           )}
                         </Link>
                         {h.tilt === "positive" && (
-                          <span className="text-success" aria-label="positive tilt">
+                          <span className="text-success" aria-label="mostly positive coverage in the last 7 days">
                             ▲
                           </span>
                         )}
                         {h.tilt === "negative" && (
-                          <span className="text-destructive" aria-label="negative tilt">
+                          <span className="text-destructive" aria-label="mostly negative coverage in the last 7 days">
                             ▼
                           </span>
                         )}
                         {h.tilt === "mixed" && (
-                          <span className="text-muted-foreground" aria-label="mixed tilt">
+                          <span className="text-muted-foreground" aria-label="mixed coverage in the last 7 days">
                             ◆
                           </span>
                         )}
@@ -504,7 +509,7 @@ function StocksBoard() {
                 {surgingDesks.length > 0 && (
                   <div className="mt-4 space-y-1 border-t border-border/60 pt-3">
                     <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                      Desks surging
+                      Topics heating up
                     </p>
                     {surgingDesks.map((d) => (
                       <p
@@ -513,13 +518,16 @@ function StocksBoard() {
                       >
                         <span className="uppercase tracking-[0.12em]">{d.label}</span>
                         <span className="num shrink-0">
-                          {d.count24h} in 24h ·{" "}
+                          {d.count24h} stories in 24h ·{" "}
                           <span className="font-bold text-primary">
-                            {(d.surgeRatio as number).toFixed(1)}× pace
+                            {(d.surgeRatio as number).toFixed(1)}× the usual rate
                           </span>
                         </span>
                       </p>
                     ))}
+                    <p className="pt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      3.2× means 3.2 times the usual number of stories per day.
+                    </p>
                   </div>
                 )}
               </Panel>
@@ -539,7 +547,7 @@ function StocksBoard() {
             >
               {e.shortName}
               <span className="text-[9px] opacity-70">
-                {e.status === "soon" ? "Soon" : e.source === "yahoo" ? "Live" : "EOD"}
+                {e.status === "soon" ? "Soon" : e.source === "yahoo" ? "Live" : "End of day"}
               </span>
             </Chip>
           ))}
@@ -549,7 +557,7 @@ function StocksBoard() {
           <StateBlock
             tone="empty"
             title={exchange.name}
-            message="No free, machine-readable price feed exists for this exchange yet. We're tracking the search — the board goes live the moment a reliable free source appears. Nothing here is estimated or filled in."
+            message="We are still looking for a reliable free price feed for this exchange. The board will appear here as soon as we find one. Nothing on this page is estimated or filled in by hand."
             className="mt-6"
           />
         ) : (
@@ -685,9 +693,6 @@ function StocksBoard() {
                 </Panel>
               )}
             </div>
-            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-              Educational terminal — not investment advice.
-            </p>
           </>
         )}
       </PageContainer>

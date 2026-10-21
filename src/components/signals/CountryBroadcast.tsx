@@ -97,7 +97,7 @@ export function CountryBroadcast({
             Soko <span className="text-primary">Live</span>
           </span>
           <span className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground sm:inline">
-            {country.name} desk
+            {country.name}
           </span>
           <span className="num ml-auto font-mono text-[11px] text-popover-foreground/80">
             {clock} EAT
@@ -158,7 +158,8 @@ export function CountryBroadcast({
               </>
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">
-                Signal is moving on trend velocity — no headlines in the last 24h yet.
+                This country is being mentioned more than usual, but no headlines
+                from the last 24 hours matched it yet.
               </p>
             )}
           </div>
@@ -169,7 +170,7 @@ export function CountryBroadcast({
               <div
                 className="h-1.5 w-28 overflow-hidden rounded-full bg-popover-foreground/10"
                 role="img"
-                aria-label={`Instability index ${instability} of 100`}
+                aria-label={`Bad-news score ${instability} of 100`}
               >
                 <div
                   className={`h-full rounded-full ${
@@ -182,13 +183,16 @@ export function CountryBroadcast({
                   style={{ width: `${instability}%` }}
                 />
               </div>
-              <span className="num font-mono text-[10px] uppercase tracking-[0.14em] text-popover-foreground">
-                Instability {instability}/100
+              <span
+                className="num font-mono text-[10px] uppercase tracking-[0.14em] text-popover-foreground"
+                title="How bad the news from this country is, out of 100 — counted from negative stories, unrest and disasters in the last 24 hours"
+              >
+                Bad news {instability}/100
               </span>
             </div>
             <span className="num font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               {articles.length} articles · 24h
-              {signal.velocity > 0 && ` · velocity +${signal.velocity.toFixed(1)}`}
+              {signal.velocity > 0 && ` · mentions rising fast`}
             </span>
             {(signal.eventHits > 0 || signal.quakeHits > 0) && (
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-destructive">
@@ -202,7 +206,7 @@ export function CountryBroadcast({
             )}
             {converging && (
               <span className="rounded-full bg-destructive/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-destructive">
-                Signals converging
+                Several kinds of trouble at once
               </span>
             )}
           </div>

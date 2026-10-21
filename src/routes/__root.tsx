@@ -11,18 +11,18 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
       <div className="text-center">
         <p className="font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-primary">
-          ERR · No such function
+          404
         </p>
         <h1 className="font-display mt-3 text-7xl font-semibold leading-none">404</h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          This page doesn&apos;t exist on the terminal.
+          This page doesn&apos;t exist.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-primary underline-offset-4 hover:underline"
           >
-            ← STK · Back to the boards
+            ← Back to the stock boards
           </Link>
         </div>
       </div>
@@ -39,7 +39,7 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Soko Stock: the African stock terminal. Twelve exchanges — boards, signals, macro and the news wire — in one place. Research tool; not investment advice.",
+          "Soko Stock: stock prices from twelve African exchanges, the news moving them, and practice trading with virtual cash — built for Kenyans learning to invest.",
       },
       { name: "author", content: "Soko Stock" },
       { name: "theme-color", content: "#0C0B09" },

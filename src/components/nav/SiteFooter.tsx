@@ -4,8 +4,9 @@ import { TERMINAL_SECTIONS } from "./terminal-nav";
 
 /**
  * The terminal's folio footer — provenance printed, not implied.
- * One disclaimer (instead of the sentence hand-pasted into five pages),
- * the data sources with their freshness contract, and the /terms link.
+ * The site's one disclaimer lives here (instead of the sentence that
+ * used to be hand-pasted into five pages), the data sources in plain
+ * sentences, and the /terms link.
  */
 export function SiteFooter() {
   return (
@@ -15,15 +16,18 @@ export function SiteFooter() {
           <div className="min-w-0">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-foreground">
               Soko<span className="text-primary">_Stock</span>
-              <span className="ml-3 font-medium text-muted-foreground">
-                Educational terminal — not investment advice
-              </span>
             </p>
-            <p className="mt-2 max-w-xl font-mono text-[10px] leading-relaxed tracking-[0.08em] text-muted-foreground">
-              JSE INTRADAY VIA YAHOO FINANCE · NSE / NGX / GSE + 8 EXCHANGES EOD
-              VIA AFRICAN FINANCIALS · MACRO VIA CENTRAL BANK OF KENYA · NEWS
-              WIRE VIA THE SOKO PIPELINE — EVERY BOARD IS LABELLED LIVE OR EOD
-              WHERE IT APPEARS.
+            <p className="mt-2 max-w-xl text-[11px] leading-relaxed text-muted-foreground">
+              Where the numbers come from: Johannesburg prices come from Yahoo
+              Finance, about 15 minutes behind the market. The other eleven
+              exchanges come from African Financials, once a day after closing.
+              Economy figures come from the Central Bank of Kenya. Every price
+              on the site is marked &lsquo;live&rsquo; or &lsquo;end of
+              day&rsquo; where it appears.
+            </p>
+            <p className="mt-2 max-w-xl text-[11px] leading-relaxed text-muted-foreground">
+              Soko Stock is for learning and practising. Paper trades use
+              virtual cash, and nothing here is investment advice.
             </p>
             <p className="mt-2 max-w-xl text-[11px] leading-relaxed text-muted-foreground">
               Soko Stock is information and practice only. We hold no client
