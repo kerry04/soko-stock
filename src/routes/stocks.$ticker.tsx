@@ -1,17 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  ExternalLink,
-  Minus,
-  Newspaper,
-  Star,
-} from "lucide-react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { ExternalLink, Star } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { PageContainer } from "@/components/nav/PageContainer";
+import { PageHeader } from "@/components/nav/PageHeader";
+import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { SkeletonBlock, SkeletonRows, StateBlock } from "@/components/common/states";
 import { TradeTicket } from "@/components/paper/TradeTicket";
-import { EventBadge, LimitChip, SentimentDot } from "@/components/stocks/badges";
-import { fmtPrice as fmt } from "@/lib/stocks/format";
+import { EventBadge, LimitChip, SentimentDot, NewsSurgeChip } from "@/components/stocks/badges";
+import { ChangeCell } from "@/components/stocks/change";
+import { fmtPrice as fmt, timeAgo } from "@/lib/stocks/format";
+import {
+  classifyHeadline,
+  HEADLINE_EVENT_LABELS,
+  type HeadlineEvent,
+} from "@/lib/news/events";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
@@ -116,11 +120,34 @@ const RANGES = [
   { id: "5y", label: "5Y" },
 ] as const;
 
-function timeAgo(iso: string): string {
-  const s = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (s < 3600) return `${Math.max(1, Math.floor(s / 60))}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+/**
+ * Folio section header — the stock page's section dialect: an amber
+ * point, a mono slug, and a hairline rule. Sections are separated by
+ * this, not by card slabs.
+ */
+function FolioHeader({
+  title,
+  right,
+  className,
+}: {
+  title: string;
+  right?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "mb-3 flex items-center justify-between gap-3 border-b border-border pb-2",
+        className,
+      )}
+    >
+      <p className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+        <span className="inline-block h-1.5 w-1.5 shrink-0 bg-primary" aria-hidden />
+        {title}
+      </p>
+      {right}
+    </div>
+  );
 }
 
 /**
@@ -155,15 +182,17 @@ function Wk52Bar({
   const nearLow = price <= low * 1.03;
 
   return (
-    <div className="mt-3 rounded-xl border border-border/60 bg-card/40 p-3 sm:p-4">
+    <Panel variant="stat" padding="sm">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          52-week range
-        </p>
+        <PanelTitle>52-week range</PanelTitle>
         <p
           className={cn(
             "num font-mono text-[11px] font-semibold",
-            nearHigh ? "text-success" : nearLow ? "text-red-500" : "text-muted-foreground",
+            nearHigh
+              ? "text-success"
+              : nearLow
+                ? "text-destructive"
+                : "text-muted-foreground",
           )}
         >
           {nearHigh
@@ -185,22 +214,22 @@ function Wk52Bar({
       </div>
       <div className="num mt-2 flex items-center justify-between font-mono text-[11px] text-muted-foreground">
         <span>
-          <span className="text-red-500/90">Low</span> {fmt(low, sym)}
+          <span className="text-destructive/90">Low</span> {fmt(low, sym)}
         </span>
         <span>
           <span className="text-success/90">High</span> {fmt(high, sym)}
         </span>
       </div>
-    </div>
+    </Panel>
   );
 }
 
 const GAUGE_SEGS = [
-  { label: "Strong Sell", color: "#ef4444" },
-  { label: "Sell", color: "#f59e0b" },
-  { label: "Neutral", color: "#6b7280" },
-  { label: "Buy", color: "#a3e635" },
-  { label: "Strong Buy", color: "#22c55e" },
+  { label: "Strong Sell", className: "stroke-destructive" },
+  { label: "Sell", className: "stroke-warning" },
+  { label: "Neutral", className: "stroke-muted-foreground" },
+  { label: "Buy", className: "stroke-success/60" },
+  { label: "Strong Buy", className: "stroke-success" },
 ] as const;
 
 function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): string {
@@ -213,7 +242,7 @@ function arcPath(cx: number, cy: number, r: number, a0: number, a1: number): str
 }
 
 /**
- * Technical signals card (TradingView pattern): composite gauge from five
+ * Technical signals panel (TradingView pattern): composite gauge from five
  * real votes — RSI(14), MACD, price vs 50D/200D, 50D vs 200D — plus the
  * breakdown. Delayed daily data only; labeled as pattern, not advice.
  */
@@ -229,7 +258,7 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
     vote > 0
       ? ["Buy", "bg-success/15 text-success"]
       : vote < 0
-        ? ["Sell", "bg-red-500/15 text-red-500"]
+        ? ["Sell", "bg-destructive/15 text-destructive"]
         : ["Neutral", "bg-muted text-muted-foreground"];
 
   const rows: [string, string, [string, string]][] = [
@@ -246,22 +275,17 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
       "Volume vs 20-day avg",
       t.relVolume != null ? `${t.relVolume.toFixed(1)}×` : "—",
       t.relVolume != null && t.relVolume >= 2
-        ? ["Unusual", "bg-amber-500/15 text-amber-500"]
+        ? ["Unusual", "bg-primary/15 text-primary"]
         : ["Normal", "bg-muted text-muted-foreground"],
     ],
   ];
 
   return (
-    <section
-      aria-label="Technical signals"
-      className="mt-3 rounded-xl border border-border/60 bg-card/40 p-3 sm:p-4"
-    >
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-          Technical signals
-        </p>
+    <Panel padding="md" aria-label="Technical signals">
+      <PanelHeader>
+        <PanelTitle>Technical signals</PanelTitle>
         <p className="font-mono text-[10px] text-muted-foreground">{t.barsUsed}d of history</p>
-      </div>
+      </PanelHeader>
 
       <div className="mt-1 flex flex-col items-center sm:flex-row sm:gap-6">
         <div className="w-full max-w-[240px]">
@@ -271,7 +295,7 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
                 key={s.label}
                 d={arcPath(cx, cy, r, 180 - i * 36, 180 - (i + 1) * 36)}
                 fill="none"
-                stroke={s.color}
+                className={s.className}
                 strokeWidth="11"
                 strokeLinecap="butt"
                 opacity={t.label === s.label ? 1 : 0.28}
@@ -283,7 +307,11 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
           <p
             className={cn(
               "num -mt-1 text-center font-mono text-sm font-bold",
-              t.composite >= 0.2 ? "text-success" : t.composite <= -0.2 ? "text-red-500" : "text-muted-foreground",
+              t.composite >= 0.2
+                ? "text-success"
+                : t.composite <= -0.2
+                  ? "text-destructive"
+                  : "text-muted-foreground",
             )}
           >
             {t.label}
@@ -315,7 +343,7 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
       <p className="mt-3 border-t border-border/50 pt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
         Pattern from delayed daily data — not a recommendation.
       </p>
-    </section>
+    </Panel>
   );
 }
 
@@ -339,22 +367,19 @@ function SignalWire({
           ? "Mixed"
           : null;
   return (
-    <section className="mt-6" aria-label="Related news signals">
-      <div className="flex items-center gap-2">
-        <Newspaper className="h-4 w-4 text-success" aria-hidden />
-        <h2 className="font-mono text-sm font-bold uppercase tracking-[0.18em]">
-          Signal wire
-        </h2>
-        {signal?.surging && signal.surgeRatio != null && (
-          <span
-            title={`${signal.count24h} linked stories in 24h vs a ${signal.medianDaily}/day 30-day pace`}
-            className="rounded bg-sky-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-sky-400"
-          >
-            News {signal.surgeRatio.toFixed(1)}×
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-sm text-muted-foreground">
+    <section aria-label="Related news signals">
+      <FolioHeader
+        title="Signal wire"
+        right={
+          signal?.surging && signal.surgeRatio != null ? (
+            <NewsSurgeChip
+              ratio={signal.surgeRatio}
+              title={`${signal.count24h} linked stories in 24h vs a ${signal.medianDaily}/day 30-day pace`}
+            />
+          ) : undefined
+        }
+      />
+      <p className="text-sm text-muted-foreground">
         Headlines mentioning {name} from our global news pipeline.
         {updatedAt != null && (
           <span className="font-mono text-[11px]">
@@ -370,7 +395,7 @@ function SignalWire({
           <span
             className={cn(
               s.tilt === "positive" && "text-success",
-              s.tilt === "negative" && "text-red-500",
+              s.tilt === "negative" && "text-destructive",
             )}
           >
             {tiltLabel}
@@ -380,17 +405,20 @@ function SignalWire({
       )}
 
       {!signal || signal.articles.length === 0 ? (
-        <p className="mt-3 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
-          No linked headlines in the last 7 days.{" "}
-          <Link to="/map" className="text-success hover:underline">
-            Check the signal map
-          </Link>{" "}
-          for the wider picture.
-        </p>
+        <StateBlock
+          tone="empty"
+          className="mt-3"
+          title="No linked headlines in the last 7 days"
+          action={
+            <Link to="/map" className="text-sm text-success hover:underline">
+              Check the signal map for the wider picture
+            </Link>
+          }
+        />
       ) : (
-        <ul className="mt-3 space-y-2.5">
+        <ul className="mt-3 border-t border-border/60">
           {signal.articles.slice(0, 8).map((n) => (
-            <li key={n.id} className="flex gap-2.5">
+            <li key={n.id} className="flex gap-2.5 border-b border-border/50 py-2.5">
               <SentimentDot score={n.sentiment_score} className="mt-1.5" />
               <div className="min-w-0">
                 <a
@@ -424,49 +452,221 @@ function SignalWire({
   );
 }
 
-function PriceChart({ bars, sym, up }: { bars: Bar[]; sym: string; up: boolean }) {
-  const pts = useMemo(() => bars.filter((b) => b.c != null) as (Bar & { c: number })[], [bars]);
-  if (pts.length < 2) return <div className="flex h-56 items-center justify-center text-sm text-muted-foreground">Not enough history yet.</div>;
+/** A classified headline pinned to the chart timeline. */
+export interface ChartEvent {
+  t: number;
+  event: HeadlineEvent;
+}
 
+const DAY_MS = 86_400_000;
+
+function PriceChart({
+  bars,
+  sym,
+  events,
+}: {
+  bars: Bar[];
+  sym: string;
+  events: ChartEvent[];
+}) {
+  const pts = useMemo(() => bars.filter((b) => b.c != null) as (Bar & { c: number })[], [bars]);
+  if (pts.length < 2) {
+    return (
+      <StateBlock
+        tone="empty"
+        className="border-none py-10"
+        title="Not enough history yet"
+      />
+    );
+  }
+
+  // Plot geometry: left gutter carries price labels, right gutter the
+  // last-value tag, bottom strip the time axis.
   const W = 720;
-  const H = 240;
-  const padX = 8;
-  const padY = 14;
+  const H = 248;
+  const padL = 64;
+  const padR = 62;
+  const padT = 12;
+  const padB = 20;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
   const min = Math.min(...pts.map((p) => p.c));
   const max = Math.max(...pts.map((p) => p.c));
   const span = Math.max(0.0001, max - min);
-  const x = (i: number) => padX + (i / (pts.length - 1)) * (W - padX * 2);
-  const y = (v: number) => padY + (1 - (v - min) / span) * (H - padY * 2);
+  const x = (i: number) => padL + (i / (pts.length - 1)) * plotW;
+  const y = (v: number) => padT + (1 - (v - min) / span) * plotH;
   const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.c).toFixed(1)}`).join(" ");
-  const area = `${line} L${x(pts.length - 1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z`;
-  const color = up ? "#22c55e" : "#ef4444";
-  const gid = `sg-${up ? "up" : "dn"}`;
+  const area = `${line} L${x(pts.length - 1).toFixed(1)},${padT + plotH} L${x(0).toFixed(1)},${padT + plotH} Z`;
 
-  const firstT = new Date(pts[0].t);
-  const lastT = new Date(pts[pts.length - 1].t);
+  const gridFracs = [0, 1 / 3, 2 / 3, 1];
   const dateFmt = (d: Date) =>
     d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
+  const timeIdx = [0, Math.floor((pts.length - 1) / 2), pts.length - 1];
+
+  const last = pts[pts.length - 1];
+  const lastLabel = fmt(last.c, sym);
+  const tagW = Math.ceil(lastLabel.length * 5.9) + 12;
+  const tagX = W - tagW;
+  const tagY = Math.min(padT + plotH - 18, Math.max(padT, y(last.c) - 9));
+
+  // Event markers: snap each classified headline to its nearest trading
+  // day and keep it only when that day is within four calendar days —
+  // a marker is a date claim, so an out-of-span headline gets none.
+  const stackAt = new Map<number, number>();
+  const markers: { i: number; event: HeadlineEvent; stack: number }[] = [];
+  for (const ev of events) {
+    let best = -1;
+    let bestDiff = Infinity;
+    pts.forEach((p, i) => {
+      const d = Math.abs(p.t - ev.t);
+      if (d < bestDiff) {
+        bestDiff = d;
+        best = i;
+      }
+    });
+    if (best < 0 || bestDiff > 4 * DAY_MS) continue;
+    const stack = stackAt.get(best) ?? 0;
+    stackAt.set(best, stack + 1);
+    markers.push({ i: best, event: ev.event, stack });
+  }
+  const legend: { event: HeadlineEvent; count: number }[] = [];
+  for (const m of markers) {
+    const row = legend.find((l) => l.event === m.event);
+    if (row) row.count += 1;
+    else legend.push({ event: m.event, count: 1 });
+  }
 
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-56 w-full" role="img" aria-label="Price history chart">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="h-56 w-full"
+        role="img"
+        aria-label={`Price history chart${markers.length ? ` with ${markers.length} news event markers` : ""}`}
+      >
         <defs>
-          <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
-            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          <linearGradient id="sg-price" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" style={{ stopColor: "var(--primary)" }} stopOpacity="0.22" />
+            <stop offset="100%" style={{ stopColor: "var(--primary)" }} stopOpacity="0" />
           </linearGradient>
         </defs>
-        <path d={area} fill={`url(#${gid})`} />
-        <path d={line} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" />
-        <circle cx={x(pts.length - 1)} cy={y(pts[pts.length - 1].c)} r="3.5" fill={color} />
+
+        {/* Gridlines + price axis */}
+        {gridFracs.map((f) => {
+          const v = min + span * f;
+          const gy = y(v);
+          return (
+            <g key={f}>
+              <line
+                x1={padL}
+                x2={padL + plotW}
+                y1={gy}
+                y2={gy}
+                className="stroke-border"
+                strokeWidth="1"
+                opacity="0.55"
+              />
+              <text
+                x={padL - 6}
+                y={gy + 3}
+                textAnchor="end"
+                fontSize="9.5"
+                className="fill-muted-foreground font-mono"
+              >
+                {fmt(v, sym)}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Time axis */}
+        {timeIdx.map((i) => (
+          <text
+            key={i}
+            x={x(i)}
+            y={H - 5}
+            textAnchor={i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"}
+            fontSize="9.5"
+            className="fill-muted-foreground font-mono"
+          >
+            {dateFmt(new Date(pts[i].t))}
+          </text>
+        ))}
+
+        <path d={area} fill="url(#sg-price)" />
+        <path
+          d={line}
+          fill="none"
+          className="stroke-primary"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+
+        {/* Event markers — amber ticks on the timeline */}
+        {markers.map((m, k) => {
+          const mx = x(m.i);
+          const dy = padT + 4 + m.stack * 10;
+          return (
+            <g key={k}>
+              <line
+                x1={mx}
+                x2={mx}
+                y1={padT}
+                y2={padT + 7}
+                className="stroke-primary"
+                strokeWidth="1.5"
+              />
+              <path
+                d={`M${mx},${dy} l4,5 l-4,5 l-4,-5 Z`}
+                className="fill-primary"
+              >
+                <title>{HEADLINE_EVENT_LABELS[m.event]}</title>
+              </path>
+            </g>
+          );
+        })}
+
+        {/* Last point + value tag */}
+        <line
+          x1={x(pts.length - 1)}
+          x2={tagX}
+          y1={y(last.c)}
+          y2={y(last.c)}
+          className="stroke-primary"
+          strokeWidth="1"
+          opacity="0.6"
+        />
+        <circle cx={x(pts.length - 1)} cy={y(last.c)} r="3.5" className="fill-primary" />
+        <rect x={tagX} y={tagY} width={tagW} height="18" rx="2" className="fill-primary" />
+        <text
+          x={tagX + tagW / 2}
+          y={tagY + 12.5}
+          textAnchor="middle"
+          fontSize="9.5"
+          fontWeight="700"
+          className="fill-primary-foreground font-mono"
+        >
+          {lastLabel}
+        </text>
       </svg>
-      <div className="mt-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-        <span>{fmt(max, sym)} high</span>
-        <span>
-          {dateFmt(firstT)} → {dateFmt(lastT)}
-        </span>
-        <span>{fmt(min, sym)} low</span>
-      </div>
+
+      {legend.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+            On the timeline
+          </span>
+          {legend.map((l) => (
+            <span
+              key={l.event}
+              className="inline-flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground"
+            >
+              <span className="inline-block h-2 w-2 rotate-45 bg-primary" aria-hidden />
+              {HEADLINE_EVENT_LABELS[l.event]}
+              {l.count > 1 ? ` ×${l.count}` : ""}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -560,13 +760,35 @@ function StockDetail() {
     };
   }, [quote]);
 
+  // Classified headlines for the chart timeline. Bars are Yahoo daily
+  // closes with epoch-ms dates and the headlines carry ISO dates, so a
+  // marker can be pinned to its nearest trading day honestly.
+  const chartEvents = useMemo<ChartEvent[]>(() => {
+    if (!news) return [];
+    const out: ChartEvent[] = [];
+    for (const a of news.articles) {
+      const event = classifyHeadline(a.title);
+      if (!event) continue;
+      const t = new Date(a.published_at).getTime();
+      if (Number.isFinite(t)) out.push({ t, event });
+    }
+    return out;
+  }, [news]);
+
   const pct = quote?.changePercent ?? null;
   const up = (pct ?? 0) >= 0;
   const sym = quote?.currencySymbol ?? "";
+  const asOfLabel = quote
+    ? new Date(quote.asOf).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <TerminalShell>
-      <div className="mx-auto max-w-[1100px] px-3 py-4 sm:px-5">
+      <PageContainer className="py-4 sm:py-6">
         <Link
           to="/"
           className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
@@ -575,22 +797,34 @@ function StockDetail() {
         </Link>
 
         {loading && (
-          <div className="mt-4 space-y-3">
-            <div className="h-8 w-64 animate-pulse rounded bg-muted/60" />
-            <div className="h-56 animate-pulse rounded-xl bg-muted/40" />
+          <div className="mt-4 space-y-3" aria-label="Loading quote">
+            <SkeletonBlock className="h-9 w-72" />
+            <SkeletonBlock className="h-56" />
+            <SkeletonRows rows={4} />
           </div>
         )}
         {!loading && (error || !quote) && (
-          <p className="mt-8 text-center text-sm text-muted-foreground">
-            Quote unavailable right now — check back shortly.
-          </p>
+          <StateBlock
+            tone="error"
+            className="mt-8"
+            title="Quote unavailable right now"
+            message="Check back shortly."
+          />
         )}
         {!loading && quote && (
           <>
-            <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold sm:text-2xl">{quote.name}</h1>
+            <PageHeader
+              className="mt-3"
+              slug={[
+                "STK",
+                quote.ticker,
+                exchange?.name ?? quote.exchange,
+                hasHistory ? "Delayed live" : "End of day",
+                `As of ${asOfLabel}`,
+              ].join(" · ")}
+              title={quote.name}
+              actions={
+                <>
                   <button
                     onClick={() => toggle(ticker)}
                     aria-label={watched.includes(ticker) ? "Unwatch" : "Watch"}
@@ -598,8 +832,8 @@ function StockDetail() {
                     className={cn(
                       "rounded p-1",
                       watched.includes(ticker)
-                        ? "text-amber-400"
-                        : "text-muted-foreground/50 hover:text-amber-400",
+                        ? "text-primary"
+                        : "text-muted-foreground/50 hover:text-primary",
                     )}
                   >
                     <Star
@@ -608,202 +842,182 @@ function StockDetail() {
                       aria-hidden
                     />
                   </button>
-                </div>
-                <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                  {quote.ticker} · {exchange?.name ?? quote.exchange}
-                </p>
-                {quote.board?.limitHit && (
-                  <p className="mt-1.5">
-                    <LimitChip hit={quote.board.limitHit} />
-                  </p>
-                )}
-              </div>
-              <div className="text-right">
-                <p className="num font-mono text-3xl font-bold">
-                  {quote.price != null ? fmt(quote.price, sym) : "—"}
-                </p>
-                <p
-                  className={cn(
-                    "num mt-0.5 inline-flex items-center gap-1 font-mono text-sm font-semibold",
-                    up ? "text-success" : "text-red-500",
-                  )}
-                >
-                  {pct == null ? (
-                    <Minus className="h-3.5 w-3.5" aria-hidden />
-                  ) : up ? (
-                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                  ) : (
-                    <ArrowDownRight className="h-3.5 w-3.5" aria-hidden />
-                  )}
-                  {quote.change != null && (
-                    <span>
-                      {up && quote.change > 0 ? "+" : ""}
-                      {fmt(quote.change, sym)}
-                    </span>
-                  )}
-                  {pct != null && (
-                    <span>
-                      ({up ? "+" : ""}
-                      {pct.toFixed(2)}%)
-                    </span>
-                  )}
-                </p>
-                <p className="mt-1 font-mono text-[10px] text-muted-foreground">{quote.timeNote}</p>
-              </div>
-            </div>
+                  <div className="text-right">
+                    <p className="num font-mono text-3xl font-bold">
+                      {quote.price != null ? fmt(quote.price, sym) : "—"}
+                    </p>
+                    <p className="num mt-0.5 flex items-center justify-end gap-2 font-mono text-sm font-semibold">
+                      {quote.change != null && (
+                        <span className={up ? "text-success" : "text-destructive"}>
+                          {up && quote.change > 0 ? "+" : ""}
+                          {fmt(quote.change, sym)}
+                        </span>
+                      )}
+                      <ChangeCell value={pct} className="text-sm" />
+                    </p>
+                    <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+                      {quote.timeNote}
+                    </p>
+                  </div>
+                </>
+              }
+            />
+
+            {quote.board?.limitHit && (
+              <p className="-mt-2 mb-4">
+                <LimitChip hit={quote.board.limitHit} />
+              </p>
+            )}
 
             {quote.board?.speculation ? (
-              <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs leading-relaxed text-warning">
+              <p className="mb-4 border-l-2 border-warning bg-warning/10 px-3 py-2 text-xs leading-relaxed text-warning">
                 Speculation signature: a large move on thin trading with no matching news
                 behind it. Moves like this often reverse — the terminal flags them, it does
                 not chase them.
               </p>
             ) : quote.board?.liquidity === "thin" ? (
-              <p className="mt-3 font-mono text-[11px] text-muted-foreground">
+              <p className="mb-4 font-mono text-[11px] text-muted-foreground">
                 Thin counter — this name trades lightly, so its signals are noisy and its
                 price can jump on a single order.
               </p>
             ) : null}
 
-            {/* Range selector + chart, or EOD-only note */}
-            {hasHistory ? (
-              <>
-                <div className="mt-4 flex gap-1.5" role="tablist" aria-label="Chart range">
-                  {RANGES.map((r) => (
-                    <button
-                      key={r.id}
-                      role="tab"
-                      aria-selected={range === r.id}
-                      onClick={() => setRange(r.id)}
-                      className={cn(
-                        "rounded-md px-3 py-1.5 font-mono text-[11px] font-bold",
-                        range === r.id
-                          ? "bg-success/15 text-success"
-                          : "text-muted-foreground hover:bg-card hover:text-foreground",
-                      )}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
+            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="min-w-0 space-y-4">
+                {/* Range selector + chart, or EOD-only notes */}
+                {hasHistory ? (
+                  <>
+                    <section aria-label="Price chart">
+                      <div className="mb-2 flex gap-1.5" role="tablist" aria-label="Chart range">
+                        {RANGES.map((r) => (
+                          <Chip
+                            key={r.id}
+                            role="tab"
+                            aria-selected={range === r.id}
+                            active={range === r.id}
+                            onClick={() => setRange(r.id)}
+                          >
+                            {r.label}
+                          </Chip>
+                        ))}
+                      </div>
+                      <Panel padding="sm">
+                        <PriceChart bars={quote.bars} sym={sym} events={chartEvents} />
+                      </Panel>
+                    </section>
 
-                <div className="mt-2 rounded-xl border border-border/70 bg-card/40 p-3 sm:p-4">
-                  <PriceChart bars={quote.bars} sym={sym} up={up} />
-                </div>
+                    {/* 52-week position — only meaningful on the 1Y view */}
+                    {range === "1y" && quote.price != null && (
+                      <Wk52Bar bars={quote.bars} price={quote.price} sym={sym} />
+                    )}
 
-                {/* 52-week position — only meaningful on the 1Y view */}
-                {range === "1y" && quote.price != null && (
-                  <Wk52Bar bars={quote.bars} price={quote.price} sym={sym} />
-                )}
-
-                {/* Technical signals — real history only */}
-                {quote.technicals ? (
-                  <SignalsCard t={quote.technicals} sym={sym} />
+                    {/* Technical signals — real history only */}
+                    {quote.technicals ? (
+                      <SignalsCard t={quote.technicals} sym={sym} />
+                    ) : (
+                      <StateBlock
+                        tone="empty"
+                        title="Technical signals"
+                        message="Not enough price history yet for technical signals — check back as history accumulates."
+                      />
+                    )}
+                  </>
                 ) : (
-                  <p className="mt-3 rounded-xl border border-border/60 bg-card/40 p-3 font-mono text-[11px] text-muted-foreground">
-                    Not enough price history yet for technical signals — check back as history
-                    accumulates.
-                  </p>
+                  <>
+                    <Panel padding="md">
+                      <PanelTitle>
+                        End-of-day quote{quote.extras?.updated ? ` · ${quote.extras.updated}` : ""}
+                      </PanelTitle>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        Price history isn't available for this listing yet — the board updates
+                        once per trading day.
+                      </p>
+                    </Panel>
+                    <Panel padding="md">
+                      <PanelTitle>Technical signals · History building</PanelTitle>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        Signals like RSI, moving averages, and volume patterns need daily price
+                        history. We're recording this listing's closes every trading day — signals
+                        unlock automatically once there's enough to compute them honestly.
+                      </p>
+                    </Panel>
+                  </>
                 )}
-              </>
-            ) : (
-              <>
-                <div className="mt-4 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground">
-                    End-of-day quote{quote.extras?.updated ? ` · ${quote.extras.updated}` : ""}.
-                  </p>
-                  <p className="mt-1">
-                    Price history isn't available for this listing yet — the board updates once per
-                    trading day.
-                  </p>
-                </div>
-                <div className="mt-3 rounded-xl border border-border/60 bg-card/40 p-4">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                    Technical signals · history building
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Signals like RSI, moving averages, and volume patterns need daily price
-                    history. We're recording this listing's closes every trading day — signals
-                    unlock automatically once there's enough to compute them honestly.
-                  </p>
-                </div>
-              </>
-            )}
 
-            {/* Stats */}
-            {hasHistory ? (
-              stats && (
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {[
-                    ["Prev close", stats.prevClose],
-                    ["Day high", stats.dayHigh],
-                    ["Day low", stats.dayLow],
-                    [`${range.toUpperCase()} high`, stats.allHigh],
-                  ].map(([label, v]) => (
-                    <div key={label as string} className="rounded-xl border border-border/60 bg-card/40 p-3">
-                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                        {label}
-                      </p>
-                      <p className="num mt-1 font-mono text-sm font-semibold">
-                        {typeof v === "number" ? fmt(v, sym) : "—"}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )
-            ) : (
-              quote.extras && (
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {[
-                    ["Sector", quote.extras.sector],
-                    [
-                      "YTD",
-                      quote.extras.ytdPercent != null
-                        ? `${quote.extras.ytdPercent >= 0 ? "+" : ""}${quote.extras.ytdPercent.toFixed(2)}%`
-                        : null,
-                    ],
-                    [
-                      "Volume",
-                      quote.extras.volume != null
-                        ? quote.extras.volume.toLocaleString("en-ZA")
-                        : null,
-                    ],
-                    [
-                      "Value traded",
-                      quote.extras.value != null
-                        ? `${sym}${quote.extras.value.toLocaleString("en-ZA")}`
-                        : null,
-                    ],
-                  ].map(([label, v]) => (
-                    <div key={label as string} className="rounded-xl border border-border/60 bg-card/40 p-3">
-                      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                        {label}
-                      </p>
-                      <p className="num mt-1 font-mono text-sm font-semibold">{v ?? "—"}</p>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
+                {/* Stats */}
+                {hasHistory
+                  ? stats && (
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        {[
+                          ["Prev close", stats.prevClose],
+                          ["Day high", stats.dayHigh],
+                          ["Day low", stats.dayLow],
+                          [`${range.toUpperCase()} high`, stats.allHigh],
+                        ].map(([label, v]) => (
+                          <Panel key={label as string} variant="stat" padding="sm">
+                            <PanelTitle>{label}</PanelTitle>
+                            <p className="num mt-1 font-mono text-sm font-semibold">
+                              {typeof v === "number" ? fmt(v, sym) : "—"}
+                            </p>
+                          </Panel>
+                        ))}
+                      </div>
+                    )
+                  : quote.extras && (
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                        <Panel variant="stat" padding="sm">
+                          <PanelTitle>Sector</PanelTitle>
+                          <p className="num mt-1 font-mono text-sm font-semibold">
+                            {quote.extras.sector ?? "—"}
+                          </p>
+                        </Panel>
+                        <Panel variant="stat" padding="sm">
+                          <PanelTitle>YTD</PanelTitle>
+                          <p className="mt-1">
+                            <ChangeCell value={quote.extras.ytdPercent} className="text-sm" />
+                          </p>
+                        </Panel>
+                        <Panel variant="stat" padding="sm">
+                          <PanelTitle>Volume</PanelTitle>
+                          <p className="num mt-1 font-mono text-sm font-semibold">
+                            {quote.extras.volume != null
+                              ? quote.extras.volume.toLocaleString("en-ZA")
+                              : "—"}
+                          </p>
+                        </Panel>
+                        <Panel variant="stat" padding="sm">
+                          <PanelTitle>Value traded</PanelTitle>
+                          <p className="num mt-1 font-mono text-sm font-semibold">
+                            {quote.extras.value != null ? fmt(quote.extras.value, sym) : "—"}
+                          </p>
+                        </Panel>
+                      </div>
+                    )}
+              </div>
 
-            <TradeTicket
-              ticker={ticker}
-              price={quote.price}
-              currencySymbol={sym}
-              eod={!hasHistory}
-              asOf={quote.asOf}
-              eodLabel={quote.extras?.updated ?? null}
-              timeNote={quote.timeNote}
-            />
+              <aside className="lg:sticky lg:top-4">
+                <TradeTicket
+                  ticker={ticker}
+                  price={quote.price}
+                  currencySymbol={sym}
+                  eod={!hasHistory}
+                  asOf={quote.asOf}
+                  eodLabel={quote.extras?.updated ?? null}
+                  timeNote={quote.timeNote}
+                />
+              </aside>
 
-            <SignalWire signal={news} updatedAt={newsAt} name={quote.name} />
+              <div className="lg:col-start-1">
+                <SignalWire signal={news} updatedAt={newsAt} name={quote.name} />
+              </div>
+            </div>
 
             <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               Educational terminal — not investment advice.
             </p>
           </>
         )}
-      </div>
+      </PageContainer>
     </TerminalShell>
   );
 }

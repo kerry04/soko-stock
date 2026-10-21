@@ -88,6 +88,33 @@ export function SentimentDot({
 /* ── Board row signal chip ─────────────────────────────────────────────── */
 
 /** The signal fields a board row badge reads — structurally any board row. */
+/** Standalone news-surge chip — the same sky recipe BoardRowBadge uses,
+ *  for surfaces without a full board row (stock-page SignalWire, screener).
+ *  Sky because a surge is attention without a direction. */
+export function NewsSurgeChip({
+  ratio,
+  title,
+  withLabel = true,
+  className,
+}: {
+  ratio: number;
+  title?: string;
+  withLabel?: boolean;
+  className?: string;
+}) {
+  return (
+    <span
+      title={title ?? `News volume ${ratio.toFixed(1)}× the 30-day daily pace`}
+      className={cn(
+        "inline-block rounded bg-sky-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-sky-400",
+        className,
+      )}
+    >
+      {withLabel ? `News ${ratio.toFixed(1)}×` : `${ratio.toFixed(1)}×`}
+    </span>
+  );
+}
+
 export interface BoardRowSignal {
   price: number;
   wk52High: number | null;

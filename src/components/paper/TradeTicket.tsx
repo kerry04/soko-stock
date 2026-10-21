@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Panel } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { isStaleEod } from "@/lib/paper/fill";
 import { fmtPrice as fmt } from "@/lib/stocks/format";
@@ -52,7 +53,7 @@ export function TradeTicket({
   const [fill, setFill] = useState<{ price: number; side: string; qty: number } | null>(null);
 
   if (loading) {
-    return <div className="mt-3 h-24 animate-pulse rounded-xl bg-muted/40" />;
+    return <div className="mt-3 h-24 animate-pulse rounded-lg bg-muted/40" />;
   }
   if (!user) {
     return (
@@ -108,9 +109,10 @@ export function TradeTicket({
   };
 
   return (
-    <section
+    <Panel
+      padding="none"
       aria-label="Paper trade ticket"
-      className="mt-3 rounded-xl border border-border/60 bg-card/40 p-3 sm:p-4"
+      className="mt-3 p-3 sm:p-4"
     >
       <div className="flex items-center justify-between gap-2">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -121,7 +123,7 @@ export function TradeTicket({
             title={asOf ? `Last close ingested ${asOf}` : "End-of-day price"}
             className={cn(
               "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em]",
-              stale ? "bg-red-500/15 text-red-500" : "bg-amber-500/15 text-amber-500",
+              stale ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary",
             )}
           >
             {stale ? "EOD stale" : `EOD · last close ${eodLabel ?? ""}`.trim()}
@@ -161,7 +163,7 @@ export function TradeTicket({
               step={1}
               value={qty}
               onChange={(e) => setQty(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
-              className="num w-24 rounded-md border border-border/70 bg-background px-2 py-1.5 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success/60"
+              className="num w-24 rounded-md border border-border/70 bg-background px-2 py-1.5 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
             />
             <p className="num ml-auto font-mono text-sm font-semibold">≈ {fmt(qty * price, sym)}</p>
           </div>
@@ -178,7 +180,7 @@ export function TradeTicket({
               type="button"
               disabled={pending !== null}
               onClick={() => submit("SELL")}
-              className="rounded-md bg-red-500/15 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-red-500 disabled:opacity-40"
+              className="rounded-md bg-destructive/15 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-destructive disabled:opacity-40"
             >
               {pending === "SELL" ? "Filling…" : "Sell"}
             </button>
@@ -187,7 +189,7 @@ export function TradeTicket({
       )}
 
       {error && (
-        <p role="alert" className="mt-2 text-sm text-red-500">
+        <p role="alert" className="mt-2 text-sm text-destructive">
           {error}
         </p>
       )}
@@ -203,6 +205,6 @@ export function TradeTicket({
         Virtual cash only — not investment advice.
         {eod ? " EOD fills at the last published close." : " Fills at the displayed quote."}
       </p>
-    </section>
+    </Panel>
   );
 }
