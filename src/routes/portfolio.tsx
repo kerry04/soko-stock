@@ -2,9 +2,15 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { PageContainer } from "@/components/nav/PageContainer";
+import { PageHeader } from "@/components/nav/PageHeader";
+import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
+import { DataTable, type DataTableColumn } from "@/components/ui/table";
+import { StateBlock, SkeletonBlock } from "@/components/common/states";
+import { ChangeCell } from "@/components/stocks/change";
 import { PaperLoginForm } from "@/components/paper/auth";
 import { usePaperSession } from "@/components/paper/use-paper-session";
-import { fmtMoney as money } from "@/lib/stocks/format";
+import { fmtMoney as money, timeAgo } from "@/lib/stocks/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/portfolio")({
@@ -37,6 +43,75 @@ interface PortfolioResponse {
   positions: PositionRow[];
   orders: OrderRow[];
 }
+
+const positionColumns: DataTableColumn<PositionRow>[] = [
+  {
+    key: "ticker",
+    header: "Ticker",
+    render: (p) => (
+      <Link
+        to="/stocks/$ticker"
+        params={{ ticker: p.ticker }}
+        className="font-mono text-[13px] font-bold text-foreground underline-offset-2 hover:underline"
+      >
+        {p.ticker}
+      </Link>
+    ),
+  },
+  {
+    key: "qty",
+    header: "Qty",
+    numeric: true,
+    render: (p) => p.qty,
+  },
+  {
+    key: "avg",
+    header: "Avg cost",
+    numeric: true,
+    render: (p) => money(p.avg),
+  },
+  {
+    key: "board",
+    header: "Board",
+    numeric: true,
+    render: (p) => (
+      <div className="flex flex-col items-end gap-1">
+        <span>{money(p.board)}</span>
+        {p.delayed && (
+          <span className="rounded bg-primary/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-primary">
+            EOD delayed
+          </span>
+        )}
+        {p.asOf && (
+          <span className="font-mono text-[10px] text-muted-foreground">
+            as of {timeAgo(p.asOf)}
+          </span>
+        )}
+      </div>
+    ),
+  },
+  {
+    key: "pnl",
+    header: "P&L",
+    numeric: true,
+    render: (p) => {
+      const pnl = p.board != null ? (p.board - p.avg) * p.qty : null;
+      const pnlPct =
+        p.board != null && p.avg !== 0 ? ((p.board - p.avg) / p.avg) * 100 : null;
+      if (pnl == null) return "—";
+      const up = pnl >= 0;
+      return (
+        <span className="inline-flex items-center justify-end gap-1.5">
+          <span className={cn("font-semibold", up ? "text-success" : "text-destructive")}>
+            {pnl > 0 ? "+" : ""}
+            {money(pnl)}
+          </span>
+          {pnlPct != null && <ChangeCell value={pnlPct} />}
+        </span>
+      );
+    },
+  },
+];
 
 function Portfolio() {
   const { user, loading: authLoading } = usePaperSession();
@@ -73,132 +148,101 @@ function Portfolio() {
 
   return (
     <TerminalShell>
-      <div className="mx-auto max-w-[1100px] px-3 py-4 sm:px-5">
-        <h1 className="font-mono text-sm font-bold uppercase tracking-[0.18em]">Paper portfolio</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Virtual cash only — educational terminal, not investment advice.
-        </p>
+      <PageContainer className="py-4 sm:py-6">
+        <PageHeader
+          slug="PORT · Paper portfolio"
+          title="Paper portfolio"
+          description="Virtual cash only — educational terminal, not investment advice."
+        />
 
-        {authLoading && <div className="mt-4 h-40 animate-pulse rounded-xl bg-muted/40" />}
+        {authLoading && <SkeletonBlock className="h-40" />}
         {!authLoading && !user && (
-          <div className="mt-4 max-w-md">
+          <div className="max-w-md">
             <PaperLoginForm />
           </div>
         )}
         {!authLoading && user && failed && (
-          <p className="mt-8 text-center text-sm text-muted-foreground">
-            Portfolio unavailable right now — check back shortly.
-          </p>
+          <StateBlock
+            tone="error"
+            message="Portfolio unavailable right now — check back shortly."
+          />
         )}
         {!authLoading && user && !failed && data && (
           <>
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {Object.entries(data.cash).map(([ccy, cash]) => (
-                <div key={ccy} className="rounded-xl border border-border/60 bg-card/40 p-3">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                    {ccy} cash
-                  </p>
-                  <p className="num mt-1 font-mono text-sm font-semibold">{money(cash)}</p>
-                </div>
+                <Panel key={ccy} variant="stat" padding="sm">
+                  <PanelTitle>{ccy} cash</PanelTitle>
+                  <p className="num mt-1 font-mono text-base font-semibold">{money(cash)}</p>
+                </Panel>
               ))}
               {Object.keys(data.cash).length === 0 && (
-                <div className="col-span-2 rounded-xl border border-border/60 bg-card/40 p-3 sm:col-span-4">
+                <Panel variant="plain" padding="md" className="col-span-2 sm:col-span-4">
                   <p className="text-sm text-muted-foreground">
                     No virtual cash yet — place your first paper trade from any{" "}
-                    <Link to="/" className="text-success hover:underline">
+                    <Link to="/" className="text-primary hover:underline">
                       stock board
                     </Link>
                     .
                   </p>
-                </div>
+                </Panel>
               )}
             </div>
 
-            <h2 className="mt-6 font-mono text-sm font-bold uppercase tracking-[0.18em]">
-              Positions
-            </h2>
-            {data.positions.length === 0 ? (
-              <p className="mt-3 rounded-xl border border-border/60 bg-card/40 p-4 text-sm text-muted-foreground">
-                No positions yet — place a paper trade from any stock page.
-              </p>
-            ) : (
-              <ul className="mt-3 space-y-2">
-                {data.positions.map((p) => {
-                  const pnl = p.board != null ? (p.board - p.avg) * p.qty : null;
-                  const pnlPct =
-                    p.board != null && p.avg !== 0 ? ((p.board - p.avg) / p.avg) * 100 : null;
-                  const up = (pnl ?? 0) >= 0;
-                  return (
-                    <li
-                      key={p.ticker}
-                      className="rounded-xl border border-border/60 bg-card/40 p-3"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <Link
-                          to="/stocks/$ticker"
-                          params={{ ticker: p.ticker }}
-                          className="font-mono text-sm font-bold hover:underline"
-                        >
-                          {p.ticker}
-                        </Link>
-                        {p.delayed && (
-                          <span className="rounded bg-amber-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-amber-500">
-                            EOD delayed
-                          </span>
-                        )}
-                      </div>
-                      <div className="num mt-2 grid grid-cols-3 gap-2 font-mono text-[12px] text-muted-foreground">
-                        <span>
-                          {p.qty} @ {money(p.avg)}
-                        </span>
-                        <span>Board {money(p.board)}</span>
-                        <span
-                          className={cn(
-                            "text-right font-semibold",
-                            up ? "text-success" : "text-red-500",
-                          )}
-                        >
-                          {pnl == null ? "—" : `${up && pnl > 0 ? "+" : ""}${money(pnl)}`}
-                          {pnlPct != null && ` (${up ? "+" : ""}${pnlPct.toFixed(2)}%)`}
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+            <Panel variant="folio" padding="none" className="mt-6 overflow-hidden">
+              <PanelHeader className="px-4 pt-4">
+                <PanelTitle>Positions</PanelTitle>
+              </PanelHeader>
+              {data.positions.length === 0 ? (
+                <StateBlock
+                  tone="empty"
+                  message="No positions yet — place a paper trade from any stock page."
+                  className="border-0"
+                />
+              ) : (
+                <DataTable
+                  columns={positionColumns}
+                  rows={data.positions}
+                  rowKey={(p) => p.ticker}
+                />
+              )}
+            </Panel>
 
-            <h2 className="mt-6 font-mono text-sm font-bold uppercase tracking-[0.18em]">
-              Recent orders
-            </h2>
-            {data.orders.length === 0 ? (
-              <p className="mt-3 text-sm text-muted-foreground">No orders yet.</p>
-            ) : (
-              <ul className="mt-3 space-y-1.5">
-                {data.orders.map((o, i) => (
-                  <li
-                    key={`${o.created_at}-${i}`}
-                    className="flex items-center justify-between gap-2 font-mono text-[12px] text-muted-foreground"
-                  >
-                    <span>
-                      <span className={o.side === "BUY" ? "text-success" : "text-red-500"}>
-                        {o.side}
-                      </span>{" "}
-                      {o.qty} {o.ticker} @ {money(Number(o.fill_price))}
-                    </span>
-                    <span>
-                      {new Date(o.created_at).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                      })}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <Panel variant="folio" padding="none" className="mt-6 overflow-hidden">
+              <PanelHeader className="px-4 pt-4">
+                <PanelTitle>Recent orders</PanelTitle>
+              </PanelHeader>
+              {data.orders.length === 0 ? (
+                <StateBlock tone="empty" message="No orders yet." className="border-0" />
+              ) : (
+                <ul className="divide-y divide-border/60">
+                  {data.orders.map((o, i) => (
+                    <li
+                      key={`${o.created_at}-${i}`}
+                      className="flex items-center justify-between gap-2 px-4 py-2.5 font-mono text-[12px] text-muted-foreground"
+                    >
+                      <span>
+                        <span className={o.side === "BUY" ? "text-success" : "text-destructive"}>
+                          {o.side}
+                        </span>{" "}
+                        {o.qty}{" "}
+                        <span className="font-semibold text-foreground">{o.ticker}</span> @{" "}
+                        {money(Number(o.fill_price))}
+                      </span>
+                      <span>
+                        {new Date(o.created_at).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                        })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
           </>
         )}
-      </div>
+      </PageContainer>
     </TerminalShell>
   );
 }

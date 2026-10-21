@@ -1,10 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Minus, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { PageContainer } from "@/components/nav/PageContainer";
+import { PageHeader } from "@/components/nav/PageHeader";
+import { Panel } from "@/components/ui/card";
+import { StateBlock, SkeletonRows } from "@/components/common/states";
+import { ChangeCell } from "@/components/stocks/change";
+import { fmtPrice } from "@/lib/stocks/format";
 import { LIVE_EXCHANGES } from "@/lib/stocks/exchanges";
 import { useWatchlist } from "@/lib/watchlist";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/watchlist")({
   head: () => ({
@@ -71,81 +76,67 @@ function WatchlistPage() {
 
   return (
     <TerminalShell>
-      <div className="mx-auto max-w-[900px] px-3 py-4 sm:px-5">
-        <h1 className="font-mono text-sm font-bold uppercase tracking-[0.18em]">Watchlist</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Your starred stocks, saved on this device. No account needed.
-        </p>
+      <PageContainer className="py-4 sm:py-6">
+        <PageHeader
+          slug="WCH · Stocks you follow"
+          title="Watchlist"
+          description="Your starred stocks, saved on this device. No account needed."
+        />
 
         {loading ? (
-          <div className="mt-4 space-y-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-14 animate-pulse rounded-xl bg-muted/40" />
-            ))}
-          </div>
+          <Panel variant="plain" padding="md">
+            <SkeletonRows rows={3} />
+          </Panel>
         ) : rows.length === 0 ? (
-          <div className="mt-6 rounded-xl border border-border/70 bg-card/40 p-8 text-center">
-            <Star className="mx-auto h-6 w-6 text-muted-foreground" aria-hidden />
-            <p className="mt-2 text-sm text-muted-foreground">
-              Nothing watched yet. Tap the star on any stock to pin it here.
-            </p>
-            <Link
-              to="/"
-              className="mt-3 inline-block font-mono text-[11px] uppercase tracking-[0.16em] text-success hover:underline"
-            >
-              Browse boards →
-            </Link>
-          </div>
+          <Panel variant="folio" padding="none" className="overflow-hidden">
+            <StateBlock
+              tone="empty"
+              title="Nothing watched yet"
+              message="Tap the star on any stock to pin it here."
+              className="border-0"
+              action={
+                <Link
+                  to="/"
+                  className="font-mono text-[11px] font-bold uppercase tracking-[0.16em] text-primary hover:underline"
+                >
+                  Browse boards →
+                </Link>
+              }
+            />
+          </Panel>
         ) : (
-          <ul className="mt-4 space-y-2">
-            {rows.map((r) => {
-              const pct = r.changePercent;
-              const up = (pct ?? 0) >= 0;
-              return (
+          <Panel variant="plain" padding="none" className="overflow-hidden">
+            <ul className="divide-y divide-border/60">
+              {rows.map((r) => (
                 <li
                   key={r.ticker}
-                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 p-3"
+                  className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-accent/40 sm:px-4"
                 >
                   <button
                     onClick={() => toggle(r.ticker)}
                     aria-label="Remove from watchlist"
-                    className="rounded p-1 text-amber-400 hover:text-amber-300"
+                    className="rounded p-1 text-primary transition-colors hover:text-primary/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                   >
                     <Star className="h-4 w-4" fill="currentColor" aria-hidden />
                   </button>
                   <Link to="/stocks/$ticker" params={{ ticker: r.ticker }} className="min-w-0 flex-1">
-                    <p className="truncate font-medium hover:underline">{r.name}</p>
+                    <p className="truncate text-sm font-medium hover:underline">{r.name}</p>
                     <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                       {r.ticker}
                     </p>
                   </Link>
                   <div className="text-right">
                     <p className="num font-mono text-sm font-semibold">
-                      {r.currencySymbol}
-                      {r.price.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {fmtPrice(r.price, r.currencySymbol)}
                     </p>
-                    <p
-                      className={cn(
-                        "num inline-flex items-center gap-0.5 font-mono text-[11px] font-semibold",
-                        pct == null ? "text-muted-foreground" : up ? "text-success" : "text-red-500",
-                      )}
-                    >
-                      {pct == null ? (
-                        <Minus className="h-3 w-3" aria-hidden />
-                      ) : up ? (
-                        <ArrowUpRight className="h-3 w-3" aria-hidden />
-                      ) : (
-                        <ArrowDownRight className="h-3 w-3" aria-hidden />
-                      )}
-                      {pct != null ? `${up ? "+" : ""}${pct.toFixed(2)}%` : "—"}
-                    </p>
+                    <ChangeCell value={r.changePercent} className="mt-0.5" />
                   </div>
                 </li>
-              );
-            })}
-          </ul>
+              ))}
+            </ul>
+          </Panel>
         )}
-      </div>
+      </PageContainer>
     </TerminalShell>
   );
 }
