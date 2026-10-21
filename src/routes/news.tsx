@@ -216,10 +216,12 @@ function NewsDeskPage() {
     active === "all"
       ? `The wire — ${articles.length} stories · 48h`
       : desk
-        ? `${desk.label} — ${desk.count24h} in 24h · ${
+        ? `${desk.label} — ${desk.count24h} in 24h${
             desk.surging && desk.surgeRatio != null
-              ? `${desk.surgeRatio.toFixed(1)}× pace`
-              : `baseline ${desk.medianDaily}/day`
+              ? ` · ${desk.surgeRatio.toFixed(1)}× pace`
+              : desk.medianDaily > 0
+                ? ` · baseline ${desk.medianDaily}/day`
+                : ""
           }`
         : "The wire";
 
@@ -252,7 +254,11 @@ function NewsDeskPage() {
               aria-selected={active === d.id}
               active={active === d.id}
               onClick={() => setActive(d.id)}
-              title={`${d.hint} — ${d.count24h} stories in 24h (baseline ${d.medianDaily}/day)`}
+              title={
+                d.medianDaily > 0
+                  ? `${d.hint} — ${d.count24h} stories in 24h (baseline ${d.medianDaily}/day)`
+                  : `${d.hint} — ${d.count24h} stories in 24h`
+              }
             >
               {d.surging && <Flame className="h-3 w-3 text-primary" aria-hidden />}
               {d.label}
@@ -264,7 +270,8 @@ function NewsDeskPage() {
         </div>
         {desk ? (
           <p className="mb-3 text-xs text-muted-foreground">
-            {desk.hint} — {desk.count24h} stories in 24h vs {desk.medianDaily}/day baseline
+            {desk.hint} — {desk.count24h} stories in 24h
+            {desk.medianDaily > 0 && <> vs {desk.medianDaily}/day baseline</>}
             {desk.surging && desk.surgeRatio != null && (
               <span className="ml-1 font-bold text-primary">
                 · surging {desk.surgeRatio.toFixed(1)}×

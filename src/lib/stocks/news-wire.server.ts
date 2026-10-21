@@ -1,6 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { isMarketRelevant } from "@/lib/news/relevance";
 import { dedupeByTitle } from "@/lib/news/dedupe";
+import {
+  getWorldArticles,
+  mergeWireArticles,
+  buildRegionDesks,
+  type WorldArticle,
+} from "@/lib/news/world-feeds.server";
 import { EXCHANGES } from "@/lib/stocks/exchanges";
 import { getDBBoard } from "@/lib/stocks/boards-db.server";
 import { getExchangeBoardRows } from "@/lib/stocks/board-rows.server";
@@ -128,7 +134,7 @@ export interface HeatItem {
 }
 
 export interface NewsWireResult {
-  /** Newest first, last 48 hours (cap 150). */
+  /** Newest first, last 48 hours — pipeline + world feeds (cap 300). */
   articles: NewsArticle[];
   desks: DeskResult[];
   /** Most-covered listed companies in the last 24h (top 8). */
@@ -244,9 +250,25 @@ export async function getNewsWire(): Promise<NewsWireResult> {
     .sort((a, b) => b.count24h - a.count24h || (b.surgeRatio ?? 0) - (a.surgeRatio ?? 0))
     .slice(0, 8);
 
+  // World layer: African + international outlets read from public feeds
+  // (lib/news/world-feeds.server). Merged in HERE only — after the desks
+  // and heat above were computed from pipeline data alone, so world items
+  // never feed per-stock signals or company heat. A world-layer failure
+  // degrades to the pipeline wire on its own; it never breaks this read.
+  let world: WorldArticle[] = [];
+  try {
+    world = await getWorldArticles();
+  } catch {
+    world = [];
+  }
+
   const result: NewsWireResult = {
-    articles: all.filter((a) => a.published_at >= wireSince).slice(0, 150),
-    desks,
+    articles: mergeWireArticles(
+      all.filter((a) => a.published_at >= wireSince).slice(0, 150),
+      world,
+      wireSince,
+    ),
+    desks: [...desks, ...buildRegionDesks(world)],
     heat,
     asOf: new Date().toISOString(),
   };
