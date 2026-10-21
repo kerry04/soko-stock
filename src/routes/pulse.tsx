@@ -15,10 +15,15 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { PageContainer } from "@/components/nav/PageContainer";
+import { PageHeader } from "@/components/nav/PageHeader";
+import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
+import { SkeletonBlock, StateBlock } from "@/components/common/states";
+import { ChangeCell } from "@/components/stocks/change";
 import { BandChip, type BandState } from "@/components/macro/BandChip";
 import { isMarketRelevant } from "@/lib/news/relevance";
 import { dedupeByTitle } from "@/lib/news/dedupe";
-import { timeAgo } from "@/lib/stocks/format";
+import { fmtPrice, timeAgo } from "@/lib/stocks/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pulse")({
@@ -115,14 +120,19 @@ function fmtTime(iso: string): string {
   }
 }
 
-const KIND_META: Record<FeedKind, { icon: typeof Zap; cls: string; label: string }> = {
-  "news-surge": { icon: Zap, cls: "text-sky-400", label: "News surge" },
-  sentiment: { icon: MessageSquareText, cls: "text-violet-400", label: "Sentiment" },
-  "52wk-high": { icon: ArrowUpRight, cls: "text-success", label: "52-week high" },
-  "52wk-low": { icon: ArrowDownRight, cls: "text-red-500", label: "52-week low" },
-  "rsi-hot": { icon: Flame, cls: "text-orange-400", label: "RSI overbought" },
-  "rsi-cold": { icon: Snowflake, cls: "text-sky-300", label: "RSI oversold" },
-  volume: { icon: BarChart3, cls: "text-amber-400", label: "Unusual volume" },
+/**
+ * Kind chips in the shared badge recipes — semantic tokens only: amber
+ * (primary) is attention, success/destructive are direction, muted is
+ * neutral. RSI hot/cold follow the BoardRowBadge recipes.
+ */
+const KIND_META: Record<FeedKind, { icon: typeof Zap; chipCls: string; label: string }> = {
+  "news-surge": { icon: Zap, chipCls: "bg-primary/15 text-primary", label: "News surge" },
+  sentiment: { icon: MessageSquareText, chipCls: "bg-muted text-muted-foreground", label: "Sentiment" },
+  "52wk-high": { icon: ArrowUpRight, chipCls: "bg-success/15 text-success", label: "52-week high" },
+  "52wk-low": { icon: ArrowDownRight, chipCls: "bg-destructive/15 text-destructive", label: "52-week low" },
+  "rsi-hot": { icon: Flame, chipCls: "bg-destructive/15 text-destructive", label: "RSI overbought" },
+  "rsi-cold": { icon: Snowflake, chipCls: "bg-success/15 text-success", label: "RSI oversold" },
+  volume: { icon: BarChart3, chipCls: "bg-primary/10 text-primary", label: "Unusual volume" },
 };
 
 /**
@@ -326,52 +336,47 @@ function PulsePage() {
 
   return (
     <TerminalShell>
-      <main className="mx-auto max-w-[1400px] px-3 py-5 sm:px-5 sm:py-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-success">
-          Terminal · signal feed
-        </p>
-        <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Pulse</h1>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            {asOf ? `As of ${fmtTime(asOf.toISOString())}` : loading ? "Loading…" : "No data"}
-          </p>
-        </div>
+      <PageContainer className="py-4 sm:py-6">
+        <PageHeader
+          slug="PLS · Signal feed"
+          title="Pulse"
+          description="Ranked market signals — news surges, sentiment tilts, 52-week events, RSI extremes and unusual volume, ordered by intensity."
+          actions={
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              {asOf ? `As of ${fmtTime(asOf.toISOString())}` : loading ? "Loading…" : "No data"}
+            </p>
+          }
+        />
 
         {loading ? (
-          <div className="mt-6 grid gap-4 lg:grid-cols-3" aria-hidden>
+          <div className="grid gap-4 lg:grid-cols-3" aria-hidden>
             {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-72 animate-pulse rounded-xl border border-border/70 bg-card/40"
-              />
+              <SkeletonBlock key={i} className="h-72" />
             ))}
           </div>
         ) : (
           <>
             {/* Economy strip — one section above the signal list. Absent on failure. */}
             {macro && (macro.cpi != null || macro.cbr != null || macro.fxUsd != null) && (
-              <section
-                aria-label="Economy snapshot"
-                className="mt-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              <Panel variant="stat" padding="md" role="region" aria-label="Economy snapshot">
+                <PanelHeader>
+                  <PanelTitle className="flex items-center gap-2">
                     <Landmark className="h-3.5 w-3.5" aria-hidden /> Economy
-                  </h2>
+                  </PanelTitle>
                   <Link
                     to="/economy"
                     className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground underline-offset-4 hover:underline"
                   >
                     Full view →
                   </Link>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+                </PanelHeader>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
                   {macro.cpi != null && (
                     <span className="flex items-center gap-2">
                       <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                         Inflation
                       </span>
-                      <span className="font-mono text-lg font-bold tabular-nums">
+                      <span className="num font-mono text-lg font-bold tabular-nums">
                         {macro.cpi.toFixed(2)}%
                       </span>
                       <BandChip band={macro.band} />
@@ -382,7 +387,7 @@ function PulsePage() {
                       <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                         CBR
                       </span>
-                      <span className="font-mono text-lg font-bold tabular-nums">
+                      <span className="num font-mono text-lg font-bold tabular-nums">
                         {macro.cbr.toFixed(2)}%
                       </span>
                     </span>
@@ -392,38 +397,45 @@ function PulsePage() {
                       <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
                         KES/USD
                       </span>
-                      <span className="font-mono text-lg font-bold tabular-nums">
+                      <span className="num font-mono text-lg font-bold tabular-nums">
                         {macro.fxUsd.toFixed(2)}
                       </span>
                     </span>
                   )}
                 </div>
-              </section>
+              </Panel>
             )}
-            {/* Ranked signal feed */}
-            <section
+
+            {/* Ranked signal feed — a ruled ledger, not cards */}
+            <Panel
+              variant="plain"
+              padding="md"
+              className={macro ? "mt-4" : undefined} role="region"
               aria-label="Ranked market signals"
-              className="mt-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
             >
-              <h2 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                <Zap className="h-3.5 w-3.5" aria-hidden /> Signals, ranked
-              </h2>
+              <PanelHeader>
+                <PanelTitle className="flex items-center gap-2">
+                  <Zap className="h-3.5 w-3.5" aria-hidden /> Signals, ranked
+                </PanelTitle>
+              </PanelHeader>
               {feed.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">
-                  No strong signals right now — the feed updates as the news
-                  pipeline and the market move.
-                </p>
+                <StateBlock
+                  tone="empty"
+                  className="border-none py-4"
+                  title="No strong signals right now"
+                  message="The feed updates as the news pipeline and the market move."
+                />
               ) : (
-                <ol className="mt-3 space-y-2">
+                <ol>
                   {feed.map((f, i) => {
                     const meta = KIND_META[f.kind];
                     const Icon = meta.icon;
                     return (
-                      <li key={f.id}>
+                      <li key={f.id} className="border-b border-border/50 last:border-0">
                         <Link
                           to="/stocks/$ticker"
                           params={{ ticker: f.ticker }}
-                          className="flex items-center gap-3 rounded-lg border border-border/50 px-3 py-2.5 transition-colors hover:bg-accent/40"
+                          className="-mx-1 flex items-center gap-3 rounded px-1 py-2.5 transition-colors hover:bg-accent/40"
                         >
                           <span
                             className="num w-6 shrink-0 font-mono text-[11px] text-muted-foreground"
@@ -431,12 +443,22 @@ function PulsePage() {
                           >
                             {String(i + 1).padStart(2, "0")}
                           </span>
-                          <Icon className={cn("h-4 w-4 shrink-0", meta.cls)} aria-hidden />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">{f.headline}</p>
-                            <p className="num mt-0.5 truncate font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                              {meta.label} · {f.detail}
-                              {f.at ? ` · ${timeAgo(f.at)}` : ""}
+                            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
+                                  meta.chipCls,
+                                )}
+                              >
+                                <Icon className="h-3 w-3" aria-hidden />
+                                {meta.label}
+                              </span>
+                              <span>
+                                {f.detail}
+                                {f.at ? ` · ${timeAgo(f.at)}` : ""}
+                              </span>
                             </p>
                           </div>
                         </Link>
@@ -449,25 +471,29 @@ function PulsePage() {
                 Ranked by signal intensity. Facts from the live pipeline and
                 market data — not recommendations.
               </p>
-            </section>
+            </Panel>
 
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
               {/* Top stories */}
-              <section
-                aria-label="Top stories, last 24 hours"
-                className="rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
-              >
-                <h2 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  <Newspaper className="h-3.5 w-3.5" aria-hidden /> Top stories
-                </h2>
+              <Panel variant="plain" padding="md" role="region" aria-label="Top stories, last 24 hours">
+                <PanelHeader>
+                  <PanelTitle className="flex items-center gap-2">
+                    <Newspaper className="h-3.5 w-3.5" aria-hidden /> Top stories
+                  </PanelTitle>
+                </PanelHeader>
                 {stories.length === 0 ? (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    No processed stories in the last 24 hours.
-                  </p>
+                  <StateBlock
+                    tone="empty"
+                    className="border-none py-4"
+                    message="No processed stories in the last 24 hours."
+                  />
                 ) : (
-                  <ol className="mt-3 space-y-3">
+                  <ol>
                     {stories.map((s, i) => (
-                      <li key={s.id} className="flex gap-3">
+                      <li
+                        key={s.id}
+                        className="flex gap-3 border-b border-border/50 py-2.5 first:pt-0 last:border-0"
+                      >
                         <span
                           className="num w-6 shrink-0 font-mono text-[11px] text-muted-foreground"
                           aria-hidden
@@ -495,69 +521,50 @@ function PulsePage() {
                     ))}
                   </ol>
                 )}
-              </section>
+              </Panel>
 
               {/* Biggest movers */}
-              <section
-                aria-label="Biggest market movers, last 24 hours"
-                className="rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
-              >
-                <h2 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  <Radio className="h-3.5 w-3.5" aria-hidden /> Market movers
-                </h2>
+              <Panel variant="plain" padding="md" role="region" aria-label="Biggest market movers, last 24 hours">
+                <PanelHeader>
+                  <PanelTitle className="flex items-center gap-2">
+                    <Radio className="h-3.5 w-3.5" aria-hidden /> Market movers
+                  </PanelTitle>
+                </PanelHeader>
                 {movers.length === 0 ? (
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    No stock moves to report right now.
-                  </p>
+                  <StateBlock
+                    tone="empty"
+                    className="border-none py-4"
+                    message="No stock moves to report right now."
+                  />
                 ) : (
-                  <ul className="mt-3 space-y-2.5">
-                    {movers.map((m) => {
-                      const up = m.changePercent >= 0;
-                      return (
-                        <li key={m.ticker}>
-                          <Link
-                            to="/stocks/$ticker"
-                            params={{ ticker: m.ticker }}
-                            className="flex items-center justify-between gap-3 rounded-lg border border-border/50 px-3 py-2 transition-colors hover:bg-accent/40"
-                          >
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium">{m.name}</p>
-                              <p className="num mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-                                {m.currencySymbol}
-                                {m.price.toLocaleString("en-ZA", {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                })}
-                              </p>
-                            </div>
-                            <span
-                              className={cn(
-                                "num inline-flex shrink-0 items-center gap-1 font-mono text-sm font-bold tabular-nums",
-                                up ? "text-success" : "text-destructive",
-                              )}
-                            >
-                              {up ? (
-                                <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                              ) : (
-                                <ArrowDownRight className="h-3.5 w-3.5" aria-hidden />
-                              )}
-                              {up ? "+" : ""}
-                              {m.changePercent.toFixed(2)}%
-                            </span>
-                          </Link>
-                        </li>
-                      );
-                    })}
+                  <ul>
+                    {movers.map((m) => (
+                      <li key={m.ticker} className="border-b border-border/50 last:border-0">
+                        <Link
+                          to="/stocks/$ticker"
+                          params={{ ticker: m.ticker }}
+                          className="-mx-1 flex items-center justify-between gap-3 rounded px-1 py-2 transition-colors hover:bg-accent/40"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-medium">{m.name}</p>
+                            <p className="num mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+                              {fmtPrice(m.price, m.currencySymbol)}
+                            </p>
+                          </div>
+                          <ChangeCell value={m.changePercent} className="shrink-0" />
+                        </Link>
+                      </li>
+                    ))}
                   </ul>
                 )}
                 <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                   Biggest daily moves on the JSE board.
                 </p>
-              </section>
+              </Panel>
             </div>
           </>
         )}
-      </main>
+      </PageContainer>
     </TerminalShell>
   );
 }

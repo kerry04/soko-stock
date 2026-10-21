@@ -9,6 +9,10 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { PageContainer } from "@/components/nav/PageContainer";
+import { PageHeader } from "@/components/nav/PageHeader";
+import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
+import { SkeletonBlock, StateBlock } from "@/components/common/states";
 import { BandChip, type BandState } from "@/components/macro/BandChip";
 import { cn } from "@/lib/utils";
 
@@ -74,26 +78,18 @@ function fmtNum(v: number | null, digits = 2): string {
   return v == null ? "—" : v.toFixed(digits);
 }
 
-function SectionTitle({ icon: Icon, children }: { icon: typeof Landmark; children: string }) {
-  return (
-    <h2 className="flex items-center gap-2 font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-      <Icon className="h-3.5 w-3.5" aria-hidden /> {children}
-    </h2>
-  );
-}
-
 function PendingBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-amber-400">
+    <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
       <BadgeAlert className="h-3 w-3" aria-hidden /> pending verification
     </span>
   );
 }
 
 function SourceLine({ snap, fallback }: { snap: IndicatorSnapshot | null; fallback: string }) {
-  if (!snap) return <p className="text-xs text-muted-foreground">{fallback}: no data</p>;
+  if (!snap) return <p className="font-mono text-[11px] text-muted-foreground">{fallback}: no data</p>;
   return (
-    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted-foreground">
       <span>
         {fallback} · {snap.source} · released {fmtDate(snap.released_at)}
       </span>
@@ -130,41 +126,129 @@ function BandBar({ value }: { value: number | null }) {
   );
 }
 
-/** 24-month CPI sparkline with the target band shaded. */
+/**
+ * 24-month CPI history with the stock chart's furniture: hairline
+ * gridlines with mono value labels in the left gutter, a time axis in
+ * the bottom strip, the CBK band shaded, and a last-value tag in the
+ * right gutter tied to the final point.
+ */
 function CpiSparkline({ history }: { history: HistoryPoint[] }) {
   if (history.length < 2) {
     return <p className="mt-3 text-sm text-muted-foreground">No history yet.</p>;
   }
-  const W = 560;
-  const H = 120;
-  const PAD = 6;
+  const W = 720;
+  const H = 180;
+  const padL = 42;
+  const padR = 58;
+  const padT = 10;
+  const padB = 18;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
   const vals = history.map((h) => h.value);
   const lo = Math.min(...vals, BAND_LO) - 0.25;
   const hi = Math.max(...vals, BAND_HI) + 0.25;
-  const x = (i: number) => PAD + (i / (history.length - 1)) * (W - PAD * 2);
-  const y = (v: number) => H - PAD - ((v - lo) / (hi - lo)) * (H - PAD * 2);
+  const x = (i: number) => padL + (i / (history.length - 1)) * plotW;
+  const y = (v: number) => padT + (1 - (v - lo) / (hi - lo)) * plotH;
   const pts = history.map((h, i) => `${x(i).toFixed(1)},${y(h.value).toFixed(1)}`).join(" ");
+
+  const gridFracs = [0, 1 / 3, 2 / 3, 1];
+  const dateFmt = (d: Date) => d.toLocaleDateString("en-GB", { month: "short", year: "2-digit" });
+  const timeIdx = [0, Math.floor((history.length - 1) / 2), history.length - 1];
+
+  const last = history[history.length - 1];
+  const lastLabel = `${last.value.toFixed(2)}%`;
+  const tagW = Math.ceil(lastLabel.length * 5.9) + 12;
+  const tagX = W - tagW;
+  const tagY = Math.min(padT + plotH - 18, Math.max(padT, y(last.value) - 9));
+
   return (
     <svg
       viewBox={`0 0 ${W} ${H}`}
-      className="mt-3 h-28 w-full"
+      className="mt-3 h-36 w-full"
       role="img"
       aria-label="24-month inflation history"
-      preserveAspectRatio="none"
     >
+      {/* CBK target band */}
       <rect
-        x={PAD}
+        x={padL}
         y={y(BAND_HI)}
-        width={W - PAD * 2}
+        width={plotW}
         height={Math.max(0, y(BAND_LO) - y(BAND_HI))}
         className="fill-success/15"
       />
-      <polyline points={pts} fill="none" className="stroke-foreground" strokeWidth="2" />
-      {history.map((h, i) =>
-        i === history.length - 1 ? (
-          <circle key={i} cx={x(i)} cy={y(h.value)} r="3.5" className="fill-foreground" />
-        ) : null,
-      )}
+
+      {/* Gridlines + value axis */}
+      {gridFracs.map((f) => {
+        const v = lo + (hi - lo) * f;
+        const gy = y(v);
+        return (
+          <g key={f}>
+            <line
+              x1={padL}
+              x2={padL + plotW}
+              y1={gy}
+              y2={gy}
+              className="stroke-border"
+              strokeWidth="1"
+              opacity="0.55"
+            />
+            <text
+              x={padL - 6}
+              y={gy + 3}
+              textAnchor="end"
+              fontSize="9.5"
+              className="fill-muted-foreground font-mono"
+            >
+              {v.toFixed(1)}%
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Time axis */}
+      {timeIdx.map((i) => (
+        <text
+          key={i}
+          x={x(i)}
+          y={H - 4}
+          textAnchor={i === 0 ? "start" : i === history.length - 1 ? "end" : "middle"}
+          fontSize="9.5"
+          className="fill-muted-foreground font-mono"
+        >
+          {dateFmt(new Date(history[i].released_at))}
+        </text>
+      ))}
+
+      <polyline
+        points={pts}
+        fill="none"
+        className="stroke-primary"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+
+      {/* Last point + value tag */}
+      <line
+        x1={x(history.length - 1)}
+        x2={tagX}
+        y1={y(last.value)}
+        y2={y(last.value)}
+        className="stroke-primary"
+        strokeWidth="1"
+        opacity="0.6"
+      />
+      <circle cx={x(history.length - 1)} cy={y(last.value)} r="3.5" className="fill-primary" />
+      <rect x={tagX} y={tagY} width={tagW} height="18" rx="2" className="fill-primary" />
+      <text
+        x={tagX + tagW / 2}
+        y={tagY + 12.5}
+        textAnchor="middle"
+        fontSize="9.5"
+        fontWeight="700"
+        className="fill-primary-foreground font-mono"
+      >
+        {lastLabel}
+      </text>
     </svg>
   );
 }
@@ -184,7 +268,7 @@ function StatRow({
         {label}
       </span>
       <span className="text-right">
-        <span className="font-mono text-sm tabular-nums">{value}</span>
+        <span className="num font-mono text-sm tabular-nums">{value}</span>
         {sub && <span className="ml-2 text-xs text-muted-foreground">{sub}</span>}
       </span>
     </div>
@@ -225,49 +309,45 @@ function EconomyPage() {
 
   return (
     <TerminalShell>
-      <main className="mx-auto max-w-[1400px] px-3 py-5 sm:px-5 sm:py-8">
-        <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-success">
-          Terminal · economy
-        </p>
-        <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
-          <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">Economy</h1>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-            {loading ? "Loading…" : data ? `As of ${fmtDate(data.asOf)}` : "No data"}
-          </p>
-        </div>
+      <PageContainer className="py-4 sm:py-6">
+        <PageHeader
+          slug="ECO · Kenya macro"
+          title="Economy"
+          description="Kenya macro snapshot: inflation vs the CBK target band, the Central Bank Rate, T-bill yields and KES/USD."
+          actions={
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              {loading ? "Loading…" : data ? `As of ${fmtDate(data.asOf)}` : "No data"}
+            </p>
+          }
+        />
 
         {loading ? (
-          <div className="mt-6 grid gap-4 lg:grid-cols-3" aria-hidden>
+          <div className="grid gap-4 lg:grid-cols-3" aria-hidden>
             {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-56 animate-pulse rounded-xl border border-border/70 bg-card/40"
-              />
+              <SkeletonBlock key={i} className="h-56" />
             ))}
           </div>
         ) : !hasAny ? (
-          <section className="mt-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5">
-            <p className="text-sm text-muted-foreground">
-              No macro data ingested yet — inflation, rates and FX will appear here
-              once the pipeline runs its first cycle.
-            </p>
-          </section>
+          <StateBlock
+            tone="empty"
+            message="No macro data ingested yet — inflation, rates and FX will appear here once the pipeline runs its first cycle."
+          />
         ) : (
           <>
             {(band === "hot" || band === "crisis") && cpi && (
               <div
                 role="alert"
                 className={cn(
-                  "mt-6 flex items-start gap-3 rounded-xl border p-4",
+                  "mb-4 flex items-start gap-3 rounded-lg border p-4",
                   band === "crisis"
-                    ? "border-red-500/50 bg-red-500/10"
-                    : "border-amber-400/50 bg-amber-400/10",
+                    ? "border-destructive/50 bg-destructive/10"
+                    : "border-primary/50 bg-primary/10",
                 )}
               >
                 <TriangleAlert
                   className={cn(
                     "mt-0.5 h-5 w-5 shrink-0",
-                    band === "crisis" ? "text-red-500" : "text-amber-400",
+                    band === "crisis" ? "text-destructive" : "text-primary",
                   )}
                   aria-hidden
                 />
@@ -280,13 +360,14 @@ function EconomyPage() {
             )}
 
             {/* Inflation hero */}
-            <section
-              aria-label="Inflation"
-              className="mt-6 rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
-            >
-              <SectionTitle icon={LineChart}>Inflation · CPI year-on-year</SectionTitle>
-              <div className="mt-3 flex flex-wrap items-end gap-x-4 gap-y-2">
-                <span className="font-mono text-5xl font-extrabold tabular-nums sm:text-6xl">
+            <Panel variant="folio" padding="md" role="region" aria-label="Inflation">
+              <PanelHeader>
+                <PanelTitle className="flex items-center gap-2">
+                  <LineChart className="h-3.5 w-3.5" aria-hidden /> Inflation · CPI year-on-year
+                </PanelTitle>
+              </PanelHeader>
+              <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+                <span className="font-display text-5xl font-semibold tabular-nums tracking-tight sm:text-6xl">
                   {cpi ? `${cpi.value.toFixed(2)}%` : "—"}
                 </span>
                 <span className="pb-1.5">
@@ -303,30 +384,32 @@ function EconomyPage() {
               <div className="mt-3">
                 <SourceLine snap={cpi} fallback="CPI YoY" />
               </div>
-            </section>
+            </Panel>
 
             <div className="mt-4 grid gap-4 md:grid-cols-3">
               {/* Policy rate */}
-              <section
-                aria-label="Policy rate"
-                className="rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
-              >
-                <SectionTitle icon={Landmark}>Central Bank Rate</SectionTitle>
-                <p className="mt-3 font-mono text-3xl font-extrabold tabular-nums">
+              <Panel variant="stat" padding="md" role="region" aria-label="Policy rate">
+                <PanelHeader>
+                  <PanelTitle className="flex items-center gap-2">
+                    <Landmark className="h-3.5 w-3.5" aria-hidden /> Central Bank Rate
+                  </PanelTitle>
+                </PanelHeader>
+                <p className="num font-mono text-3xl font-bold tabular-nums">
                   {ind?.cbr ? `${ind.cbr.value.toFixed(2)}%` : "—"}
                 </p>
                 <div className="mt-2">
                   <SourceLine snap={ind?.cbr ?? null} fallback="Policy rate" />
                 </div>
-              </section>
+              </Panel>
 
               {/* T-bills */}
-              <section
-                aria-label="Treasury bill yields"
-                className="rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
-              >
-                <SectionTitle icon={Percent}>T-bill yields</SectionTitle>
-                <div className="mt-2">
+              <Panel variant="stat" padding="md" role="region" aria-label="Treasury bill yields">
+                <PanelHeader>
+                  <PanelTitle className="flex items-center gap-2">
+                    <Percent className="h-3.5 w-3.5" aria-hidden /> T-bill yields
+                  </PanelTitle>
+                </PanelHeader>
+                <div>
                   <StatRow
                     label="91-day"
                     value={ind?.tbill_91 ? `${fmtNum(ind.tbill_91.value)}%` : "—"}
@@ -343,15 +426,16 @@ function EconomyPage() {
                 <div className="mt-2">
                   <SourceLine snap={ind?.tbill_91 ?? null} fallback="T-bill auction" />
                 </div>
-              </section>
+              </Panel>
 
               {/* FX */}
-              <section
-                aria-label="Foreign exchange"
-                className="rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5"
-              >
-                <SectionTitle icon={Banknote}>KES / USD</SectionTitle>
-                <p className="mt-3 font-mono text-3xl font-extrabold tabular-nums">
+              <Panel variant="stat" padding="md" role="region" aria-label="Foreign exchange">
+                <PanelHeader>
+                  <PanelTitle className="flex items-center gap-2">
+                    <Banknote className="h-3.5 w-3.5" aria-hidden /> KES / USD
+                  </PanelTitle>
+                </PanelHeader>
+                <p className="num font-mono text-3xl font-bold tabular-nums">
                   {ind?.fx_usd ? `KSh ${fmtNum(ind.fx_usd.value)}` : "—"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -360,7 +444,7 @@ function EconomyPage() {
                 <div className="mt-2">
                   <SourceLine snap={ind?.fx_usd ?? null} fallback="FX" />
                 </div>
-              </section>
+              </Panel>
             </div>
 
             <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
@@ -368,7 +452,7 @@ function EconomyPage() {
             </p>
           </>
         )}
-      </main>
+      </PageContainer>
     </TerminalShell>
   );
 }

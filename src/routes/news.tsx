@@ -1,9 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Flame, Newspaper } from "lucide-react";
+import { ExternalLink, Flame } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
+import { PageContainer } from "@/components/nav/PageContainer";
+import { PageHeader } from "@/components/nav/PageHeader";
+import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { SkeletonRows, StateBlock } from "@/components/common/states";
 import { EventBadge, SentimentDot } from "@/components/stocks/badges";
 import { timeAgo } from "@/lib/stocks/format";
+import { compileMatchers, stockKeywords, titleMatches } from "@/lib/news/matching";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/news")({
@@ -56,7 +62,13 @@ interface WireResponse {
   heat: HeatItem[];
 }
 
-function ArticleRow({ a }: { a: WireArticle }) {
+function ArticleRow({
+  a,
+  match,
+}: {
+  a: WireArticle;
+  match?: { ticker: string; base: string };
+}) {
   return (
     <li className="flex items-start gap-1 border-b border-border/50 py-2 last:border-0">
       <span className="mt-1.5 shrink-0">
@@ -76,9 +88,74 @@ function ArticleRow({ a }: { a: WireArticle }) {
             {a.source} · {timeAgo(a.published_at)}
           </span>
           <EventBadge title={a.title} />
+          {match && (
+            <Link
+              to="/stocks/$ticker"
+              params={{ ticker: match.ticker }}
+              title={`Open ${match.ticker}`}
+              className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-primary hover:bg-primary/20"
+            >
+              {match.base}
+            </Link>
+          )}
         </p>
       </div>
     </li>
+  );
+}
+
+/** The most-covered rail — the same ranked markup as Home's rail. */
+function HeatRail({ heat }: { heat: HeatItem[] }) {
+  return (
+    <Panel variant="plain" padding="md" role="region" aria-label="Most covered companies, last 24 hours">
+      <PanelHeader>
+        <PanelTitle>Most covered · 24h</PanelTitle>
+        <Flame className="h-3.5 w-3.5 text-primary" aria-hidden />
+      </PanelHeader>
+      <ul>
+        {heat.map((h, i) => (
+          <li
+            key={h.ticker}
+            className="flex items-center gap-2 border-b border-border/50 py-1.5 last:border-0"
+          >
+            <span className="num w-5 shrink-0 font-mono text-[10px] text-muted-foreground">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <Link
+              to="/stocks/$ticker"
+              params={{ ticker: h.ticker }}
+              title={`${h.name} — ${h.count24h} stories in 24h${h.surging && h.surgeRatio != null ? `, surging ${h.surgeRatio.toFixed(1)}×` : ""}${h.tilt ? `, 7-day tilt ${h.tilt}` : ""}`}
+              className="font-mono text-[12px] font-bold text-foreground hover:underline"
+            >
+              {h.ticker.replace(/\.(JO|NSE|NGX|GSE|DSE|USE|LUSE|ZSE|BSE|MSE|SEM|VFEX)$/, "")}
+            </Link>
+            {h.tilt === "positive" && (
+              <span className="text-success" aria-label="positive tilt">
+                ▲
+              </span>
+            )}
+            {h.tilt === "negative" && (
+              <span className="text-destructive" aria-label="negative tilt">
+                ▼
+              </span>
+            )}
+            {h.tilt === "mixed" && (
+              <span className="text-muted-foreground" aria-label="mixed tilt">
+                ◆
+              </span>
+            )}
+            <span className="num ml-auto font-mono text-[12px] text-muted-foreground">
+              {h.count24h}
+            </span>
+            {h.surging && h.surgeRatio != null && (
+              <span className="num font-mono text-[11px] font-bold text-primary">
+                {h.surgeRatio.toFixed(1)}×
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }
 
@@ -119,88 +196,77 @@ function NewsDeskPage() {
     [data, active, desk],
   );
 
+  // Headline→ticker chips: match each story against the companies the
+  // wire itself is already tracking (the heat set), using the exact
+  // matcher engine the server signals use — lib/news/matching is shared.
+  const heatMatchers = useMemo(
+    () =>
+      (data?.heat ?? []).map((h) => ({
+        ticker: h.ticker,
+        base: h.ticker.split(".")[0],
+        matchers: compileMatchers(stockKeywords(h.name)),
+      })),
+    [data],
+  );
+  const matchFor = (title: string) =>
+    heatMatchers.find((h) => titleMatches(title, h.matchers));
+
+  const hasHeat = !!data && data.heat.length > 0;
+  const folioLine =
+    active === "all"
+      ? `The wire — ${articles.length} stories · 48h`
+      : desk
+        ? `${desk.label} — ${desk.count24h} in 24h · ${
+            desk.surging && desk.surgeRatio != null
+              ? `${desk.surgeRatio.toFixed(1)}× pace`
+              : `baseline ${desk.medianDaily}/day`
+          }`
+        : "The wire";
+
   return (
     <TerminalShell>
-      <div className="mx-auto max-w-[1100px] px-3 py-4 sm:px-5">
-        <div className="mb-3 flex items-center gap-2">
-          <Newspaper className="h-4 w-4 text-muted-foreground" aria-hidden />
-          <h1 className="font-mono text-sm font-bold uppercase tracking-[0.1em]">
-            News Desk <span className="text-muted-foreground">· 48h wire</span>
-          </h1>
-        </div>
+      <PageContainer className="py-4 sm:py-6">
+        <PageHeader
+          slug="NEWS · The wire"
+          title="News Desk"
+          description="Newest market-moving headlines across the pipeline, cut into topic desks that flag when a desk's story rate surges past its own baseline."
+        />
 
-        {/* Company heat — the listed names the wire is talking about */}
-        {data && data.heat.length > 0 && (
-          <div className="mb-3 flex flex-wrap items-center gap-1.5" aria-label="Most covered companies, last 24 hours">
-            <span className="mr-1 inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-              <Flame className="h-3 w-3 text-amber-500" aria-hidden /> News heat
-            </span>
-            {data.heat.map((h) => (
-              <Link
-                key={h.ticker}
-                to="/stocks/$ticker"
-                params={{ ticker: h.ticker }}
-                title={`${h.name} — ${h.count24h} stories in 24h${h.surging && h.surgeRatio != null ? `, surging ${h.surgeRatio.toFixed(1)}×` : ""}${h.tilt ? `, 7-day tilt ${h.tilt}` : ""}`}
-                className="inline-flex items-center gap-1.5 rounded border border-border bg-card px-2 py-1 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <span className="font-bold text-foreground">{h.ticker.replace(/\.(JO|NSE|NGX|GSE|DSE|USE|LUSE|ZSE|BSE|MSE|SEM|VFEX)$/, "")}</span>
-                <span className="num">{h.count24h}</span>
-                {h.surging && h.surgeRatio != null && (
-                  <span className="font-bold text-amber-500">{h.surgeRatio.toFixed(1)}×</span>
-                )}
-                {h.tilt === "positive" && <span className="text-success" aria-label="positive tilt">▲</span>}
-                {h.tilt === "negative" && <span className="text-red-500" aria-label="negative tilt">▼</span>}
-                {h.tilt === "mixed" && <span className="text-muted-foreground" aria-label="mixed tilt">◆</span>}
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Desk chips */}
-        <div className="mb-2 flex flex-wrap items-center gap-2" role="tablist" aria-label="News desks">
-          <button
+        {/* Desk chips — the section index, in the one Chip dialect */}
+        <div className="mb-2 flex flex-wrap items-center gap-1.5" role="tablist" aria-label="News desks">
+          <Chip
             role="tab"
             aria-selected={active === "all"}
+            active={active === "all"}
             onClick={() => setActive("all")}
-            className={cn(
-              "rounded border px-3 py-1.5 font-mono text-xs",
-              active === "all"
-                ? "border-foreground bg-foreground text-background"
-                : "border-border bg-card text-muted-foreground hover:text-foreground",
-            )}
           >
             All wire
-            <span className={cn("ml-1.5 font-bold", active === "all" ? "text-background" : "text-foreground")}>
+            <span className={cn("font-bold", active === "all" ? "" : "text-foreground")}>
               {data?.articles.length ?? "—"}
             </span>
-          </button>
+          </Chip>
           {data?.desks.map((d) => (
-            <button
+            <Chip
               key={d.id}
               role="tab"
               aria-selected={active === d.id}
+              active={active === d.id}
               onClick={() => setActive(d.id)}
               title={`${d.hint} — ${d.count24h} stories in 24h (baseline ${d.medianDaily}/day)`}
-              className={cn(
-                "rounded border px-3 py-1.5 font-mono text-xs",
-                active === d.id
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground",
-              )}
             >
-              {d.surging && <Flame className="mr-1 inline h-3 w-3 text-amber-500" aria-hidden />}
+              {d.surging && <Flame className="h-3 w-3 text-primary" aria-hidden />}
               {d.label}
-              <span className={cn("ml-1.5 font-bold", active === d.id ? "text-background" : "text-foreground")}>
+              <span className={cn("font-bold", active === d.id ? "" : "text-foreground")}>
                 {d.count24h}
               </span>
-            </button>
+            </Chip>
           ))}
         </div>
         {desk ? (
           <p className="mb-3 text-xs text-muted-foreground">
             {desk.hint} — {desk.count24h} stories in 24h vs {desk.medianDaily}/day baseline
             {desk.surging && desk.surgeRatio != null && (
-              <span className="ml-1 font-bold text-amber-500">
+              <span className="ml-1 font-bold text-primary">
                 · surging {desk.surgeRatio.toFixed(1)}×
               </span>
             )}
@@ -211,31 +277,49 @@ function NewsDeskPage() {
           </p>
         )}
 
-        {error && <p className="mb-3 text-sm text-destructive">{error}</p>}
+        {error && data && <p className="mb-3 text-sm text-destructive">{error}</p>}
 
-        {!data ? (
-          <p className="font-mono text-sm text-muted-foreground">Tuning the wire…</p>
-        ) : articles.length === 0 ? (
-          <p className="font-mono text-sm text-muted-foreground">
-            {active === "all"
-              ? "No stories in the last 48 hours — the pipeline may be between cycles."
-              : "No stories on this desk in the last 48 hours."}
-          </p>
-        ) : (
-          <section className="rounded-xl border border-border/70 bg-card/40 p-4 sm:p-5" aria-label="News wire">
-            <ul>
-              {articles.map((a) => (
-                <ArticleRow key={a.id} a={a} />
-              ))}
-            </ul>
-          </section>
-        )}
+        <div className="grid items-start gap-3 lg:grid-cols-3">
+          <div className={hasHeat ? "lg:col-span-2" : "lg:col-span-3"}>
+            {!data ? (
+              error ? (
+                <StateBlock tone="error" message={error} />
+              ) : (
+                <Panel variant="folio" padding="md" role="region" aria-label="Loading the wire">
+                  <SkeletonRows rows={6} />
+                </Panel>
+              )
+            ) : articles.length === 0 ? (
+              <StateBlock
+                tone="empty"
+                message={
+                  active === "all"
+                    ? "No stories in the last 48 hours — the pipeline may be between cycles."
+                    : "No stories on this desk in the last 48 hours."
+                }
+              />
+            ) : (
+              <Panel variant="folio" padding="md" role="region" aria-label="News wire">
+                <PanelHeader>
+                  <PanelTitle>{folioLine}</PanelTitle>
+                </PanelHeader>
+                <ul>
+                  {articles.map((a) => (
+                    <ArticleRow key={a.id} a={a} match={matchFor(a.title)} />
+                  ))}
+                </ul>
+              </Panel>
+            )}
+          </div>
 
-        <p className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+          {hasHeat && <HeatRail heat={data.heat} />}
+        </div>
+
+        <p className="mt-3 flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
           <ExternalLink className="h-3 w-3" aria-hidden />
           Headlines link out to the outlet. Scores are pipeline VADER; hollow dots are not scored yet.
         </p>
-      </div>
+      </PageContainer>
     </TerminalShell>
   );
 }
