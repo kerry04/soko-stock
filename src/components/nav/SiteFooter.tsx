@@ -25,6 +25,11 @@ export function SiteFooter() {
               WIRE VIA THE SOKO PIPELINE — EVERY BOARD IS LABELLED LIVE OR EOD
               WHERE IT APPEARS.
             </p>
+            <p className="mt-2 max-w-xl text-[11px] leading-relaxed text-muted-foreground">
+              Soko Stock is information and practice only. We hold no client
+              money, and we cannot trade for you — real share trading happens
+              through CMA-licensed brokers.
+            </p>
           </div>
           <nav
             aria-label="Footer"

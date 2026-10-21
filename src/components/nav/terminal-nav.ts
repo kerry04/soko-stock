@@ -1,4 +1,4 @@
-import { Activity, Briefcase, Globe, Landmark, Newspaper, SlidersHorizontal, Star, CandlestickChart } from "lucide-react";
+import { Activity, Briefcase, Globe, Landmark, Newspaper, Rocket, SlidersHorizontal, Star, CandlestickChart } from "lucide-react";
 
 export interface TerminalSection {
   label: string;
@@ -9,8 +9,9 @@ export interface TerminalSection {
   hint: string;
 }
 
-/** The eight ops-room sections. Order is the product's spine. */
+/** The ops-room sections. Order is the product's spine. */
 export const TERMINAL_SECTIONS: TerminalSection[] = [
+  { label: "Start", code: "STRT", to: "/start", icon: Rocket, hint: "The path to your first share" },
   { label: "Stocks", code: "STK", to: "/", icon: CandlestickChart, hint: "African stock boards" },
   { label: "Screener", code: "SCRN", to: "/screener", icon: SlidersHorizontal, hint: "Signal scans across every board" },
   { label: "News", code: "NEWS", to: "/news", icon: Newspaper, hint: "The 48h wire and topic desks" },

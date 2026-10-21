@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 import { TERMINAL_SECTIONS, isSectionActive } from "./terminal-nav";
 
 /**
- * Mobile bottom tab bar: the same eight ops-room sections as the command
+ * Mobile bottom tab bar: the same ops-room sections as the command
  * bar, in one horizontally scrollable row (never a squeezed grid).
  * Fixed with safe-area padding. md+ is covered by the CommandBar.
  */
