@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import { SIGNAL_COUNTRY_BY_ID } from "@/lib/signal-countries";
 import { StateBlock } from "@/components/common/states";
+import { findFeatureAtGeo, isTapGesture, type PointerSnapshot } from "./globe-tap";
 import type { CountrySignal } from "./SignalMap";
 
 /**
@@ -47,7 +48,7 @@ interface GlobeApi {
   polygonStrokeColor(fn: (f: CountryFeature) => string): GlobeApi;
   polygonAltitude(fn: (f: CountryFeature) => number): GlobeApi;
   polygonLabel(fn: (f: CountryFeature) => string): GlobeApi;
-  onPolygonClick(fn: (f: CountryFeature) => void): GlobeApi;
+  onPolygonClick(fn: (f: CountryFeature, ev?: { timeStamp: number }) => void): GlobeApi;
   onPolygonHover(fn: (f: CountryFeature | null) => void): GlobeApi;
   polygonsTransitionDuration(n: number): GlobeApi;
   ringsData(d: RingDatum[]): GlobeApi;
@@ -58,6 +59,7 @@ interface GlobeApi {
   ringPropagationSpeed(n: number): GlobeApi;
   ringRepeatPeriod(n: number): GlobeApi;
   pointOfView(pov: { lat: number; lng: number; altitude: number }, ms?: number): GlobeApi;
+  toGlobeCoords(x: number, y: number): { lat: number; lng: number } | null;
   controls(): {
     autoRotate: boolean;
     autoRotateSpeed: number;
@@ -100,6 +102,54 @@ export function GlobeMap({
   onSelectRef.current = onSelect;
   onErrorRef.current = onError;
   const [ready, setReady] = useState(false);
+
+  // ── Tap detection ─────────────────────────────────────────────────
+  // globe.gl's polygon click almost never fires for touch: its pointer
+  // layer flags any pressed touch pointermove as a drag (movementX is
+  // undefined on most touch browsers, which alone trips the flag) and
+  // then swallows the click on release (clickAfterDrag is false). So
+  // the wrapper tracks gestures itself and hit-tests taps against the
+  // same features the polygons are drawn from. Mouse keeps using the
+  // polygon click path; both funnel into applyFeatureTap, deduped by
+  // the originating pointerup's timeStamp (globe.gl forwards the same
+  // event object to onPolygonClick, deferred via requestAnimationFrame,
+  // so a duplicate always carries the tap's timeStamp).
+  const downRef = useRef<PointerSnapshot | null>(null);
+  const activePointersRef = useRef(0);
+  const multiTouchRef = useRef(false);
+  const lastTapRef = useRef<{ timeStamp: number; featureId: string } | null>(null);
+
+  /** The one selection behaviour, shared by polygon clicks and taps:
+   *  a lit country toggles selection and flies into view; a quiet
+   *  country clears the selection. Reads only refs, so it never goes
+   *  stale inside the mount-once effect or the pointer handlers. */
+  const applyFeatureTap = (f: CountryFeature) => {
+    const s = f.signal;
+    if (s) {
+      onSelectRef.current(selectedRef.current?.country.id === s.country.id ? null : s);
+      const globe = globeRef.current;
+      if (globe) {
+        const { lat, lng } = centroidLatLng(s);
+        globe.pointOfView({ lat, lng, altitude: 1.35 }, 900);
+      }
+    } else {
+      onSelectRef.current(null);
+    }
+  };
+
+  /** Resolve a tap at container-relative CSS px to a country and apply
+   *  it. Off-globe (null geo) and ocean taps (no feature) are ignored,
+   *  mirroring a background click, which selects nothing. */
+  const handleTapAt = (relX: number, relY: number, timeStamp: number) => {
+    const globe = globeRef.current;
+    if (!globe) return;
+    const geo = globe.toGlobeCoords(relX, relY);
+    if (!geo) return;
+    const f = findFeatureAtGeo(featuresRef.current, geo.lng, geo.lat);
+    if (!f) return;
+    lastTapRef.current = { timeStamp, featureId: String(f.id) };
+    applyFeatureTap(f);
+  };
 
   // Build / update the polygon + ring layers from the live signals.
   // Hard-wrapped: globe.gl applies data inside its own animation digest,
@@ -217,15 +267,21 @@ export function GlobeMap({
               <div style="color:var(${s.converging ? "--color-destructive" : "--color-success"});margin-top:2px">${s.articles.length} articles · 24h · instability ${s.instability}/100${s.converging ? " · CONVERGING" : ""}</div>
             </div>`;
           })
-          .onPolygonClick((f) => {
-            const s = f.signal;
-            if (s) {
-              onSelectRef.current(selectedRef.current?.country.id === s.country.id ? null : s);
-              const { lat, lng } = centroidLatLng(s);
-              globe.pointOfView({ lat, lng, altitude: 1.35 }, 900);
-            } else {
-              onSelectRef.current(null);
+          .onPolygonClick((f, ev) => {
+            // A tap already resolved by the wrapper's own detector
+            // arrives here again (globe.gl defers its click through
+            // requestAnimationFrame with the same pointerup event) —
+            // applying it twice would toggle the selection back off.
+            const last = lastTapRef.current;
+            if (
+              ev &&
+              last &&
+              Math.abs(ev.timeStamp - last.timeStamp) <= 1 &&
+              last.featureId === String(f.id)
+            ) {
+              return;
             }
+            applyFeatureTap(f);
           })
           .onPolygonHover((f) => {
             host.style.cursor = f?.signal ? "pointer" : "grab";
@@ -305,6 +361,53 @@ export function GlobeMap({
       className="relative h-[440px] w-full overflow-hidden rounded-lg border border-border/70 bg-[radial-gradient(ellipse_at_center,var(--color-card)_0%,var(--color-background)_75%)] sm:h-[540px]"
       role="img"
       aria-label="3D globe: countries glowing with live news-signal intensity. Drag to spin, click a lit country for headlines."
+      onPointerDown={(e) => {
+        activePointersRef.current += 1;
+        if (activePointersRef.current > 1) {
+          // Second finger down (pinch): this gesture is not a tap.
+          multiTouchRef.current = true;
+          downRef.current = null;
+          return;
+        }
+        if (e.isPrimary && e.button === 0) {
+          downRef.current = {
+            x: e.clientX,
+            y: e.clientY,
+            time: e.timeStamp,
+            pointerId: e.pointerId,
+          };
+        }
+      }}
+      onPointerUp={(e) => {
+        activePointersRef.current = Math.max(0, activePointersRef.current - 1);
+        if (activePointersRef.current === 0) multiTouchRef.current = false;
+        const down = downRef.current;
+        downRef.current = null;
+        if (!down || multiTouchRef.current || !e.isPrimary || e.button !== 0) return;
+        const up: PointerSnapshot = {
+          x: e.clientX,
+          y: e.clientY,
+          time: e.timeStamp,
+          pointerId: e.pointerId,
+        };
+        if (!isTapGesture(down, up)) return;
+        // Best-effort only: a failed tap must never take the page down,
+        // and no preventDefault — drags, pinches and page scroll are
+        // left exactly as the globe's own controls handle them.
+        try {
+          const host = hostRef.current;
+          if (!host) return;
+          const rect = host.getBoundingClientRect();
+          handleTapAt(e.clientX - rect.left, e.clientY - rect.top, e.timeStamp);
+        } catch {
+          /* ignore: mouse clicks and the country rail still work */
+        }
+      }}
+      onPointerCancel={() => {
+        activePointersRef.current = Math.max(0, activePointersRef.current - 1);
+        if (activePointersRef.current === 0) multiTouchRef.current = false;
+        downRef.current = null;
+      }}
     >
       {/* Globe host: globe.gl owns this node's entire subtree. */}
       <div ref={hostRef} className="absolute inset-0" />
