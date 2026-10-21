@@ -136,6 +136,9 @@ function TradePage() {
   const [failed, setFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
+  // Bumped on every completed sell so the buy panel can drop a stale
+  // "you now own…" confirmation for shares that may no longer be held.
+  const [sellCount, setSellCount] = useState(0);
   const directory = useStockDirectory(!!user);
 
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
@@ -230,6 +233,7 @@ function TradePage() {
                     directory={directory}
                     onSold={(msg, fill) => {
                       setNotice(msg);
+                      setSellCount((n) => n + 1);
                       // Put the fill the API returned (new cash, remaining
                       // position) on screen straight away — the same
                       // response data the buy flow confirms with — then
@@ -268,7 +272,12 @@ function TradePage() {
               cash={data.cash}
               directory={directory}
               firstBuy={data.positions.length === 0}
-              onBought={refresh}
+              sellCount={sellCount}
+              onBought={() => {
+                // A fresh buy makes any earlier sell notice stale.
+                setNotice(null);
+                refresh();
+              }}
             />
             <Panel padding="md">
               <p className="text-[13px] leading-relaxed text-muted-foreground">
@@ -620,11 +629,13 @@ function BuyShares({
   cash,
   directory,
   firstBuy,
+  sellCount,
   onBought,
 }: {
   cash: Record<string, number>;
   directory: DirectoryEntry[];
   firstBuy: boolean;
+  sellCount: number;
   onBought: () => void;
 }) {
   const [board, setBoard] = useState<BoardRowLite[] | null>(null);
@@ -636,6 +647,12 @@ function BuyShares({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ owned: number; cost: number; sym: string } | null>(null);
+
+  // A completed sell can make this panel's "you now own…" confirmation
+  // wrong (the shares it names may all be sold), so drop it on each sell.
+  useEffect(() => {
+    setDone(null);
+  }, [sellCount]);
 
   // NSE board for the starter list (names + the same EOD prices fills use).
   useEffect(() => {
