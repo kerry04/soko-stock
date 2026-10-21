@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Flame, Newspaper } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
-import { EventBadge } from "@/components/stocks/badges";
+import { EventBadge, SentimentDot } from "@/components/stocks/badges";
+import { timeAgo } from "@/lib/stocks/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/news")({
@@ -55,38 +56,11 @@ interface WireResponse {
   heat: HeatItem[];
 }
 
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86_400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86_400)}d ago`;
-}
-
-/** Per-headline sentiment dot: green/red/grey, hollow when unscored — Pulse's rule. */
-function SentimentDot({ score }: { score: number | null }) {
-  const cls =
-    score == null
-      ? "border border-muted-foreground/50 bg-transparent"
-      : score >= 0.2
-        ? "bg-success"
-        : score <= -0.2
-          ? "bg-destructive"
-          : "bg-muted-foreground";
-  return (
-    <span
-      className={cn("mr-2 inline-block h-2 w-2 shrink-0 rounded-full", cls)}
-      title={score == null ? "not scored yet" : `sentiment ${score.toFixed(2)}`}
-      aria-hidden
-    />
-  );
-}
-
 function ArticleRow({ a }: { a: WireArticle }) {
   return (
     <li className="flex items-start gap-1 border-b border-border/50 py-2 last:border-0">
       <span className="mt-1.5 shrink-0">
-        <SentimentDot score={a.sentiment_score} />
+        <SentimentDot score={a.sentiment_score} className="mr-2" />
       </span>
       <div className="min-w-0">
         <a

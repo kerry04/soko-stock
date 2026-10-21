@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { TradeTicket } from "@/components/paper/TradeTicket";
-import { EventBadge, LimitChip } from "@/components/stocks/badges";
+import { EventBadge, LimitChip, SentimentDot } from "@/components/stocks/badges";
+import { fmtPrice as fmt } from "@/lib/stocks/format";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
@@ -114,10 +115,6 @@ const RANGES = [
   { id: "2y", label: "2Y" },
   { id: "5y", label: "5Y" },
 ] as const;
-
-function fmt(v: number, sym: string): string {
-  return `${sym}${v.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 function timeAgo(iso: string): string {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -322,29 +319,6 @@ function SignalsCard({ t, sym }: { t: Technicals; sym: string }) {
   );
 }
 
-/** Sentiment dot: green ≥ 0.2, red ≤ −0.2, grey in between, hollow when unscored. */
-function SentimentDot({ score }: { score: number | null }) {
-  const cls =
-    score == null
-      ? "border-muted-foreground/40 bg-transparent"
-      : score >= 0.2
-        ? "border-success bg-success"
-        : score <= -0.2
-          ? "border-red-500 bg-red-500"
-          : "border-muted-foreground/50 bg-muted-foreground/40";
-  return (
-    <span
-      title={
-        score == null
-          ? "Not yet scored"
-          : `Sentiment ${score >= 0 ? "+" : ""}${score.toFixed(2)}`
-      }
-      className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full border", cls)}
-      aria-hidden
-    />
-  );
-}
-
 /** Headline sentiment, news surge, and 7-day tilt for one stock. */
 function SignalWire({
   signal,
@@ -417,7 +391,7 @@ function SignalWire({
         <ul className="mt-3 space-y-2.5">
           {signal.articles.slice(0, 8).map((n) => (
             <li key={n.id} className="flex gap-2.5">
-              <SentimentDot score={n.sentiment_score} />
+              <SentimentDot score={n.sentiment_score} className="mt-1.5" />
               <div className="min-w-0">
                 <a
                   href={n.url}

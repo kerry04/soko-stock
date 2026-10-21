@@ -1,4 +1,4 @@
-import { Activity, Globe, Landmark, Newspaper, SlidersHorizontal, Star, CandlestickChart } from "lucide-react";
+import { Activity, Briefcase, Globe, Landmark, Newspaper, SlidersHorizontal, Star, CandlestickChart } from "lucide-react";
 
 export interface TerminalSection {
   label: string;
@@ -9,7 +9,7 @@ export interface TerminalSection {
   hint: string;
 }
 
-/** The seven ops-room sections. Order is the product's spine. */
+/** The eight ops-room sections. Order is the product's spine. */
 export const TERMINAL_SECTIONS: TerminalSection[] = [
   { label: "Stocks", code: "STK", to: "/", icon: CandlestickChart, hint: "African stock boards" },
   { label: "Screener", code: "SCRN", to: "/screener", icon: SlidersHorizontal, hint: "Signal scans across every board" },
@@ -18,6 +18,7 @@ export const TERMINAL_SECTIONS: TerminalSection[] = [
   { label: "Pulse", code: "PLS", to: "/pulse", icon: Activity, hint: "Market-moving news digest" },
   { label: "Economy", code: "ECO", to: "/economy", icon: Landmark, hint: "Inflation, rates & shilling" },
   { label: "Watchlist", code: "WCH", to: "/watchlist", icon: Star, hint: "Stocks you follow" },
+  { label: "Portfolio", code: "PORT", to: "/portfolio", icon: Briefcase, hint: "Paper portfolio, positions & orders" },
 ];
 
 export function isSectionActive(pathname: string, to: string): boolean {

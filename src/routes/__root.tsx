@@ -8,16 +8,21 @@ import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
       <div className="text-center">
-        <h1 className="text-6xl font-bold text-neutral-900">404</h1>
-        <p className="mt-3 text-sm text-neutral-600">This page doesn&apos;t exist.</p>
+        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-primary">
+          ERR · No such function
+        </p>
+        <h1 className="font-display mt-3 text-7xl font-semibold leading-none">404</h1>
+        <p className="mt-3 text-sm text-muted-foreground">
+          This page doesn&apos;t exist on the terminal.
+        </p>
         <div className="mt-6">
           <Link
             to="/"
-            className="text-sm font-medium text-neutral-900 underline underline-offset-4 hover:text-neutral-600"
+            className="font-mono text-xs font-medium uppercase tracking-[0.16em] text-primary underline-offset-4 hover:underline"
           >
-            Go home
+            ← STK · Back to the boards
           </Link>
         </div>
       </div>
@@ -34,10 +39,10 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Soko Stock: a live signal terminal for prediction markets. Watch the world's news move across the map, then trade the outcome.",
+          "Soko Stock: the African stock terminal. Twelve exchanges — boards, signals, macro and the news wire — in one place. Research tool; not investment advice.",
       },
       { name: "author", content: "Soko Stock" },
-      { name: "theme-color", content: "#06060f" },
+      { name: "theme-color", content: "#0C0B09" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
@@ -45,14 +50,14 @@ export const Route = createRootRoute({
       { property: "og:title", content: "Soko Stock — Live Signal Terminal" },
       {
         property: "og:description",
-        content: "Watch the world's signals move. Trade the outcome.",
+        content: "Twelve African exchanges — boards, signals, macro and the news wire.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Soko Stock — Live Signal Terminal" },
       {
         name: "twitter:description",
-        content: "Watch the world's signals move. Trade the outcome.",
+        content: "Twelve African exchanges — boards, signals, macro and the news wire.",
       },
     ],
     links: [
@@ -60,7 +65,7 @@ export const Route = createRootRoute({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400..700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap",
       },
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },

@@ -18,6 +18,7 @@ import { TerminalShell } from "@/components/nav/TerminalShell";
 import { BandChip, type BandState } from "@/components/macro/BandChip";
 import { isMarketRelevant } from "@/lib/news/relevance";
 import { dedupeByTitle } from "@/lib/news/dedupe";
+import { timeAgo } from "@/lib/stocks/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/pulse")({
@@ -99,14 +100,6 @@ interface FeedItem {
   detail: string;
   score: number;
   at: string | null;
-}
-
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86_400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86_400)}d ago`;
 }
 
 function fmtTime(iso: string): string {

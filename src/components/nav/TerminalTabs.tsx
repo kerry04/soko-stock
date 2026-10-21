@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils";
 import { TERMINAL_SECTIONS, isSectionActive } from "./terminal-nav";
 
 /**
- * Mobile bottom tab bar: the same four ops-room sections, terminal-styled.
+ * Mobile bottom tab bar: the same eight ops-room sections as the command
+ * bar, in one horizontally scrollable row (never a squeezed grid).
  * Fixed with safe-area padding. md+ is covered by the CommandBar.
  */
 export function TerminalTabs() {
@@ -15,7 +16,7 @@ export function TerminalTabs() {
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/92 backdrop-blur-xl md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="grid grid-cols-4 px-2 pt-1.5">
+      <div className="scrollbar-none flex overflow-x-auto px-2 pt-1.5">
         {TERMINAL_SECTIONS.map((s) => {
           const Icon = s.icon;
           const active = isSectionActive(pathname, s.to);
@@ -25,7 +26,7 @@ export function TerminalTabs() {
               to={s.to}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-lg py-1.5 transition-colors",
+                "flex min-w-[4.5rem] flex-1 flex-col items-center gap-1 rounded-lg py-1.5 transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                 active ? "text-primary" : "text-muted-foreground hover:text-foreground",
               )}

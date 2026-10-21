@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { isStaleEod } from "@/lib/paper/fill";
+import { fmtPrice as fmt } from "@/lib/stocks/format";
 import { usePaperSession } from "./use-paper-session";
 import { PaperLoginForm } from "./auth";
 
@@ -16,10 +17,6 @@ const FRIENDLY: Record<string, string> = {
   login_required: "Your session expired — log in again.",
   invalid_token: "Your session expired — log in again.",
 };
-
-function fmt(v: number, sym: string): string {
-  return `${sym}${v.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
 
 export interface TradeTicketProps {
   ticker: string;

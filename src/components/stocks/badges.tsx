@@ -50,3 +50,36 @@ export function LimitChip({ hit, className }: { hit: "up" | "down"; className?: 
     </span>
   );
 }
+
+/**
+ * Per-headline sentiment dot — the single copy (absorbed from the stock
+ * page, the news wire and the country broadcast). Green ≥ 0.2, red ≤ −0.2,
+ * grey in between, hollow when unscored. Semantic tokens only.
+ */
+export function SentimentDot({
+  score,
+  className,
+}: {
+  score: number | null;
+  className?: string;
+}) {
+  const cls =
+    score == null
+      ? "border-muted-foreground/50 bg-transparent"
+      : score >= 0.2
+        ? "border-success bg-success"
+        : score <= -0.2
+          ? "border-destructive bg-destructive"
+          : "border-muted-foreground/50 bg-muted-foreground/40";
+  return (
+    <span
+      title={
+        score == null
+          ? "Not scored yet"
+          : `Sentiment ${score >= 0 ? "+" : ""}${score.toFixed(2)}`
+      }
+      className={cn("inline-block h-2 w-2 shrink-0 rounded-full border", cls, className)}
+      aria-hidden
+    />
+  );
+}

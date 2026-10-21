@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Radio, X } from "lucide-react";
 import type { Article, CountrySignal, StockLink } from "./SignalMap";
+import { SentimentDot } from "@/components/stocks/badges";
+import { timeAgo } from "@/lib/stocks/format";
 
 /**
  * "Soko Live" broadcast pop-up for a selected country: a TV-news frame
@@ -11,21 +13,6 @@ import type { Article, CountrySignal, StockLink } from "./SignalMap";
  * Presentation only; every number comes from the same CountrySignal the
  * flat panel used. Nothing here is a real video feed.
  */
-
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86_400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86_400)}d ago`;
-}
-
-function sentimentDot(a: Article): string {
-  if (a.sentiment_score == null) return "bg-slate-400";
-  if (a.sentiment_score < -0.2) return "bg-red-500";
-  if (a.sentiment_score > 0.2) return "bg-emerald-500";
-  return "bg-slate-400";
-}
 
 export function CountryBroadcast({
   signal,
@@ -147,7 +134,7 @@ export function CountryBroadcast({
                   {top.title}
                 </a>
                 <p className="mt-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">
-                  <span className={`h-1.5 w-1.5 rounded-full ${sentimentDot(top)}`} aria-hidden />
+                  <SentimentDot score={top.sentiment_score} className="h-1.5 w-1.5" />
                   {top.source} · {timeAgo(top.published_at)}
                 </p>
                 {articles.length > 1 && (
@@ -230,10 +217,7 @@ export function CountryBroadcast({
                     rel="noreferrer"
                     className="flex items-start gap-2 text-sm leading-snug text-slate-100 hover:underline"
                   >
-                    <span
-                      className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${sentimentDot(a)}`}
-                      aria-hidden
-                    />
+                    <SentimentDot score={a.sentiment_score} className="mt-1.5 h-1.5 w-1.5" />
                     {a.title}
                   </a>
                   <p className="mt-0.5 pl-3.5 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-500">

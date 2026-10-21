@@ -5,6 +5,7 @@ import worldDots from "@/data/world-dots.json";
 import { SIGNAL_COUNTRIES, type SignalCountry } from "@/lib/signal-countries";
 import { isMarketRelevant } from "@/lib/news/relevance";
 import { dedupeByTitle } from "@/lib/news/dedupe";
+import { timeAgo } from "@/lib/stocks/format";
 import { GlobeMap } from "./GlobeMap";
 import { CountryBroadcast } from "./CountryBroadcast";
 
@@ -53,14 +54,6 @@ export interface CountrySignal {
   converging: boolean;
   eventHits: number;
   quakeHits: number;
-}
-
-function timeAgo(iso: string): string {
-  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86_400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86_400)}d ago`;
 }
 
 function matchesCountry(a: Article, c: SignalCountry): boolean {

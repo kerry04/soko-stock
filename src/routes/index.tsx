@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus, Search, Star } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { EXCHANGES, type Exchange } from "@/lib/stocks/exchanges";
+import { fmtCompactValue, fmtPrice } from "@/lib/stocks/format";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
 
@@ -57,18 +58,6 @@ interface BoardResponse {
 }
 
 type SortKey = "name" | "price" | "changePercent" | "value";
-
-function fmtPrice(v: number, sym: string): string {
-  return `${sym}${v.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function fmtCompactValue(v: number, sym: string): string {
-  const c = new Intl.NumberFormat("en-ZA", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(v);
-  return `${sym}${c}`;
-}
 
 /**
  * One badge slot per row (Robinhood watchlist-density pattern).

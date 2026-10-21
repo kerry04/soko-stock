@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, Minus, SlidersHorizontal } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { LimitChip } from "@/components/stocks/badges";
+import { fmtPrice } from "@/lib/stocks/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/screener")({
@@ -61,10 +62,6 @@ interface ScreenerResponse {
   rows: ScreenerRow[];
   screens: ScreenInfo[];
   failedExchanges: string[];
-}
-
-function fmtPrice(v: number, sym: string): string {
-  return `${sym}${v.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /** 0–100 position of price between its 52-week low and high. Null without history. */

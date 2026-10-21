@@ -5,6 +5,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { cn } from "@/lib/utils";
 import { TERMINAL_SECTIONS, isSectionActive } from "./terminal-nav";
 import { CommandPalette } from "./CommandPalette";
+import { loadStockDirectory, type DirectoryEntry } from "./use-directory";
 
 export function StockBrand({ compact = false }: { compact?: boolean }) {
   return (
@@ -25,17 +26,12 @@ export function StockBrand({ compact = false }: { compact?: boolean }) {
   );
 }
 
-interface DirectoryEntry {
-  ticker: string;
-  name: string;
-  exchange: string;
-}
-
 /**
  * Bloomberg-style command line: type a function code (ECO, MAP, SCRN…)
  * or a ticker / company name and hit Enter. Tickers resolve against the
- * full directory (all exchanges), loaded lazily on first focus. A query
- * that matches nothing hands off to the ⌘K palette.
+ * full directory (all exchanges), loaded lazily on first focus via the
+ * shared directory hook. A query that matches nothing hands off to the
+ * ⌘K palette.
  */
 function CommandLine({ onOpenPalette }: { onOpenPalette: () => void }) {
   const navigate = useNavigate();
@@ -45,12 +41,9 @@ function CommandLine({ onOpenPalette }: { onOpenPalette: () => void }) {
 
   const loadDirectory = () => {
     if (directory) return;
-    fetch("/api/stocks/directory")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        if (j?.stocks) setDirectory(j.stocks as DirectoryEntry[]);
-      })
-      .catch(() => {});
+    loadStockDirectory().then((list) => {
+      if (list.length > 0) setDirectory(list);
+    });
   };
 
   const submit = () => {

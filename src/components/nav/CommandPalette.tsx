@@ -3,15 +3,11 @@ import { CandlestickChart, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { TERMINAL_SECTIONS } from "./terminal-nav";
+import { useStockDirectory } from "./use-directory";
 
 interface PaletteProps {
   open: boolean;
   onClose: () => void;
-}
-
-interface StockHit {
-  ticker: string;
-  name: string;
 }
 
 /**
@@ -21,9 +17,11 @@ interface StockHit {
 export function CommandPalette({ open, onClose }: PaletteProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [stocks, setStocks] = useState<StockHit[]>([]);
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Same full directory the command line resolves against (all exchanges),
+  // shared via the directory hook — not just one board.
+  const stocks = useStockDirectory(open);
 
   // Global shortcut.
   useEffect(() => {
@@ -48,24 +46,6 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
       setQuery("");
       setCursor(0);
       requestAnimationFrame(() => inputRef.current?.focus());
-      // Load the board once per open for local stock search.
-      let cancelled = false;
-      fetch("/api/stocks/board?exchange=JSE")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((j) => {
-          if (!cancelled && j?.rows) {
-            setStocks(
-              (j.rows as { ticker: string; name: string }[]).map((r) => ({
-                ticker: r.ticker,
-                name: r.name,
-              })),
-            );
-          }
-        })
-        .catch(() => {});
-      return () => {
-        cancelled = true;
-      };
     }
   }, [open ]);
 
@@ -116,7 +96,7 @@ export function CommandPalette({ open, onClose }: PaletteProps) {
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" aria-hidden />
       <div
-        className="relative w-full max-w-lg overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+        className="relative w-full max-w-lg overflow-hidden rounded-lg border border-border bg-card shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "Escape") onClose();

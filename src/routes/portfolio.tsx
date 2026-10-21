@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { PaperLoginForm } from "@/components/paper/auth";
 import { usePaperSession } from "@/components/paper/use-paper-session";
+import { fmtMoney as money } from "@/lib/stocks/format";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/portfolio")({
@@ -35,11 +36,6 @@ interface PortfolioResponse {
   cash: Record<string, number>;
   positions: PositionRow[];
   orders: OrderRow[];
-}
-
-function money(v: number | null, sym = ""): string {
-  if (v == null || !Number.isFinite(v)) return "—";
-  return `${sym}${v.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function Portfolio() {
