@@ -1,9 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, Minus, Search, Star } from "lucide-react";
+import { Flame, Search, Star } from "lucide-react";
 import { TerminalShell } from "@/components/nav/TerminalShell";
-import { EXCHANGES, type Exchange } from "@/lib/stocks/exchanges";
-import { fmtCompactValue, fmtPrice } from "@/lib/stocks/format";
+import { PageContainer } from "@/components/nav/PageContainer";
+import { PageHeader } from "@/components/nav/PageHeader";
+import { SkeletonRows, StateBlock } from "@/components/common/states";
+import { BoardRowBadge, EventBadge, SentimentDot } from "@/components/stocks/badges";
+import { ChangeCell } from "@/components/stocks/change";
+import { Chip } from "@/components/ui/chip";
+import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { DataTable, type DataTableColumn } from "@/components/ui/table";
+import { EXCHANGES, LIVE_EXCHANGES, type Exchange } from "@/lib/stocks/exchanges";
+import { fmtCompactValue, fmtPrice, timeAgo } from "@/lib/stocks/format";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
 
@@ -59,170 +68,42 @@ interface BoardResponse {
 
 type SortKey = "name" | "price" | "changePercent" | "value";
 
-/**
- * One badge slot per row (Robinhood watchlist-density pattern).
- * Priority: 52-week events > news surge > unusual volume > RSI > 50-day trend.
- * EOD-only listings carry no history, so they get no badge.
- */
-function RowBadge({ row }: { row: BoardRow }) {
-  const { price, wk52High, wk52Low, rsi, aboveSma50, relVolume, newsSurge, limitHit, liquidity, speculation } = row;
+/* ── News wire (same endpoint and shapes as the News Desk) ─────────────── */
 
-  // A limit hit is the day's defining fact — it outranks every other badge.
-  if (limitHit) {
-    return (
-      <span
-        title={limitHit === "up" ? "At the daily limit up" : "At the daily limit down"}
-        className={cn(
-          "ml-2 inline-block rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
-          limitHit === "up" ? "bg-success/15 text-success" : "bg-red-500/15 text-red-500",
-        )}
-      >
-        Limit {limitHit === "up" ? "↑" : "↓"}
-      </span>
-    );
-  }
-
-  // Speculation signature next: a big move with nothing underneath it.
-  if (speculation) {
-    return (
-      <span
-        title="Big move on thin trading with no matching news — classic speculation signature"
-        className="ml-2 inline-block rounded bg-warning/20 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-warning"
-      >
-        Spec?
-      </span>
-    );
-  }
-
-  if (wk52High != null && wk52Low != null && wk52High > 0) {
-    let label: string | null = null;
-    let cls = "";
-    let short = "";
-    if (price >= wk52High) {
-      label = "New 52wk high";
-      short = "52WK HI";
-      cls = "bg-success/15 text-success";
-    } else if (price <= wk52Low) {
-      label = "New 52wk low";
-      short = "52WK LO";
-      cls = "bg-red-500/15 text-red-500";
-    } else if (price >= wk52High * 0.97) {
-      label = "Near 52wk high";
-      short = "≈HI";
-      cls = "bg-success/10 text-success/80";
-    } else if (price <= wk52Low * 1.03) {
-      label = "Near 52wk low";
-      short = "≈LO";
-      cls = "bg-red-500/10 text-red-500/80";
-    }
-    if (label) {
-      return (
-        <span
-          title={label}
-          className={cn(
-            "ml-2 inline-block rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
-            cls,
-          )}
-        >
-          {short}
-        </span>
-      );
-    }
-  }
-
-  // News surge is attention without a direction — blue, never green/red.
-  // Thin counters are gated out: on a name that barely trades, a surge
-  // ratio is arithmetic noise, not a signal.
-  if (newsSurge != null && liquidity !== "thin") {
-    return (
-      <span
-        title={`News volume ${newsSurge.toFixed(1)}× the 30-day daily pace`}
-        className="ml-2 inline-block rounded bg-sky-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-sky-400"
-      >
-        News {newsSurge.toFixed(1)}×
-      </span>
-    );
-  }
-
-  // Volume is attention, not direction — amber, never green/red. Also gated on thin counters.
-  if (relVolume != null && relVolume >= 2 && liquidity !== "thin") {
-    return (
-      <span
-        title={`Volume ${relVolume.toFixed(1)}× the 20-day average`}
-        className="ml-2 inline-block rounded bg-amber-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-amber-500"
-      >
-        Vol {relVolume.toFixed(1)}×
-      </span>
-    );
-  }
-
-  if (rsi != null) {
-    if (rsi >= 70) {
-      return (
-        <span
-          title={`RSI ${rsi.toFixed(0)} — overbought`}
-          className="ml-2 inline-block rounded bg-red-500/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-red-500"
-        >
-          RSI hot
-        </span>
-      );
-    }
-    if (rsi <= 30) {
-      return (
-        <span
-          title={`RSI ${rsi.toFixed(0)} — oversold`}
-          className="ml-2 inline-block rounded bg-success/15 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-success"
-        >
-          RSI cold
-        </span>
-      );
-    }
-  }
-
-  if (aboveSma50 != null) {
-    return (
-      <span
-        title={aboveSma50 ? "Above 50-day average" : "Below 50-day average"}
-        className={cn(
-          "ml-2 inline-block rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
-          aboveSma50 ? "bg-success/10 text-success/80" : "bg-red-500/10 text-red-500/80",
-        )}
-      >
-        {aboveSma50 ? "▲50d" : "▼50d"}
-      </span>
-    );
-  }
-
-  return null;
+interface WireArticle {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  published_at: string;
+  sentiment_score: number | null;
 }
 
-function ChangeBadge({ pct }: { pct: number | null }) {
-  if (pct == null)
-    return (
-      <span className="inline-flex items-center gap-1 font-mono text-[12px] text-muted-foreground">
-        <Minus className="h-3 w-3" aria-hidden /> —
-      </span>
-    );
-  const up = pct > 0;
-  const flat = pct === 0;
-  return (
-    <span
-      className={cn(
-        "num inline-flex items-center gap-1 font-mono text-[12px] font-semibold",
-        up ? "text-success" : flat ? "text-muted-foreground" : "text-red-500",
-      )}
-    >
-      {up ? (
-        <ArrowUpRight className="h-3 w-3" aria-hidden />
-      ) : flat ? (
-        <Minus className="h-3 w-3" aria-hidden />
-      ) : (
-        <ArrowDownRight className="h-3 w-3" aria-hidden />
-      )}
-      {up ? "+" : ""}
-      {pct.toFixed(2)}%
-    </span>
-  );
+interface Desk {
+  id: string;
+  label: string;
+  hint: string;
+  count24h: number;
+  medianDaily: number;
+  surgeRatio: number | null;
+  surging: boolean;
+  articles: WireArticle[];
+}
+
+interface HeatItem {
+  ticker: string;
+  name: string;
+  count24h: number;
+  surgeRatio: number | null;
+  surging: boolean;
+  tilt: "positive" | "negative" | "mixed" | null;
+}
+
+interface WireResponse {
+  ok: boolean;
+  articles: WireArticle[];
+  desks: Desk[];
+  heat: HeatItem[];
 }
 
 function StocksBoard() {
@@ -234,6 +115,8 @@ function StocksBoard() {
   const [sortKey, setSortKey] = useState<SortKey>("changePercent");
   const [sortDir, setSortDir] = useState<1 | -1>(-1);
   const { ids: watched, toggle } = useWatchlist();
+  const [wire, setWire] = useState<WireResponse | null>(null);
+  const [wireFailed, setWireFailed] = useState(false);
 
   const exchange: Exchange = EXCHANGES.find((e) => e.id === exchangeId) ?? EXCHANGES[0];
 
@@ -276,6 +159,34 @@ function StocksBoard() {
     };
   }, [exchangeId, exchange.status]);
 
+  // The lead-story block reads the same wire as the News Desk. It is an
+  // enrichment: if the wire fails, the block hides and the board stands.
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      fetch("/api/stocks/news-wire")
+        .then((r) => r.json())
+        .then((d: WireResponse) => {
+          if (cancelled) return;
+          if (d.ok) {
+            setWire(d);
+            setWireFailed(false);
+          } else setWireFailed(true);
+        })
+        .catch(() => {
+          if (!cancelled) setWireFailed(true);
+        });
+    };
+    load();
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") load();
+    }, 10 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
   const rows = useMemo(() => {
     const list = board?.rows ?? [];
     const q = query.trim().toLowerCase();
@@ -306,6 +217,27 @@ function StocksBoard() {
     };
   }, [board]);
 
+  /** Advancers / decliners / unchanged across the board in view. */
+  const breadth = useMemo(() => {
+    let adv = 0;
+    let dec = 0;
+    let flat = 0;
+    for (const r of board?.rows ?? []) {
+      if (r.changePercent == null) continue;
+      if (r.changePercent > 0) adv++;
+      else if (r.changePercent < 0) dec++;
+      else flat++;
+    }
+    return { adv, dec, flat, counted: adv + dec + flat };
+  }, [board]);
+
+  const lead = wire?.articles[0] ?? null;
+  const secondary = wire?.articles.slice(1, 4) ?? [];
+  const leadDesk = lead
+    ? wire?.desks.find((d) => d.articles.some((a) => a.id === lead.id))
+    : undefined;
+  const surgingDesks = wire?.desks.filter((d) => d.surging && d.surgeRatio != null) ?? [];
+
   const flipSort = (k: SortKey) => {
     if (sortKey === k) setSortDir((d) => (d === 1 ? -1 : 1));
     else {
@@ -314,124 +246,388 @@ function StocksBoard() {
     }
   };
 
+  const today = new Intl.DateTimeFormat("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+
+  const slugParts = [
+    `STK · ${today}`,
+    `${LIVE_EXCHANGES.length} exchanges live`,
+  ];
+  if (board && breadth.counted > 0) {
+    slugParts.push(
+      `${exchange.shortName} breadth ▲ ${breadth.adv} · ▼ ${breadth.dec} · — ${breadth.flat}`,
+    );
+  }
+
+  const sortMark = (k: SortKey) =>
+    sortKey === k ? (sortDir === 1 ? " ▲" : " ▼") : "";
+
+  const sortHeader = (label: string, k: SortKey) => (
+    <button
+      type="button"
+      onClick={() => flipSort(k)}
+      className="uppercase tracking-[inherit] transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+    >
+      {label}
+      {sortMark(k)}
+    </button>
+  );
+
+  const columns: DataTableColumn<BoardRow>[] = [
+    {
+      key: "watch",
+      header: <span className="sr-only">Watch</span>,
+      align: "center",
+      headerClassName: "w-10",
+      cellClassName: "w-10",
+      render: (r) => (
+        <button
+          onClick={() => toggle(r.ticker)}
+          aria-label={watched.includes(r.ticker) ? "Unwatch" : "Watch"}
+          aria-pressed={watched.includes(r.ticker)}
+          className={cn(
+            "rounded p-1 transition-colors",
+            watched.includes(r.ticker)
+              ? "text-primary"
+              : "text-muted-foreground/50 hover:text-primary",
+          )}
+        >
+          <Star
+            className="h-4 w-4"
+            fill={watched.includes(r.ticker) ? "currentColor" : "none"}
+            aria-hidden
+          />
+        </button>
+      ),
+    },
+    {
+      key: "name",
+      header: sortHeader("Company", "name"),
+      cellClassName: "max-w-[180px] truncate sm:max-w-none",
+      render: (r) => (
+        <>
+          <Link
+            to="/stocks/$ticker"
+            params={{ ticker: r.ticker }}
+            className="font-medium hover:text-success hover:underline"
+          >
+            {r.name}
+          </Link>
+          <BoardRowBadge row={r} />
+        </>
+      ),
+    },
+    {
+      key: "ticker",
+      header: "Ticker",
+      headerClassName: "hidden sm:table-cell",
+      cellClassName: "hidden font-mono text-[11px] text-muted-foreground sm:table-cell",
+      render: (r) => r.ticker,
+    },
+    {
+      key: "price",
+      header: sortHeader("Price", "price"),
+      numeric: true,
+      cellClassName: "font-semibold",
+      render: (r) => fmtPrice(r.price, board?.currencySymbol ?? ""),
+    },
+    {
+      key: "change",
+      header: sortHeader("24h", "changePercent"),
+      numeric: true,
+      render: (r) => <ChangeCell value={r.changePercent} />,
+    },
+    {
+      key: "value",
+      header: sortHeader("Value", "value"),
+      numeric: true,
+      headerClassName: "hidden md:table-cell",
+      cellClassName: "hidden text-[12px] text-muted-foreground md:table-cell",
+      render: (r) =>
+        r.value != null ? fmtCompactValue(r.value, board?.currencySymbol ?? "") : "—",
+    },
+  ];
+
   return (
     <TerminalShell>
-      <div className="mx-auto max-w-[1400px] px-3 py-4 sm:px-5">
-        {/* Exchange tabs */}
-        <div className="flex flex-wrap items-center gap-2" role="tablist" aria-label="Exchanges">
+      <PageContainer className="py-4 sm:py-6">
+        <PageHeader
+          slug={slugParts.join(" · ")}
+          title="The Soko Wire"
+          description="Twelve African exchanges on one board — end-of-day ledgers and delayed live quotes, every line tied to the news that moved it."
+        />
+
+        {/* Lead story + most-covered rail, from the news wire. Enrichment
+            only: a failed wire hides the block; the board still renders. */}
+        {!wireFailed &&
+          (wire == null ? (
+            <Panel variant="folio" padding="md" className="mb-5" aria-label="Loading top stories">
+              <SkeletonRows rows={4} />
+            </Panel>
+          ) : lead ? (
+            <section aria-label="Top stories" className="mb-5 grid gap-3 lg:grid-cols-3">
+              <Panel variant="folio" padding="md" className="lg:col-span-2">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                  <span className="text-primary">The lead</span>
+                  {leadDesk ? ` · ${leadDesk.label}` : " · The wire"}
+                </p>
+                <a
+                  href={lead.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-display mt-2 block text-[28px] font-semibold leading-tight tracking-tight text-foreground underline-offset-4 hover:underline"
+                >
+                  {lead.title}
+                </a>
+                <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] text-muted-foreground">
+                  <SentimentDot score={lead.sentiment_score} />
+                  <span>
+                    {lead.source} · {timeAgo(lead.published_at)}
+                  </span>
+                  <EventBadge title={lead.title} />
+                </p>
+                {secondary.length > 0 && (
+                  <ul className="mt-4 border-t border-border/60">
+                    {secondary.map((a) => (
+                      <li
+                        key={a.id}
+                        className="flex items-start gap-1 border-b border-border/50 py-2 last:border-0"
+                      >
+                        <span className="mt-1.5 shrink-0">
+                          <SentimentDot score={a.sentiment_score} className="mr-2" />
+                        </span>
+                        <div className="min-w-0">
+                          <a
+                            href={a.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm leading-snug text-foreground underline-offset-2 hover:underline"
+                          >
+                            {a.title}
+                          </a>
+                          <p className="mt-0.5 flex flex-wrap items-center gap-x-2 font-mono text-[11px] text-muted-foreground">
+                            <span>
+                              {a.source} · {timeAgo(a.published_at)}
+                            </span>
+                            <EventBadge title={a.title} />
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Panel>
+
+              <Panel variant="plain" padding="md">
+                <PanelHeader>
+                  <PanelTitle>Most covered · 24h</PanelTitle>
+                  <Flame className="h-3.5 w-3.5 text-primary" aria-hidden />
+                </PanelHeader>
+                {wire.heat.length > 0 ? (
+                  <ul>
+                    {wire.heat.map((h, i) => (
+                      <li
+                        key={h.ticker}
+                        className="flex items-center gap-2 border-b border-border/50 py-1.5 last:border-0"
+                      >
+                        <span className="num w-5 shrink-0 font-mono text-[10px] text-muted-foreground">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <Link
+                          to="/stocks/$ticker"
+                          params={{ ticker: h.ticker }}
+                          title={h.name}
+                          className="font-mono text-[12px] font-bold text-foreground hover:underline"
+                        >
+                          {h.ticker.replace(
+                            /\.(JO|NSE|NGX|GSE|DSE|USE|LUSE|ZSE|BSE|MSE|SEM|VFEX)$/,
+                            "",
+                          )}
+                        </Link>
+                        {h.tilt === "positive" && (
+                          <span className="text-success" aria-label="positive tilt">
+                            ▲
+                          </span>
+                        )}
+                        {h.tilt === "negative" && (
+                          <span className="text-destructive" aria-label="negative tilt">
+                            ▼
+                          </span>
+                        )}
+                        {h.tilt === "mixed" && (
+                          <span className="text-muted-foreground" aria-label="mixed tilt">
+                            ◆
+                          </span>
+                        )}
+                        <span className="num ml-auto font-mono text-[12px] text-muted-foreground">
+                          {h.count24h}
+                        </span>
+                        {h.surging && h.surgeRatio != null && (
+                          <span className="num font-mono text-[11px] font-bold text-primary">
+                            {h.surgeRatio.toFixed(1)}×
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-[13px] text-muted-foreground">
+                    No listed company coverage in the last 24 hours.
+                  </p>
+                )}
+                {surgingDesks.length > 0 && (
+                  <div className="mt-4 space-y-1 border-t border-border/60 pt-3">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                      Desks surging
+                    </p>
+                    {surgingDesks.map((d) => (
+                      <p
+                        key={d.id}
+                        className="flex items-baseline justify-between gap-2 font-mono text-[11px] text-muted-foreground"
+                      >
+                        <span className="uppercase tracking-[0.12em]">{d.label}</span>
+                        <span className="num shrink-0">
+                          {d.count24h} in 24h ·{" "}
+                          <span className="font-bold text-primary">
+                            {(d.surgeRatio as number).toFixed(1)}× pace
+                          </span>
+                        </span>
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </Panel>
+            </section>
+          ) : null)}
+
+        {/* Exchange switcher — the one Chip dialect, state printed on the chip */}
+        <div className="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Exchanges">
           {EXCHANGES.map((e) => (
-            <button
+            <Chip
               key={e.id}
               role="tab"
               aria-selected={exchangeId === e.id}
+              active={exchangeId === e.id}
+              size="sm"
               onClick={() => setExchangeId(e.id)}
-              className={cn(
-                "rounded-lg border px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.14em] transition-colors",
-                exchangeId === e.id
-                  ? "border-success/60 bg-success/10 text-success"
-                  : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground",
-              )}
             >
               {e.shortName}
-              {e.status === "soon" && (
-                <span className="ml-1.5 rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground">
-                  soon
-                </span>
-              )}
-            </button>
+              <span className="text-[9px] opacity-70">
+                {e.status === "soon" ? "Soon" : e.source === "yahoo" ? "Live" : "EOD"}
+              </span>
+            </Chip>
           ))}
         </div>
 
         {exchange.status !== "live" ? (
-          <div className="mt-6 rounded-xl border border-border/70 bg-card/40 p-8 text-center">
-            <p className="font-mono text-sm font-bold uppercase tracking-[0.18em]">
-              {exchange.name}
-            </p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              No free, machine-readable price feed exists for this exchange yet. We're
-              tracking the search — the board goes live the moment a reliable free
-              source appears. Nothing here is estimated or filled in.
-            </p>
-          </div>
+          <StateBlock
+            tone="empty"
+            title={exchange.name}
+            message="No free, machine-readable price feed exists for this exchange yet. We're tracking the search — the board goes live the moment a reliable free source appears. Nothing here is estimated or filled in."
+            className="mt-6"
+          />
         ) : (
           <>
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <h1 className="font-mono text-sm font-bold uppercase tracking-[0.18em]">
+            {/* Session strip for the selected exchange */}
+            <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-y border-border/60 py-2.5">
+              <h2 className="font-display text-xl font-semibold leading-tight tracking-tight text-foreground">
                 {exchange.name}
-              </h1>
-              {board && (
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                  {board.rows.length} listed · {board.timeNote}
-                </span>
-              )}
+              </h2>
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                {exchange.country} ·{" "}
+                {exchange.source === "yahoo" ? "Live · delayed" : "End of day"} ·{" "}
+                {board ? `${board.rows.length} listed · ${board.timeNote}` : exchange.timeNote}
+              </span>
               <div className="relative ml-auto w-full sm:w-64">
                 <Search
                   className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
                   aria-hidden
                 />
-                <input
+                <Input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search stocks…"
                   aria-label="Search stocks"
-                  className="h-9 w-full rounded-md border border-border/70 bg-card/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:border-success/60 focus:outline-none"
+                  className="pl-8"
                 />
               </div>
             </div>
 
-            {/* Movers strip */}
+            {/* Movers — ranked ledger rows */}
             {!loading && !error && movers.gainers.length > 0 && (
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                <div className="rounded-xl border border-border/60 bg-card/40 p-3">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-success">
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Panel variant="plain" padding="sm">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-success">
                     Top gainers
                   </p>
-                  <ul className="mt-1.5 space-y-1">
-                    {movers.gainers.map((r) => (
-                      <li key={r.ticker} className="flex items-center justify-between text-sm">
+                  <ul className="mt-1">
+                    {movers.gainers.map((r, i) => (
+                      <li
+                        key={r.ticker}
+                        className="flex items-baseline gap-2 border-b border-border/40 py-1.5 text-sm last:border-0"
+                      >
+                        <span className="num shrink-0 font-mono text-[10px] text-muted-foreground">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
                         <Link
                           to="/stocks/$ticker"
                           params={{ ticker: r.ticker }}
-                          className="truncate hover:underline"
+                          className="min-w-0 flex-1 truncate hover:underline"
                         >
                           {r.name}
                         </Link>
-                        <ChangeBadge pct={r.changePercent} />
+                        <ChangeCell value={r.changePercent} />
                       </li>
                     ))}
                   </ul>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-card/40 p-3">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-red-500">
+                </Panel>
+                <Panel variant="plain" padding="sm">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-destructive">
                     Top losers
                   </p>
-                  <ul className="mt-1.5 space-y-1">
-                    {movers.losers.map((r) => (
-                      <li key={r.ticker} className="flex items-center justify-between text-sm">
+                  <ul className="mt-1">
+                    {movers.losers.map((r, i) => (
+                      <li
+                        key={r.ticker}
+                        className="flex items-baseline gap-2 border-b border-border/40 py-1.5 text-sm last:border-0"
+                      >
+                        <span className="num shrink-0 font-mono text-[10px] text-muted-foreground">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
                         <Link
                           to="/stocks/$ticker"
                           params={{ ticker: r.ticker }}
-                          className="truncate hover:underline"
+                          className="min-w-0 flex-1 truncate hover:underline"
                         >
                           {r.name}
                         </Link>
-                        <ChangeBadge pct={r.changePercent} />
+                        <ChangeCell value={r.changePercent} />
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Panel>
                 {movers.active.length > 0 && (
-                  <div className="rounded-xl border border-border/60 bg-card/40 p-3 sm:col-span-2 lg:col-span-1">
-                    <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                  <Panel variant="plain" padding="sm" className="sm:col-span-2 lg:col-span-1">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
                       Most active · value traded
                     </p>
-                    <ul className="mt-1.5 space-y-1">
-                      {movers.active.map((r) => (
-                        <li key={r.ticker} className="flex items-center justify-between gap-2 text-sm">
+                    <ul className="mt-1">
+                      {movers.active.map((r, i) => (
+                        <li
+                          key={r.ticker}
+                          className="flex items-baseline gap-2 border-b border-border/40 py-1.5 text-sm last:border-0"
+                        >
+                          <span className="num shrink-0 font-mono text-[10px] text-muted-foreground">
+                            {String(i + 1).padStart(2, "0")}
+                          </span>
                           <Link
                             to="/stocks/$ticker"
                             params={{ ticker: r.ticker }}
-                            className="truncate hover:underline"
+                            className="min-w-0 flex-1 truncate hover:underline"
                           >
                             {r.name}
                           </Link>
@@ -441,112 +637,30 @@ function StocksBoard() {
                         </li>
                       ))}
                     </ul>
-                  </div>
+                  </Panel>
                 )}
               </div>
             )}
 
-            {/* Board table */}
-            <div className="mt-3 overflow-hidden rounded-xl border border-border/70">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border/60 bg-card/60 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                    <th className="w-10 px-2 py-2.5" aria-label="Watch" />
-                    <th className="px-3 py-2.5 text-left">
-                      <button onClick={() => flipSort("name")} className="hover:text-foreground">
-                        Company {sortKey === "name" && (sortDir === 1 ? "▲" : "▼")}
-                      </button>
-                    </th>
-                    <th className="hidden px-3 py-2.5 text-left sm:table-cell">Ticker</th>
-                    <th className="px-3 py-2.5 text-right">
-                      <button onClick={() => flipSort("price")} className="hover:text-foreground">
-                        Price {sortKey === "price" && (sortDir === 1 ? "▲" : "▼")}
-                      </button>
-                    </th>
-                    <th className="px-3 py-2.5 text-right">
-                      <button
-                        onClick={() => flipSort("changePercent")}
-                        className="hover:text-foreground"
-                      >
-                        24h {sortKey === "changePercent" && (sortDir === 1 ? "▲" : "▼")}
-                      </button>
-                    </th>
-                    <th className="hidden px-3 py-2.5 text-right md:table-cell">
-                      <button onClick={() => flipSort("value")} className="hover:text-foreground">
-                        Value {sortKey === "value" && (sortDir === 1 ? "▲" : "▼")}
-                      </button>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading &&
-                    Array.from({ length: 8 }).map((_, i) => (
-                      <tr key={i} className="border-b border-border/40">
-                        <td colSpan={6} className="px-3 py-3">
-                          <div className="h-4 animate-pulse rounded bg-muted/60" />
-                        </td>
-                      </tr>
-                    ))}
-                  {!loading &&
-                    rows.map((r) => (
-                      <tr
-                        key={r.ticker}
-                        className="border-b border-border/40 transition-colors last:border-0 hover:bg-card/60"
-                      >
-                        <td className="px-2 py-2.5 text-center">
-                          <button
-                            onClick={() => toggle(r.ticker)}
-                            aria-label={watched.includes(r.ticker) ? "Unwatch" : "Watch"}
-                            aria-pressed={watched.includes(r.ticker)}
-                            className={cn(
-                              "rounded p-1",
-                              watched.includes(r.ticker)
-                                ? "text-amber-400"
-                                : "text-muted-foreground/50 hover:text-amber-400",
-                            )}
-                          >
-                            <Star
-                              className="h-4 w-4"
-                              fill={watched.includes(r.ticker) ? "currentColor" : "none"}
-                              aria-hidden
-                            />
-                          </button>
-                        </td>
-                        <td className="max-w-[180px] truncate px-3 py-2.5 sm:max-w-none">
-                          <Link
-                            to="/stocks/$ticker"
-                            params={{ ticker: r.ticker }}
-                            className="font-medium hover:text-success hover:underline"
-                          >
-                            {r.name}
-                          </Link>
-                          <RowBadge row={r} />
-                        </td>
-                        <td className="hidden px-3 py-2.5 font-mono text-[11px] text-muted-foreground sm:table-cell">
-                          {r.ticker}
-                        </td>
-                        <td className="num px-3 py-2.5 text-right font-mono font-semibold">
-                          {fmtPrice(r.price, board?.currencySymbol ?? "")}
-                        </td>
-                        <td className="px-3 py-2.5 text-right">
-                          <ChangeBadge pct={r.changePercent} />
-                        </td>
-                        <td className="num hidden px-3 py-2.5 text-right font-mono text-[12px] text-muted-foreground md:table-cell">
-                          {r.value != null
-                            ? fmtCompactValue(r.value, board?.currencySymbol ?? "")
-                            : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-              {!loading && !error && rows.length === 0 && (
-                <p className="px-3 py-8 text-center text-sm text-muted-foreground">
-                  {query ? `No stocks match "${query}".` : "No quotes right now — check back shortly."}
-                </p>
-              )}
-              {!loading && error && (
-                <p className="px-3 py-8 text-center text-sm text-muted-foreground">{error}</p>
+            {/* The Continental Board — a ruled ledger */}
+            <div className="mt-3">
+              {error && !loading ? (
+                <StateBlock tone="error" title={exchange.name} message={error} />
+              ) : (
+                <Panel variant="plain" padding="none" className="overflow-hidden">
+                  <DataTable
+                    columns={columns}
+                    rows={rows}
+                    rowKey={(r) => r.ticker}
+                    loading={loading}
+                    skeletonRows={8}
+                    emptyState={
+                      query
+                        ? `No stocks match "${query}".`
+                        : "No quotes right now — check back shortly."
+                    }
+                  />
+                </Panel>
               )}
             </div>
             <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
@@ -554,7 +668,7 @@ function StocksBoard() {
             </p>
           </>
         )}
-      </div>
+      </PageContainer>
     </TerminalShell>
   );
 }
