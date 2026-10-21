@@ -6,7 +6,7 @@ import { PageContainer } from "@/components/nav/PageContainer";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
 import { DataTable, type DataTableColumn } from "@/components/ui/table";
-import { StateBlock, SkeletonBlock } from "@/components/common/states";
+import { StateBlock } from "@/components/common/states";
 import { ChangeCell } from "@/components/stocks/change";
 import { PaperLoginForm } from "@/components/paper/auth";
 import { usePaperSession } from "@/components/paper/use-paper-session";
@@ -167,7 +167,9 @@ function Portfolio() {
           description="Practise buying and selling with virtual cash. No real money and nothing at risk — this is where you learn to trade before you open a real account."
         />
 
-        {authLoading && <SkeletonBlock className="h-40" />}
+        {authLoading && (
+          <StateBlock tone="loading" message="Loading your portfolio…" />
+        )}
         {!authLoading && !user && (
           <div className="max-w-md">
             <PaperLoginForm />
@@ -178,6 +180,9 @@ function Portfolio() {
             tone="error"
             message="Portfolio unavailable right now — check back shortly."
           />
+        )}
+        {!authLoading && user && !failed && !data && (
+          <StateBlock tone="loading" message="Loading your portfolio…" />
         )}
         {!authLoading && user && !failed && data && (
           <>
@@ -208,7 +213,15 @@ function Portfolio() {
               {data.positions.length === 0 ? (
                 <StateBlock
                   tone="empty"
-                  message="No positions yet — place a paper trade from any stock page."
+                  message="No shares right now — the shares you buy will show here."
+                  action={
+                    <Link
+                      to="/trade"
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Buy practice shares on the Trade page
+                    </Link>
+                  }
                   className="border-0"
                 />
               ) : (
