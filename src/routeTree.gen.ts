@@ -10,12 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BrokersRouteImport } from './routes/brokers'
 import { Route as EconomyRouteImport } from './routes/economy'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as ScreenerRouteImport } from './routes/screener'
+import { Route as StartRouteImport } from './routes/start'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as StocksTickerRouteImport } from './routes/stocks.$ticker'
@@ -37,6 +39,11 @@ import { Route as ApiPublicHooksSignalsRouteImport } from './routes/api/public/h
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BrokersRoute = BrokersRouteImport.update({
+  id: '/brokers',
+  path: '/brokers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EconomyRoute = EconomyRouteImport.update({
@@ -67,6 +74,11 @@ const PulseRoute = PulseRouteImport.update({
 const ScreenerRoute = ScreenerRouteImport.update({
   id: '/screener',
   path: '/screener',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartRoute = StartRouteImport.update({
+  id: '/start',
+  path: '/start',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -161,12 +173,14 @@ const ApiPublicHooksSignalsRoute = ApiPublicHooksSignalsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/brokers': typeof BrokersRoute
   '/economy': typeof EconomyRoute
   '/map': typeof MapRoute
   '/news': typeof NewsRoute
   '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
   '/screener': typeof ScreenerRoute
+  '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
@@ -187,12 +201,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/brokers': typeof BrokersRoute
   '/economy': typeof EconomyRoute
   '/map': typeof MapRoute
   '/news': typeof NewsRoute
   '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
   '/screener': typeof ScreenerRoute
+  '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
@@ -214,12 +230,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/brokers': typeof BrokersRoute
   '/economy': typeof EconomyRoute
   '/map': typeof MapRoute
   '/news': typeof NewsRoute
   '/portfolio': typeof PortfolioRoute
   '/pulse': typeof PulseRoute
   '/screener': typeof ScreenerRoute
+  '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
@@ -242,12 +260,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/brokers'
     | '/economy'
     | '/map'
     | '/news'
     | '/portfolio'
     | '/pulse'
     | '/screener'
+    | '/start'
     | '/terms'
     | '/watchlist'
     | '/stocks/$ticker'
@@ -268,12 +288,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/brokers'
     | '/economy'
     | '/map'
     | '/news'
     | '/portfolio'
     | '/pulse'
     | '/screener'
+    | '/start'
     | '/terms'
     | '/watchlist'
     | '/stocks/$ticker'
@@ -294,12 +316,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/brokers'
     | '/economy'
     | '/map'
     | '/news'
     | '/portfolio'
     | '/pulse'
     | '/screener'
+    | '/start'
     | '/terms'
     | '/watchlist'
     | '/stocks/$ticker'
@@ -321,12 +345,14 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BrokersRoute: typeof BrokersRoute
   EconomyRoute: typeof EconomyRoute
   MapRoute: typeof MapRoute
   NewsRoute: typeof NewsRoute
   PortfolioRoute: typeof PortfolioRoute
   PulseRoute: typeof PulseRoute
   ScreenerRoute: typeof ScreenerRoute
+  StartRoute: typeof StartRoute
   TermsRoute: typeof TermsRoute
   WatchlistRoute: typeof WatchlistRoute
   StocksTickerRoute: typeof StocksTickerRoute
@@ -353,6 +379,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/brokers': {
+      id: '/brokers'
+      path: '/brokers'
+      fullPath: '/brokers'
+      preLoaderRoute: typeof BrokersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/economy': {
@@ -395,6 +428,13 @@ declare module '@tanstack/react-router' {
       path: '/screener'
       fullPath: '/screener'
       preLoaderRoute: typeof ScreenerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/start': {
+      id: '/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof StartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -521,12 +561,14 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BrokersRoute: BrokersRoute,
   EconomyRoute: EconomyRoute,
   MapRoute: MapRoute,
   NewsRoute: NewsRoute,
   PortfolioRoute: PortfolioRoute,
   PulseRoute: PulseRoute,
   ScreenerRoute: ScreenerRoute,
+  StartRoute: StartRoute,
   TermsRoute: TermsRoute,
   WatchlistRoute: WatchlistRoute,
   StocksTickerRoute: StocksTickerRoute,

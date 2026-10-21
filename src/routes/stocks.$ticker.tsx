@@ -17,6 +17,8 @@ import {
   type HeadlineEvent,
 } from "@/lib/news/events";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
+import { estimateRealCost, LEVY_SPLIT } from "@/lib/stocks/real-cost";
+import { Input } from "@/components/ui/input";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
 
@@ -671,6 +673,76 @@ function PriceChart({
   );
 }
 
+/**
+ * "What it costs for real" — the NSE fee stack on a typed amount, for the
+ * rail of an NSE stock page. Levies are fixed (0.34%); brokerage is shown
+ * as the typical 1.5%–2.1% range, so the total is a range too. Estimates
+ * from the fee table in lib/stocks/real-cost — not a quote from a broker.
+ */
+function RealCostPanel() {
+  const [raw, setRaw] = useState("10000");
+  const amount = Number(raw.replace(/[^0-9.]/g, ""));
+  const cost = estimateRealCost(Number.isFinite(amount) ? amount : 0);
+  const ksh = (v: number) => `KSh ${Math.round(v).toLocaleString("en-ZA")}`;
+  const split = LEVY_SPLIT.map(
+    (s) => `${s.label.replace(/ levy$/, "")} ${s.pct.toFixed(2)}%`,
+  ).join(" · ");
+
+  return (
+    <Panel variant="plain" padding="md" className="mt-3">
+      <PanelHeader>
+        <PanelTitle>What it costs for real</PanelTitle>
+      </PanelHeader>
+      <label
+        htmlFor="real-cost-amount"
+        className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground"
+      >
+        Amount (KSh)
+      </label>
+      <Input
+        id="real-cost-amount"
+        inputMode="numeric"
+        value={raw}
+        onChange={(e) => setRaw(e.target.value)}
+        className="num mt-1.5 font-mono"
+        aria-describedby="real-cost-note"
+      />
+      <p className="num mt-3 font-mono text-base font-semibold">
+        Fees: {ksh(cost.totalLow)} – {ksh(cost.totalHigh)}
+      </p>
+      <dl className="num mt-2 space-y-1 font-mono text-[11px] text-muted-foreground">
+        <div className="flex items-baseline justify-between gap-2">
+          <dt>Market levies · 0.34%</dt>
+          <dd className="text-foreground">{ksh(cost.levies)}</dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-2">
+          <dt>Brokerage · 1.5%–2.1%</dt>
+          <dd className="text-foreground">
+            {ksh(cost.brokerageLow)} – {ksh(cost.brokerageHigh)}
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-2">
+          <dt>Stamp duty</dt>
+          <dd className="text-foreground">{ksh(cost.stampDuty)}</dd>
+        </div>
+      </dl>
+      <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+        Levies: {split}. Stamp duty is KSh 2 per KSh 10,000 traded.
+      </p>
+      <p id="real-cost-note" className="mt-2 text-[13px] leading-relaxed">
+        Small amounts pay a bigger share in fees, because stamp duty is a flat
+        charge on every trade. Selling charges the same fees again.
+      </p>
+      <Link
+        to="/brokers"
+        className="mt-3 inline-block font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-primary hover:underline"
+      >
+        Open a real account →
+      </Link>
+    </Panel>
+  );
+}
+
 function StockDetail() {
   const { ticker } = Route.useParams();
   const [range, setRange] = useState<(typeof RANGES)[number]["id"]>("1y");
@@ -1005,6 +1077,7 @@ function StockDetail() {
                   eodLabel={quote.extras?.updated ?? null}
                   timeNote={quote.timeNote}
                 />
+                {exchange?.id === "NSE" && <RealCostPanel />}
               </aside>
 
               <div className="lg:col-start-1">

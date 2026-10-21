@@ -11,6 +11,7 @@ import { ChangeCell } from "@/components/stocks/change";
 import { PaperLoginForm } from "@/components/paper/auth";
 import { usePaperSession } from "@/components/paper/use-paper-session";
 import { fmtMoney as money, timeAgo } from "@/lib/stocks/format";
+import { estimateRealCost } from "@/lib/stocks/real-cost";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/portfolio")({
@@ -146,6 +147,17 @@ function Portfolio() {
     };
   }, [authLoading, user]);
 
+  // Paper → real translation: once a first position exists, show what the
+  // NSE holdings would have cost in real fees (mid-range brokerage, from
+  // lib/stocks/real-cost) and what real trading needs. Display only — no
+  // paper balances, orders or storage are touched.
+  const hasPositions = (data?.positions.length ?? 0) > 0;
+  const nseValue = (data?.positions ?? [])
+    .filter((p) => p.ticker.endsWith(".NSE"))
+    .reduce((sum, p) => sum + (p.board ?? p.avg) * p.qty, 0);
+  const realFees = nseValue > 0 ? estimateRealCost(nseValue) : null;
+  const ksh = (v: number) => `KSh ${Math.round(v).toLocaleString("en-ZA")}`;
+
   return (
     <TerminalShell>
       <PageContainer className="py-4 sm:py-6">
@@ -207,6 +219,38 @@ function Portfolio() {
                 />
               )}
             </Panel>
+
+            {hasPositions && (
+              <Panel variant="plain" padding="md" className="mt-6">
+                <PanelTitle>From paper to real</PanelTitle>
+                {realFees && (
+                  <p className="mt-2 text-sm leading-relaxed">
+                    In real trading this would have cost about{" "}
+                    <span className="num font-mono font-semibold">
+                      {ksh(realFees.totalMid)}
+                    </span>{" "}
+                    in fees.
+                  </p>
+                )}
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  To trade for real you need a CDS account — ID, KRA PIN,
+                  photos.{" "}
+                  <Link
+                    to="/start"
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    See the five steps →
+                  </Link>
+                </p>
+                {realFees && (
+                  <p className="mt-2 font-mono text-[10px] uppercase leading-relaxed tracking-[0.12em] text-muted-foreground">
+                    On your NSE paper positions at board prices · levies
+                    0.34% · brokerage at the 1.8% mid-range · stamp duty
+                    included
+                  </p>
+                )}
+              </Panel>
+            )}
 
             <Panel variant="folio" padding="none" className="mt-6 overflow-hidden">
               <PanelHeader className="px-4 pt-4">
