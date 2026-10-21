@@ -5,7 +5,7 @@ import { TerminalShell } from "@/components/nav/TerminalShell";
 import { PageContainer } from "@/components/nav/PageContainer";
 import { PageHeader } from "@/components/nav/PageHeader";
 import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
-import { StateBlock, SkeletonBlock } from "@/components/common/states";
+import { StateBlock } from "@/components/common/states";
 import { PaperLoginForm } from "@/components/paper/auth";
 import { usePaperSession } from "@/components/paper/use-paper-session";
 import { useStockDirectory, type DirectoryEntry } from "@/components/nav/use-directory";
@@ -68,6 +68,15 @@ interface OrderResponse {
   position?: { qty: number; avg: number };
 }
 
+/** What the orders API reports back after a sell: the account's new cash
+ * in the sold currency and the position that remains (qty 0 = all sold). */
+interface SoldFill {
+  ticker: string;
+  currency: string;
+  cash: number | null;
+  position?: { qty: number; avg: number };
+}
+
 interface BoardRowLite {
   ticker: string;
   name: string;
@@ -116,6 +125,13 @@ function nameForTicker(ticker: string, directory: DirectoryEntry[]): string {
 
 function TradePage() {
   const { user, loading: authLoading } = usePaperSession();
+  // Key the loader on the user id, not the user object. The session hook
+  // hands back a fresh user object on every auth event, and placing an
+  // order fires those events (placeOrder calls getSession) — keying on the
+  // object made the effect cancel the post-order reload mid-flight and
+  // throw its result away, leaving pre-trade figures on screen until a
+  // manual reload.
+  const userId = user?.id ?? null;
   const [data, setData] = useState<PortfolioResponse | null>(null);
   const [failed, setFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -125,7 +141,7 @@ function TradePage() {
   const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading || !userId) return;
     let cancelled = false;
     (async () => {
       try {
@@ -152,7 +168,7 @@ function TradePage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, refreshKey]);
+  }, [authLoading, userId, refreshKey]);
 
   return (
     <TerminalShell>
@@ -163,7 +179,9 @@ function TradePage() {
           description="Buy and sell shares with practice money, at real prices. Type an amount, see how many shares you get, and learn how trading feels — before any real money is involved."
         />
 
-        {authLoading && <SkeletonBlock className="h-40" />}
+        {authLoading && (
+          <StateBlock tone="loading" message="Loading your practice account…" />
+        )}
         {!authLoading && !user && (
           <div className="max-w-[760px] space-y-4">
             <Panel padding="lg">
@@ -186,7 +204,9 @@ function TradePage() {
             message="Your practice account is unavailable right now — check back shortly."
           />
         )}
-        {!authLoading && user && !failed && !data && <SkeletonBlock className="h-40" />}
+        {!authLoading && user && !failed && !data && (
+          <StateBlock tone="loading" message="Loading your practice account…" />
+        )}
         {!authLoading && user && !failed && data && (
           <div className="max-w-[760px] space-y-4">
             <AccountHome data={data} directory={directory} />
@@ -208,8 +228,36 @@ function TradePage() {
                     key={p.ticker}
                     position={p}
                     directory={directory}
-                    onSold={(msg) => {
+                    onSold={(msg, fill) => {
                       setNotice(msg);
+                      // Put the fill the API returned (new cash, remaining
+                      // position) on screen straight away — the same
+                      // response data the buy flow confirms with — then
+                      // reload in full to reconcile.
+                      const pos = fill.position;
+                      setData((prev) => {
+                        if (!prev) return prev;
+                        const positions =
+                          pos == null
+                            ? prev.positions
+                            : pos.qty <= 0
+                              ? prev.positions.filter(
+                                  (row) => row.ticker !== fill.ticker,
+                                )
+                              : prev.positions.map((row) =>
+                                  row.ticker === fill.ticker
+                                    ? { ...row, qty: pos.qty, avg: pos.avg }
+                                    : row,
+                                );
+                        return {
+                          ...prev,
+                          cash:
+                            fill.cash != null
+                              ? { ...prev.cash, [fill.currency]: fill.cash }
+                              : prev.cash,
+                          positions,
+                        };
+                      });
                       refresh();
                     }}
                   />
@@ -347,7 +395,7 @@ function PositionCard({
 }: {
   position: PositionRow;
   directory: DirectoryEntry[];
-  onSold: (msg: string) => void;
+  onSold: (msg: string, fill: SoldFill) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<"all" | "shares" | "amount">("all");
@@ -390,6 +438,12 @@ function PositionCard({
     const got = (res.fill_price ?? price ?? 0) * toSell;
     onSold(
       `Sold ${toSell} ${toSell === 1 ? "share" : "shares"} of ${name} — ${fmt(got, sym)} is back in your practice cash.`,
+      {
+        ticker: p.ticker,
+        currency: ex?.currency ?? "KES",
+        cash: res.cash ?? null,
+        position: res.position,
+      },
     );
   };
 
