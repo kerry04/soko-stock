@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import { SIGNAL_COUNTRY_BY_ID } from "@/lib/signal-countries";
+import { StateBlock } from "@/components/common/states";
 import type { CountrySignal } from "./SignalMap";
 
 /**
@@ -204,14 +205,16 @@ export function GlobeMap({
             const s = f.signal;
             const name =
               s?.country.name ?? SIGNAL_COUNTRY_BY_ID[String(f.id)]?.name ?? f.properties.name;
+            // Theme-var colours: the label pill follows the app theme
+            // (popover surface) instead of a hard-coded dark slate.
             if (!s) {
-              return `<div style="font-family:monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;background:rgba(2,6,23,0.92);border:1px solid rgba(100,116,139,0.5);border-radius:6px;padding:5px 8px;color:#e2e8f0">${name}</div>`;
+              return `<div style="font-family:monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;background:var(--color-popover);border:1px solid var(--color-border);border-radius:4px;padding:5px 8px;color:var(--color-popover-foreground)">${name}</div>`;
             }
-            return `<div style="font-family:monospace;font-size:11px;background:rgba(2,6,23,0.94);border:1px solid ${
-              s.converging ? "rgba(239,68,68,0.7)" : "rgba(34,197,94,0.6)"
-            };border-radius:6px;padding:6px 9px;color:#e2e8f0">
+            return `<div style="font-family:monospace;font-size:11px;background:var(--color-popover);border:1px solid color-mix(in oklch, var(${
+              s.converging ? "--color-destructive" : "--color-success"
+            }) 65%, transparent);border-radius:4px;padding:6px 9px;color:var(--color-popover-foreground)">
               <div style="font-weight:700;letter-spacing:0.14em;text-transform:uppercase">${name}</div>
-              <div style="color:${s.converging ? "#f87171" : "#4ade80"};margin-top:2px">${s.articles.length} articles · 24h · instability ${s.instability}/100${s.converging ? " · CONVERGING" : ""}</div>
+              <div style="color:var(${s.converging ? "--color-destructive" : "--color-success"});margin-top:2px">${s.articles.length} articles · 24h · instability ${s.instability}/100${s.converging ? " · CONVERGING" : ""}</div>
             </div>`;
           })
           .onPolygonClick((f) => {
@@ -299,7 +302,7 @@ export function GlobeMap({
 
   return (
     <div
-      className="relative h-[440px] w-full overflow-hidden rounded-xl border border-border/70 bg-[radial-gradient(ellipse_at_center,#0b1220_0%,#020617_72%)] sm:h-[540px]"
+      className="relative h-[440px] w-full overflow-hidden rounded-lg border border-border/70 bg-[radial-gradient(ellipse_at_center,var(--color-card)_0%,var(--color-background)_75%)] sm:h-[540px]"
       role="img"
       aria-label="3D globe: countries glowing with live news-signal intensity. Drag to spin, click a lit country for headlines."
     >
@@ -307,9 +310,7 @@ export function GlobeMap({
       <div ref={hostRef} className="absolute inset-0" />
       {!ready && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-slate-400">
-            Spinning up the globe…
-          </span>
+          <StateBlock tone="loading" title="Spinning up the globe…" className="border-none px-0 py-0" />
         </div>
       )}
     </div>

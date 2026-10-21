@@ -8,6 +8,8 @@ import { dedupeByTitle } from "@/lib/news/dedupe";
 import { timeAgo } from "@/lib/stocks/format";
 import { GlobeMap } from "./GlobeMap";
 import { CountryBroadcast } from "./CountryBroadcast";
+import { Chip } from "@/components/ui/chip";
+import { StateBlock } from "@/components/common/states";
 
 interface WorldDotsData {
   cols: number;
@@ -391,7 +393,7 @@ export function SignalMap() {
       ) : (
         <div
           ref={wrapRef}
-        className="relative w-full cursor-crosshair overflow-hidden rounded-xl border border-border/70 bg-card/30"
+        className="relative w-full cursor-crosshair overflow-hidden rounded-lg border border-border/70 bg-card/30"
       >
         <canvas
           ref={canvasRef}
@@ -430,9 +432,7 @@ export function SignalMap() {
         )}
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/40">
-            <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              Tuning frequencies…
-            </span>
+            <StateBlock tone="loading" title="Tuning frequencies…" className="border-none px-0 py-0" />
           </div>
         )}
         </div>
@@ -446,13 +446,13 @@ export function SignalMap() {
         </span>
         <span>{signals.length} countries with signal</span>
         {globeError && (
-          <span className="normal-case tracking-normal text-red-500">
+          <span className="normal-case tracking-normal text-destructive">
             globe unavailable ({globeError}) — showing flat map
           </span>
         )}
         {signals.some((s) => s.converging) && (
-          <span className="inline-flex items-center gap-1.5 text-red-500">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" aria-hidden />
+          <span className="inline-flex items-center gap-1.5 text-destructive">
+            <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" aria-hidden />
             {signals.filter((s) => s.converging).length} converging
           </span>
         )}
@@ -460,30 +460,12 @@ export function SignalMap() {
           <span>as of {asOf.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
         )}
         <span className="ml-auto inline-flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setView("globe")}
-            aria-pressed={view === "globe"}
-            className={`rounded border px-2 py-0.5 uppercase tracking-[0.14em] ${
-              view === "globe"
-                ? "border-success/50 bg-success/10 text-foreground"
-                : "border-border/70 text-muted-foreground hover:text-foreground"
-            }`}
-          >
+          <Chip size="sm" active={view === "globe"} onClick={() => setView("globe")}>
             Globe
-          </button>
-          <button
-            type="button"
-            onClick={() => setView("flat")}
-            aria-pressed={view === "flat"}
-            className={`rounded border px-2 py-0.5 uppercase tracking-[0.14em] ${
-              view === "flat"
-                ? "border-success/50 bg-success/10 text-foreground"
-                : "border-border/70 text-muted-foreground hover:text-foreground"
-            }`}
-          >
+          </Chip>
+          <Chip size="sm" active={view === "flat"} onClick={() => setView("flat")}>
             Flat
-          </button>
+          </Chip>
         </span>
         <span className="hidden sm:inline">
           {view === "globe"
@@ -506,31 +488,26 @@ export function SignalMap() {
             .map((s) => {
               const isSel = selected?.country.id === s.country.id;
               return (
-                <button
+                <Chip
                   key={s.country.id}
-                  type="button"
-                  aria-pressed={isSel}
+                  active={isSel}
                   onClick={() =>
                     setSelected((prev) => (prev?.country.id === s.country.id ? null : s))
                   }
-                  className={`flex shrink-0 items-center gap-2 rounded-md border px-2.5 py-1.5 font-mono text-[11px] transition-colors ${
-                    isSel
-                      ? "border-primary/60 bg-primary/10 text-foreground"
-                      : "border-border/70 bg-card/40 text-muted-foreground hover:border-border hover:text-foreground"
-                  }`}
+                  className="shrink-0"
                 >
                   <span
-                    className={`h-1.5 w-1.5 rounded-full ${s.converging ? "bg-red-500" : "bg-success"} animate-pulse`}
+                    className={`h-1.5 w-1.5 rounded-full ${s.converging ? "bg-destructive" : "bg-success"} animate-pulse`}
                     aria-hidden
                   />
                   <span className="font-bold uppercase tracking-[0.12em]">{s.country.name}</span>
                   <span className="num text-muted-foreground">{s.articles.length} · 24h</span>
                   {s.converging && (
-                    <span className="font-bold uppercase tracking-[0.12em] text-red-500">
+                    <span className="font-bold uppercase tracking-[0.12em] text-destructive">
                       Converging
                     </span>
                   )}
-                </button>
+                </Chip>
               );
             })}
         </div>

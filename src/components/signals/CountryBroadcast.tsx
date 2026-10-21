@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { Radio, X } from "lucide-react";
 import type { Article, CountrySignal, StockLink } from "./SignalMap";
 import { SentimentDot } from "@/components/stocks/badges";
-import { timeAgo } from "@/lib/stocks/format";
+import { ChangeCell } from "@/components/stocks/change";
+import { fmtPrice, timeAgo } from "@/lib/stocks/format";
 
 /**
  * "Soko Live" broadcast pop-up for a selected country: a TV-news frame
@@ -79,33 +80,33 @@ export function CountryBroadcast({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-border bg-[#0a0f1a] shadow-2xl sm:rounded-2xl"
+        className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-lg border border-border bg-popover text-popover-foreground shadow-2xl sm:rounded-lg"
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Broadcast header: bug + brand + clock ─────────────────── */}
-        <div className="flex items-center gap-3 border-b border-white/10 px-4 py-2.5">
+        <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
           <span
-            className={`inline-flex items-center gap-1.5 rounded px-2 py-1 font-mono text-[11px] font-black uppercase tracking-[0.18em] text-white ${
-              converging ? "animate-pulse bg-red-600" : "bg-red-600"
+            className={`inline-flex items-center gap-1.5 rounded px-2 py-1 font-mono text-[11px] font-black uppercase tracking-[0.18em] text-destructive-foreground ${
+              converging ? "animate-pulse bg-destructive" : "bg-destructive"
             }`}
           >
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" aria-hidden />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-destructive-foreground" aria-hidden />
             {converging ? "Breaking" : "Live"}
           </span>
-          <span className="font-mono text-sm font-black uppercase tracking-[0.22em] text-white">
-            Soko <span className="text-amber-400">Live</span>
+          <span className="font-mono text-sm font-black uppercase tracking-[0.22em] text-popover-foreground">
+            Soko <span className="text-primary">Live</span>
           </span>
-          <span className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-slate-400 sm:inline">
+          <span className="hidden font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground sm:inline">
             {country.name} desk
           </span>
-          <span className="num ml-auto font-mono text-[11px] text-slate-300">
+          <span className="num ml-auto font-mono text-[11px] text-popover-foreground/80">
             {clock} EAT
           </span>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close broadcast"
-            className="rounded-md p-1.5 text-slate-300 hover:bg-white/10 hover:text-white"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-accent-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -115,11 +116,11 @@ export function CountryBroadcast({
         <div className="min-h-0 flex-1 overflow-y-auto">
           {/* Top story */}
           <div
-            className="border-b border-white/10 px-4 py-4 sm:px-5"
+            className="border-b border-border px-4 py-4 sm:px-5"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
           >
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
               Top story
             </p>
             {top ? (
@@ -129,11 +130,11 @@ export function CountryBroadcast({
                   href={top.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1.5 block text-xl font-bold leading-snug text-white hover:underline sm:text-2xl"
+                  className="font-display mt-1.5 block text-xl font-semibold leading-snug text-popover-foreground hover:underline sm:text-2xl"
                 >
                   {top.title}
                 </a>
-                <p className="mt-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-slate-400">
+                <p className="mt-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                   <SentimentDot score={top.sentiment_score} className="h-1.5 w-1.5" />
                   {top.source} · {timeAgo(top.published_at)}
                 </p>
@@ -147,8 +148,8 @@ export function CountryBroadcast({
                         onClick={() => setStoryIdx(i)}
                         className={`h-1 rounded-full transition-all ${
                           i === storyIdx % articles.length
-                            ? "w-6 bg-amber-400"
-                            : "w-2.5 bg-white/25 hover:bg-white/40"
+                            ? "w-6 bg-primary"
+                            : "w-2.5 bg-popover-foreground/25 hover:bg-popover-foreground/40"
                         }`}
                       />
                     ))}
@@ -156,41 +157,41 @@ export function CountryBroadcast({
                 )}
               </>
             ) : (
-              <p className="mt-2 text-sm text-slate-400">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Signal is moving on trend velocity — no headlines in the last 24h yet.
               </p>
             )}
           </div>
 
           {/* Signal meter */}
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-white/10 px-4 py-3 sm:px-5">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border px-4 py-3 sm:px-5">
             <div className="flex items-center gap-2">
               <div
-                className="h-1.5 w-28 overflow-hidden rounded-full bg-white/10"
+                className="h-1.5 w-28 overflow-hidden rounded-full bg-popover-foreground/10"
                 role="img"
                 aria-label={`Instability index ${instability} of 100`}
               >
                 <div
                   className={`h-full rounded-full ${
                     instability >= 60
-                      ? "bg-red-500"
+                      ? "bg-destructive"
                       : instability >= 30
-                        ? "bg-amber-500"
-                        : "bg-emerald-500"
+                        ? "bg-primary"
+                        : "bg-success"
                   }`}
                   style={{ width: `${instability}%` }}
                 />
               </div>
-              <span className="num font-mono text-[10px] uppercase tracking-[0.14em] text-slate-300">
+              <span className="num font-mono text-[10px] uppercase tracking-[0.14em] text-popover-foreground">
                 Instability {instability}/100
               </span>
             </div>
-            <span className="num font-mono text-[10px] uppercase tracking-[0.14em] text-slate-400">
+            <span className="num font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
               {articles.length} articles · 24h
               {signal.velocity > 0 && ` · velocity +${signal.velocity.toFixed(1)}`}
             </span>
             {(signal.eventHits > 0 || signal.quakeHits > 0) && (
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-red-400">
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-destructive">
                 {[
                   signal.eventHits > 0 ? `${signal.eventHits} unrest events` : null,
                   signal.quakeHits > 0 ? `${signal.quakeHits} quakes M≥4.5` : null,
@@ -200,7 +201,7 @@ export function CountryBroadcast({
               </span>
             )}
             {converging && (
-              <span className="rounded-full bg-red-500/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-red-400">
+              <span className="rounded-full bg-destructive/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-destructive">
                 Signals converging
               </span>
             )}
@@ -208,19 +209,19 @@ export function CountryBroadcast({
 
           {/* More of the wire */}
           {rest.length > 0 && (
-            <ul className="divide-y divide-white/5 px-4 sm:px-5">
+            <ul className="divide-y divide-border px-4 sm:px-5">
               {rest.slice(0, 4).map((a) => (
                 <li key={a.id} className="py-2.5">
                   <a
                     href={a.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-start gap-2 text-sm leading-snug text-slate-100 hover:underline"
+                    className="flex items-start gap-2 text-sm leading-snug text-popover-foreground hover:underline"
                   >
                     <SentimentDot score={a.sentiment_score} className="mt-1.5 h-1.5 w-1.5" />
                     {a.title}
                   </a>
-                  <p className="mt-0.5 pl-3.5 font-mono text-[10px] uppercase tracking-[0.12em] text-slate-500">
+                  <p className="mt-0.5 pl-3.5 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
                     {a.source} · {timeAgo(a.published_at)}
                   </p>
                 </li>
@@ -229,8 +230,8 @@ export function CountryBroadcast({
           )}
 
           {/* Market update */}
-          <div className="border-t border-white/10 px-4 py-3 sm:px-5">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-amber-400">
+          <div className="border-t border-border px-4 py-3 sm:px-5">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
               Market update · biggest movers
             </p>
             {stocks.length > 0 ? (
@@ -241,32 +242,21 @@ export function CountryBroadcast({
                       to="/stocks/$ticker"
                       params={{ ticker: s.ticker }}
                       onClick={onClose}
-                      className="inline-flex items-baseline gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 hover:bg-white/10"
+                      className="inline-flex items-baseline gap-2 rounded-lg border border-border bg-popover-foreground/5 px-3 py-1.5 hover:bg-popover-foreground/10"
                     >
-                      <span className="text-sm font-semibold text-white">{s.name}</span>
-                      <span className="num font-mono text-[11px] text-slate-300">
-                        {s.currencySymbol}
-                        {s.price.toLocaleString("en-ZA", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                      <span className="text-sm font-semibold text-popover-foreground">{s.name}</span>
+                      <span className="num font-mono text-[11px] text-muted-foreground">
+                        {fmtPrice(s.price, s.currencySymbol)}
                       </span>
                       {s.changePercent != null && (
-                        <span
-                          className={`num font-mono text-[11px] font-bold ${
-                            s.changePercent >= 0 ? "text-emerald-400" : "text-red-400"
-                          }`}
-                        >
-                          {s.changePercent >= 0 ? "+" : ""}
-                          {s.changePercent.toFixed(2)}%
-                        </span>
+                        <ChangeCell value={s.changePercent} className="text-[11px]" />
                       )}
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="mt-2 flex items-center gap-2 font-mono text-[11px] text-slate-500">
+              <p className="mt-2 flex items-center gap-2 font-mono text-[11px] text-muted-foreground">
                 <Radio className="h-3.5 w-3.5" aria-hidden />
                 No live exchange feed for this region yet.
               </p>
@@ -276,8 +266,8 @@ export function CountryBroadcast({
 
         {/* ── Headline ticker ───────────────────────────────────────── */}
         {tickerItems.length > 0 && (
-          <div className="flex items-stretch overflow-hidden border-t border-amber-400/30 bg-black">
-            <span className="z-10 flex shrink-0 items-center bg-amber-400 px-2.5 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-black">
+          <div className="flex items-stretch overflow-hidden border-t border-primary/30 bg-popover">
+            <span className="z-10 flex shrink-0 items-center bg-primary px-2.5 font-mono text-[10px] font-black uppercase tracking-[0.16em] text-primary-foreground">
               {country.name}
             </span>
             <div className="relative flex flex-1 items-center overflow-hidden">
@@ -289,12 +279,12 @@ export function CountryBroadcast({
                   <span
                     key={copy}
                     aria-hidden={copy === 1}
-                    className="flex items-center font-mono text-[11px] text-slate-200"
+                    className="flex items-center font-mono text-[11px] text-popover-foreground"
                   >
                     {tickerItems.map((t, i) => (
                       <span key={i} className="flex items-center">
                         <span className="px-3">{t}</span>
-                        <span className="text-amber-400">///</span>
+                        <span className="text-primary">///</span>
                       </span>
                     ))}
                   </span>

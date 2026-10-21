@@ -29,6 +29,9 @@ export interface Exchange {
    */
   dailyLimitPct: number | null;
   timeNote: string;
+  /** IANA timezone of the exchange's home city — local-time displays
+   *  (session ring, session strips). Metadata only; never a trading-hours claim. */
+  tz: string;
 }
 
 export const EXCHANGES: Exchange[] = [
@@ -45,6 +48,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 100, // Yahoo quotes JSE equities in ZAc (cents)
     dailyLimitPct: null, // volatility auctions — no fixed band
     timeNote: "Quotes via Yahoo Finance, ~15 min delayed",
+    tz: "Africa/Johannesburg",
     tickers: [
       "NPN.JO", // Naspers
       "PRX.JO", // Prosus
@@ -85,6 +89,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: 10,
     timeNote: "End-of-day quotes via African Financials",
+    tz: "Africa/Nairobi",
     tickers: [],
   },
   {
@@ -100,6 +105,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: 10,
     timeNote: "End-of-day quotes via African Financials",
+    tz: "Africa/Lagos",
     tickers: [],
   },
   {
@@ -115,6 +121,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: 10,
     timeNote: "End-of-day quotes via African Financials",
+    tz: "Africa/Accra",
     tickers: [],
   },
   {
@@ -130,6 +137,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials",
+    tz: "Africa/Dar_es_Salaam",
     tickers: [],
   },
   {
@@ -145,6 +153,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: 10,
     timeNote: "End-of-day quotes via African Financials",
+    tz: "Africa/Kampala",
     tickers: [],
   },
   {
@@ -160,6 +169,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: 25,
     timeNote: "End-of-day quotes via African Financials",
+    tz: "Africa/Lusaka",
     tickers: [],
   },
   {
@@ -175,6 +185,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials (listed in thebe, shown in pula)",
+    tz: "Africa/Gaborone",
     tickers: [],
   },
   {
@@ -190,6 +201,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials",
+    tz: "Africa/Lilongwe",
     tickers: [],
   },
   {
@@ -205,6 +217,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials",
+    tz: "Indian/Mauritius",
     tickers: [],
   },
   {
@@ -220,6 +233,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: null,
     timeNote: "End-of-day quotes via African Financials (listed in US cents, shown in USD)",
+    tz: "Africa/Harare",
     tickers: [],
   },
   {
@@ -235,6 +249,7 @@ export const EXCHANGES: Exchange[] = [
     divisor: 1,
     dailyLimitPct: 15,
     timeNote: "End-of-day quotes via African Financials (listed in ZiG cents, shown in ZiG)",
+    tz: "Africa/Harare",
     tickers: [],
   },
 ];
