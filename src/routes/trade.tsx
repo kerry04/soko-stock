@@ -603,11 +603,11 @@ function BuyShares({
     const picked = STARTER_TICKERS.map((t) => byTicker.get(t)).filter(
       (r): r is BoardRowLite => !!r,
     );
-    if (picked.length >= 4) return picked.slice(0, 6);
+    if (picked.length >= 4) return picked.slice(0, 8);
     const rest = [...board]
       .filter((r) => !picked.some((p) => p.ticker === r.ticker))
       .sort((a, b) => (b.value ?? 0) - (a.value ?? 0));
-    return [...picked, ...rest].slice(0, 6);
+    return [...picked, ...rest].slice(0, 8);
   }, [board]);
 
   const results = useMemo(() => {
