@@ -18,6 +18,12 @@ import { DataTable, type DataTableColumn } from "@/components/ui/table";
  * with the broker" rather than guessing. Those numbers change, and a
  * wrong figure here costs a reader real money. Every row is stamped
  * with the date the facts were checked.
+ *
+ * Outbound links were verified separately on 21 Oct 2026 by fetching
+ * each firm's site and confirming it loads under the firm's own
+ * branding — all 11 rows carry a link. (faida.co.ke is an unrelated
+ * point-of-sale app, not the investment bank; Faida's site is
+ * fib.co.ke, verified by fetch the same evening.)
  */
 
 const CHECK = "Check with the broker";
@@ -31,11 +37,11 @@ interface BrokerRow {
   mpesa: string;
   commission: string;
   minimum: string;
-  link: string;
+  site?: string;
   checked: string;
 }
 
-const row = (broker: string, app: string, note?: string): BrokerRow => ({
+const row = (broker: string, app: string, note?: string, site?: string): BrokerRow => ({
   broker,
   note,
   app,
@@ -43,27 +49,33 @@ const row = (broker: string, app: string, note?: string): BrokerRow => ({
   mpesa: CHECK,
   commission: CHECK,
   minimum: CHECK,
-  link: CHECK,
+  site,
   checked: CHECKED,
 });
 
 // CMA-licensed retail brokers named in the research brief; alphabetical.
 const BROKERS: BrokerRow[] = [
-  row("ABC Capital", "Online platform"),
-  row("AIB-AXYS Africa", "DigiTrader"),
-  row("Dyer & Blair Investment Bank", CHECK),
-  row("Faida Investment Bank", "M-Trader", "Also sits behind the Hisa app."),
-  row("Genghis Capital", CHECK),
+  row("ABC Capital", "Online platform", undefined, "https://www.abccapital.co.ke"),
+  row("AIB-AXYS Africa", "DigiTrader", undefined, "https://aib-axysafrica.com"),
+  row("Dyer & Blair Investment Bank", CHECK, undefined, "https://www.dyerandblair.com"),
+  row("Faida Investment Bank", "M-Trader", "Also sits behind the Hisa app.", "https://fib.co.ke"),
+  row("Genghis Capital", CHECK, undefined, "https://genghis-capital.com"),
   row(
     "Kestrel Capital",
     CHECK,
     "The broker behind Ziidi Trader inside M-PESA, and behind Bamboo's Kenya operation.",
+    "https://kestrelcapital.com",
   ),
-  row("Kingdom Securities", CHECK, "For Co-operative Bank customers."),
-  row("NCBA Investment Bank", CHECK),
-  row("SBG Securities", "iTrader"),
-  row("Standard Investment Bank", CHECK),
-  row("Sterling Capital", CHECK),
+  row(
+    "Kingdom Securities",
+    CHECK,
+    "For Co-operative Bank customers.",
+    "https://kingdomsecurities.co.ke",
+  ),
+  row("NCBA Investment Bank", CHECK, undefined, "https://ncbagroup.com"),
+  row("SBG Securities", "iTrader", undefined, "https://www.sbgsecurities.co.ke"),
+  row("Standard Investment Bank", CHECK, undefined, "https://sib.co.ke"),
+  row("Sterling Capital", CHECK, undefined, "https://sterlingib.com"),
 ];
 
 const muted = (v: string) =>
@@ -89,7 +101,23 @@ const brokerColumns: DataTableColumn<BrokerRow>[] = [
   { key: "mpesa", header: "M-PESA funding", render: (b) => muted(b.mpesa) },
   { key: "commission", header: "Published commission", render: (b) => muted(b.commission) },
   { key: "minimum", header: "Minimum", render: (b) => muted(b.minimum) },
-  { key: "link", header: "Link out", render: (b) => muted(b.link) },
+  {
+    key: "link",
+    header: "Link out",
+    render: (b) =>
+      b.site ? (
+        <a
+          href={b.site}
+          target="_blank"
+          rel="noreferrer"
+          className="font-medium whitespace-nowrap text-primary underline-offset-4 hover:underline"
+        >
+          {b.site.replace(/^https?:\/\//, "").replace(/\/$/, "")} →
+        </a>
+      ) : (
+        muted(CHECK)
+      ),
+  },
   {
     key: "checked",
     header: "Checked",
