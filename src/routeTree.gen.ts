@@ -19,6 +19,7 @@ import { Route as PulseRouteImport } from './routes/pulse'
 import { Route as ScreenerRouteImport } from './routes/screener'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TradeRouteImport } from './routes/trade'
 import { Route as WatchlistRouteImport } from './routes/watchlist'
 import { Route as StocksTickerRouteImport } from './routes/stocks.$ticker'
 import { Route as ApiMacroOverviewRouteImport } from './routes/api/macro/overview'
@@ -84,6 +85,11 @@ const StartRoute = StartRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TradeRoute = TradeRouteImport.update({
+  id: '/trade',
+  path: '/trade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WatchlistRoute = WatchlistRouteImport.update({
@@ -182,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/screener': typeof ScreenerRoute
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
+  '/trade': typeof TradeRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
   '/api/macro/overview': typeof ApiMacroOverviewRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/screener': typeof ScreenerRoute
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
+  '/trade': typeof TradeRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
   '/api/macro/overview': typeof ApiMacroOverviewRoute
@@ -239,6 +247,7 @@ export interface FileRoutesById {
   '/screener': typeof ScreenerRoute
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
+  '/trade': typeof TradeRoute
   '/watchlist': typeof WatchlistRoute
   '/stocks/$ticker': typeof StocksTickerRoute
   '/api/macro/overview': typeof ApiMacroOverviewRoute
@@ -269,6 +278,7 @@ export interface FileRouteTypes {
     | '/screener'
     | '/start'
     | '/terms'
+    | '/trade'
     | '/watchlist'
     | '/stocks/$ticker'
     | '/api/macro/overview'
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/screener'
     | '/start'
     | '/terms'
+    | '/trade'
     | '/watchlist'
     | '/stocks/$ticker'
     | '/api/macro/overview'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/screener'
     | '/start'
     | '/terms'
+    | '/trade'
     | '/watchlist'
     | '/stocks/$ticker'
     | '/api/macro/overview'
@@ -354,6 +366,7 @@ export interface RootRouteChildren {
   ScreenerRoute: typeof ScreenerRoute
   StartRoute: typeof StartRoute
   TermsRoute: typeof TermsRoute
+  TradeRoute: typeof TradeRoute
   WatchlistRoute: typeof WatchlistRoute
   StocksTickerRoute: typeof StocksTickerRoute
   ApiMacroOverviewRoute: typeof ApiMacroOverviewRoute
@@ -442,6 +455,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trade': {
+      id: '/trade'
+      path: '/trade'
+      fullPath: '/trade'
+      preLoaderRoute: typeof TradeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/watchlist': {
@@ -570,6 +590,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScreenerRoute: ScreenerRoute,
   StartRoute: StartRoute,
   TermsRoute: TermsRoute,
+  TradeRoute: TradeRoute,
   WatchlistRoute: WatchlistRoute,
   StocksTickerRoute: StocksTickerRoute,
   ApiMacroOverviewRoute: ApiMacroOverviewRoute,
