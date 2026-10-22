@@ -237,13 +237,34 @@ export async function getWorldArticles(): Promise<WorldArticle[]> {
   return articles;
 }
 
+/** A wire article that still carries its world region (pipeline items
+ *  have none). Build-time only — the payload strips the tag. */
+export type TaggedNewsArticle = NewsArticle & { region?: WorldRegion };
+
 /**
  * Merge the pipeline wire with world items: world items inside the
  * window only, capped, then the union deduped by title (the repo's
  * dedupeByTitle — the same story arriving via an outlet feed and a
  * Google News proxy collapses to the earliest copy) and capped.
- * Returns plain NewsArticle[] — the region tag is a build-time concern,
- * not part of the wire's payload shape.
+ * World items keep their region tag so the region desks can be built
+ * from the merged list itself (see buildRegionDesksFromMerged).
+ */
+export function mergeWireArticlesTagged(
+  pipelineWire: NewsArticle[],
+  world: WorldArticle[],
+  sinceIso: string,
+  cap = 300,
+): TaggedNewsArticle[] {
+  const worldInWindow = world
+    .filter((a) => a.published_at >= sinceIso)
+    .slice(0, WORLD_WIRE_CAP);
+  return dedupeByTitle<TaggedNewsArticle>([...pipelineWire, ...worldInWindow]).slice(0, cap);
+}
+
+/**
+ * The shipped merge: same list as mergeWireArticlesTagged with the
+ * region tag stripped — the tag is a build-time concern, not part of
+ * the wire's payload shape.
  */
 export function mergeWireArticles(
   pipelineWire: NewsArticle[],
@@ -251,11 +272,9 @@ export function mergeWireArticles(
   sinceIso: string,
   cap = 300,
 ): NewsArticle[] {
-  const worldInWindow = world
-    .filter((a) => a.published_at >= sinceIso)
-    .slice(0, WORLD_WIRE_CAP)
-    .map(({ region: _region, ...a }) => a);
-  return dedupeByTitle([...pipelineWire, ...worldInWindow]).slice(0, cap);
+  return mergeWireArticlesTagged(pipelineWire, world, sinceIso, cap).map(
+    ({ region: _region, ...a }) => a,
+  );
 }
 
 const AFRICA_DESK_REGIONS: ReadonlySet<WorldRegion> = new Set([
@@ -271,7 +290,7 @@ function regionDesk(
   id: string,
   label: string,
   hint: string,
-  items: WorldArticle[],
+  items: readonly TaggedNewsArticle[],
   day24Iso: string,
   wireSinceIso: string,
 ): DeskResult {
@@ -281,6 +300,7 @@ function regionDesk(
     label,
     hint,
     count24h: items.filter((a) => a.published_at >= day24Iso).length,
+    countWindow: inWindow.length,
     // Region desks have no 30-day baseline — the feeds only carry recent
     // items — so no surge math: medianDaily 0 / surgeRatio null and the
     // News page omits the baseline clause for desks in this state.
@@ -300,6 +320,44 @@ export function buildRegionDesks(world: WorldArticle[], nowMs: number = Date.now
   const wireSince = new Date(nowMs - 48 * 3600 * 1000).toISOString();
   const africa = world.filter((a) => AFRICA_DESK_REGIONS.has(a.region));
   const intl = world.filter((a) => a.region === "world");
+  return [
+    regionDesk(
+      "africa",
+      "Africa",
+      "Pan-African wires and outlets across the continent, beyond Kenya",
+      africa,
+      day24,
+      wireSince,
+    ),
+    regionDesk(
+      "world",
+      "World",
+      "International outlets — BBC, CNN, Fox, Al Jazeera and the wires",
+      intl,
+      day24,
+      wireSince,
+    ),
+  ];
+}
+
+/**
+ * The region desks as the News page actually ships them: counted over
+ * the MERGED wire (the capped list the page calls "the wire"), not over
+ * the raw feed fetch. Counting the raw fetch was the 2026-10-22 bug —
+ * the feeds carry ~860 items, so AFRICA read 585 against an ALL WIRE of
+ * 300. Desks built here can never out-count the wire they are drawn
+ * from, and every article a region desk lists is on that wire.
+ */
+export function buildRegionDesksFromMerged(
+  merged: readonly TaggedNewsArticle[],
+  nowMs: number = Date.now(),
+): DeskResult[] {
+  const day24 = new Date(nowMs - 24 * 3600 * 1000).toISOString();
+  const wireSince = new Date(nowMs - 48 * 3600 * 1000).toISOString();
+  const africa = merged.filter(
+    (a) => a.region != null && AFRICA_DESK_REGIONS.has(a.region),
+  );
+  const intl = merged.filter((a) => a.region === "world");
   return [
     regionDesk(
       "africa",

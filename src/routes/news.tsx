@@ -15,6 +15,7 @@ import { EXCHANGES, LIVE_EXCHANGES, type Exchange } from "@/lib/stocks/exchanges
 import { fmtCompactValue, fmtPrice, timeAgo } from "@/lib/stocks/format";
 import { compileMatchers, stockKeywords, titleMatches } from "@/lib/news/matching";
 import { classifyHeadline } from "@/lib/news/events";
+import { normalizeTitle } from "@/lib/news/dedupe";
 import { useWatchlist } from "@/lib/watchlist";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +87,7 @@ interface Desk {
   label: string;
   hint: string;
   count24h: number;
+  countWindow: number;
   medianDaily: number;
   surgeRatio: number | null;
   surging: boolean;
@@ -104,6 +106,8 @@ interface HeatItem {
 interface WireResponse {
   ok: boolean;
   articles: WireArticle[];
+  /** Server-picked lead, from the filtered pipeline wire alone. */
+  lead: WireArticle | null;
   desks: Desk[];
   heat: HeatItem[];
 }
@@ -233,14 +237,25 @@ function StocksBoard() {
     return { adv, dec, flat, counted: adv + dec + flat };
   }, [board]);
 
-  // The lead is an editorial pick, not just the newest story: the first
-  // wire article that names a company the wire is tracking (the heat
-  // set, matched with the shared engine) or carries a classified market
-  // event. Falls back to the newest story when nothing qualifies, so
-  // the front page never renders empty.
+  // The lead is an editorial pick, not just the newest story. The
+  // server picks it from the filtered pipeline wire alone (first story
+  // naming a heat-set company or carrying a classified market event,
+  // newest as fallback) and ships it as wire.lead — world items never
+  // lead while a pipeline story exists. The client-side pick below is
+  // only a fallback for a payload with no server lead (pipeline wire
+  // empty): it runs the same rule over the merged list.
   const leadPick = useMemo(() => {
     const arts = wire?.articles ?? [];
     if (arts.length === 0) return { lead: null, secondary: [] as typeof arts };
+    if (wire?.lead) {
+      const leadTitle = normalizeTitle(wire.lead.title);
+      return {
+        lead: wire.lead,
+        secondary: arts
+          .filter((a) => a.id !== wire.lead!.id && normalizeTitle(a.title) !== leadTitle)
+          .slice(0, 3),
+      };
+    }
     const matchers = (wire?.heat ?? []).map((h) =>
       compileMatchers(stockKeywords(h.name)),
     );
@@ -289,7 +304,7 @@ function StocksBoard() {
     deskId === "all"
       ? `The wire — ${deskArticles.length} stories · 48h`
       : activeDesk
-        ? `${activeDesk.label} — ${activeDesk.count24h} in 24h${
+        ? `${activeDesk.label} — ${activeDesk.countWindow} stories · 48h${
             activeDesk.surging && activeDesk.surgeRatio != null
               ? ` · ${activeDesk.surgeRatio.toFixed(1)}× the usual rate`
               : activeDesk.medianDaily > 0
@@ -757,14 +772,14 @@ function StocksBoard() {
                   onClick={() => setDeskId(d.id)}
                   title={
                     d.medianDaily > 0
-                      ? `${d.hint} — ${d.count24h} stories in 24h (usually ${d.medianDaily}/day)`
-                      : `${d.hint} — ${d.count24h} stories in 24h`
+                      ? `${d.hint} — ${d.countWindow} stories in 48h, ${d.count24h} of them in the last 24h (usually ${d.medianDaily}/day)`
+                      : `${d.hint} — ${d.countWindow} stories in 48h, ${d.count24h} of them in the last 24h`
                   }
                 >
                   {d.surging && <Flame className="h-3 w-3 text-primary" aria-hidden />}
                   {d.label}
                   <span className={cn("font-bold", deskId === d.id ? "" : "text-foreground")}>
-                    {d.count24h}
+                    {d.countWindow}
                   </span>
                 </Chip>
               ))}

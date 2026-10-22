@@ -88,6 +88,16 @@ const DROP_PATTERNS: RegExp[] = [
   /body\s+found/i, /found\s+dead/i, /dies\s+after\s+falling/i,
   /died\s+after\s+falling/i, /rescued\s+from\s+(a\s+)?house/i,
   /gang\s+member/i, /robbery\s+suspect/i,
+  // Body-recovery blotter — the "body of X recovered from River Y"
+  // phrasing slipped the wire on 2026-10-22 and got crowned lead story:
+  // the families above only covered "body found / found dead". The keep
+  // gate runs first, so a recovery story with real market words in it
+  // (tax, tenders, millions owed) still survives.
+  /\bbody\b[^.]{0,80}\brecovered\s+from\b/i,
+  /\bbody\s+(recovered|retrieved)\b/i,
+  /\bbodies\s+(recovered|retrieved|found)\b/i,
+  /\brecovered\s+from\s+(a\s+|the\s+)?(river|stream|dam|lake|forest|well|pit)\b/i,
+  /\bdrown(s|ed|ing)?\b/i,
   // Viral & human interest
   /amuses\s+kenyans/i, /kenyans\s+amused/i, /hilarious/i,
   /goes\s+viral/i, /gone\s+viral/i, /cheeky\s+.*\s+post/i,

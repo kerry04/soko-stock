@@ -1,10 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { isMarketRelevant } from "@/lib/news/relevance";
 import { dedupeByTitle } from "@/lib/news/dedupe";
+import { pickLeadStory } from "@/lib/news/lead";
 import {
   getWorldArticles,
-  mergeWireArticles,
-  buildRegionDesks,
+  mergeWireArticlesTagged,
+  buildRegionDesksFromMerged,
   type WorldArticle,
 } from "@/lib/news/world-feeds.server";
 import { EXCHANGES } from "@/lib/stocks/exchanges";
@@ -114,6 +115,10 @@ export interface DeskResult {
   label: string;
   hint: string;
   count24h: number;
+  /** Stories on this desk inside the 48h wire window — the window the
+   *  desk's article list is drawn from, so the count a reader sees next
+   *  to the desk name never disagrees with the list under it. */
+  countWindow: number;
   medianDaily: number;
   /** count24h ÷ max(medianDaily, 1) — set only when surging. */
   surgeRatio: number | null;
@@ -136,6 +141,10 @@ export interface HeatItem {
 export interface NewsWireResult {
   /** Newest first, last 48 hours — pipeline + world feeds (cap 300). */
   articles: NewsArticle[];
+  /** The lead story, picked server-side from the filtered pipeline
+   *  wire alone (see lib/news/lead). Null only when the pipeline wire
+   *  is empty — world items never lead while a pipeline story exists. */
+  lead: NewsArticle | null;
   desks: DeskResult[];
   /** Most-covered listed companies in the last 24h (top 8). */
   heat: HeatItem[];
@@ -189,6 +198,7 @@ export async function getNewsWire(): Promise<NewsWireResult> {
       if (i >= 0 && i < WINDOW_DAYS) dailyCounts[i]++;
     }
     const count24h = matched.filter((a) => a.published_at >= day24).length;
+    const countWindow = matched.filter((a) => a.published_at >= wireSince).length;
     const medianDaily = median(dailyCounts);
     const ratio = count24h / Math.max(medianDaily, 1);
     const surging = count24h >= SURGE_MIN_ARTICLES && ratio >= SURGE_MIN_RATIO;
@@ -197,6 +207,7 @@ export async function getNewsWire(): Promise<NewsWireResult> {
       label: desk.label,
       hint: desk.hint,
       count24h,
+      countWindow,
       medianDaily: Math.round(medianDaily * 10) / 10,
       surgeRatio: surging ? Math.round(ratio * 10) / 10 : null,
       surging,
@@ -262,13 +273,24 @@ export async function getNewsWire(): Promise<NewsWireResult> {
     world = [];
   }
 
+  // The pipeline slice of the wire, and the lead picked from it alone —
+  // never from the merged list, so a just-landed world item (or a
+  // borderline pipeline story riding the newest-first fallback) cannot
+  // take the crown while a qualifying pipeline story exists.
+  const pipelineSlice = all.filter((a) => a.published_at >= wireSince).slice(0, 150);
+  const lead = pickLeadStory(
+    pipelineSlice,
+    heat.map((h) => h.name),
+  );
+
+  // Region desks are counted over the merged wire itself, not the raw
+  // feed fetch — a desk count must never exceed the wire it belongs to.
+  const merged = mergeWireArticlesTagged(pipelineSlice, world, wireSince);
+
   const result: NewsWireResult = {
-    articles: mergeWireArticles(
-      all.filter((a) => a.published_at >= wireSince).slice(0, 150),
-      world,
-      wireSince,
-    ),
-    desks: [...desks, ...buildRegionDesks(world)],
+    articles: merged.map(({ region: _region, ...a }) => a),
+    lead,
+    desks: [...desks, ...buildRegionDesksFromMerged(merged)],
     heat,
     asOf: new Date().toISOString(),
   };

@@ -5,9 +5,11 @@ import {
   WORLD_FEEDS,
   WORLD_PER_FEED_CAP,
   buildRegionDesks,
+  buildRegionDesksFromMerged,
   fetchAllFeeds,
   fetchFeedArticles,
   mergeWireArticles,
+  mergeWireArticlesTagged,
   worldArticleId,
   type DocFetcher,
   type WorldArticle,
@@ -266,6 +268,40 @@ describe("buildRegionDesks", () => {
     expect(africa.surgeRatio).toBeNull();
     expect(africa.medianDaily).toBe(0);
     expect(africa.count24h).toBe(0); // 30h ago is outside 24h
+    expect(africa.countWindow).toBe(1); // the window count the chip shows
     expect(africa.articles.map((a) => a.title)).toEqual(["Recent"]); // but inside 48h
+  });
+});
+
+describe("buildRegionDesksFromMerged", () => {
+  const now = Date.parse("2026-10-22T12:00:00.000Z");
+  const h = (hoursAgo: number) => new Date(now - hoursAgo * 3600 * 1000).toISOString();
+
+  it("counts only what the merged wire carries — never the raw fetch", () => {
+    // Regression, live payload 2026-10-22: desks counted over the raw
+    // ~860-item feed fetch read AFRICA 585 against an ALL WIRE of 300.
+    const merged = mergeWireArticlesTagged(
+      [pipe("Pipeline story", h(1))],
+      [world("Nigeria story", h(2), "west"), world("Global story", h(3), "world")],
+      h(48),
+    );
+    const desks = buildRegionDesksFromMerged(merged, now);
+    const africa = desks.find((d) => d.id === "africa")!;
+    const worldDesk = desks.find((d) => d.id === "world")!;
+    expect(africa.count24h).toBe(1);
+    expect(africa.countWindow).toBe(1);
+    expect(africa.articles.map((a) => a.title)).toEqual(["Nigeria story"]);
+    expect(worldDesk.countWindow).toBe(1);
+    expect(africa.countWindow + worldDesk.countWindow).toBeLessThanOrEqual(merged.length);
+    // Pipeline items carry no region and land on neither region desk.
+    expect(africa.articles.map((a) => a.title)).not.toContain("Pipeline story");
+  });
+
+  it("a merged item older than 24h counts in the window but not in 24h", () => {
+    const merged = mergeWireArticlesTagged([], [world("Yesterday", h(30), "southern")], h(48));
+    const africa = buildRegionDesksFromMerged(merged, now).find((d) => d.id === "africa")!;
+    expect(africa.count24h).toBe(0);
+    expect(africa.countWindow).toBe(1);
+    expect(africa.articles).toHaveLength(1);
   });
 });

@@ -28,6 +28,11 @@ describe("isMarketRelevant — drops (real junk from the live wire)", () => {
     // From the world wire (Fox News firehose), 2026-10-21 — US sports are
     // not in the football-family patterns above.
     "World Series preview: Why the Milwaukee Brewers are the team to beat",
+    // Body-recovery blotter, live wire 2026-10-22 — neither matched the
+    // older "body found / found dead" family, so both passed as borderline
+    // and the first was crowned the /news lead story.
+    "Body of Kirinyaga University student recovered from River Thiba after four-day search",
+    "Woman drowns in Kirinyaga stream after suspected epileptic seizure",
   ];
   it.each(drops)("drops: %s", (t) => expect(isMarketRelevant(t)).toBe(false));
 });
@@ -53,6 +58,8 @@ describe("isMarketRelevant — keeps (market-moving or borderline)", () => {
     "KCB issues profit warning as earnings fall",
     "Kenya races to upgrade stadiums ahead of AFCON 2027 — Sh9bn construction tender opens", // keep-gate wins: tender
     "Dangote net worth jumps as refinery shares rally", // net-worth phrase, market story — format patterns must not swallow it
+    "KRA recovers Sh2 billion in unpaid taxes from importers", // keep-gate (tax) must outrank the body-recovery blotter family
+    "Markets recover as shilling strengthens against the dollar", // plain "recover" is not a blotter signature
   ];
   it.each(keeps)("keeps: %s", (t) => expect(isMarketRelevant(t)).toBe(true));
 });
