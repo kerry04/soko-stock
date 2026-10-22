@@ -117,3 +117,57 @@ describe("pickLeadStory tiers", () => {
     expect(pickLeadStory(wire, HEAT, [])?.title).toBe(wire[0].title);
   });
 });
+
+describe("pickLeadStory enforcement door", () => {
+  // Regression, live wire 2026-10-22: this crime story was the newest
+  // pipeline item and led /news through the event door — "arrested
+  // over" classifies as enforcement, and any classified event used to
+  // qualify. Enforcement stories stay on the wire, but the class no
+  // longer opens the lead door on its own.
+  const KILIFI = "Prison warder arrested over murder of 74-year-old man in Kilifi";
+
+  it("a crime story does not lead when a qualifying company story exists", () => {
+    const wire = [
+      art(KILIFI),
+      art("Safaricom expands M-Pesa services into Ethiopia"),
+    ];
+    expect(pickLeadStory(wire, HEAT)?.title).toBe(
+      "Safaricom expands M-Pesa services into Ethiopia",
+    );
+  });
+
+  it("a crime story does not lead when a tier-2 world business story exists", () => {
+    const wire = [
+      art(KILIFI),
+      art("County launches a new bursary programme for students"),
+    ];
+    const world = [
+      wart("Nigeria's central bank holds its benchmark rate", "2026-10-22T09:00:00Z", "africa"),
+    ];
+    expect(pickLeadStory(wire, HEAT, world)?.title).toBe(
+      "Nigeria's central bank holds its benchmark rate",
+    );
+  });
+
+  it("a market event still beats a newer crime story", () => {
+    const wire = [art(KILIFI), art("KCB declares dividend after half-year results")];
+    expect(pickLeadStory(wire, HEAT)?.title).toBe(
+      "KCB declares dividend after half-year results",
+    );
+  });
+
+  it("an enforcement story about a named heat company still leads via the company door", () => {
+    const wire = [art(KILIFI), art("Safaricom fined by regulator over M-Pesa outage")];
+    const world = [
+      wart("Oil prices climb as OPEC weighs output cuts", "2026-10-22T10:00:00Z", "world"),
+    ];
+    expect(pickLeadStory(wire, HEAT, world)?.title).toBe(
+      "Safaricom fined by regulator over M-Pesa outage",
+    );
+  });
+
+  it("a crime story still leads as the last resort when nothing else qualifies", () => {
+    const wire = [art(KILIFI), art("County launches a new bursary programme for students")];
+    expect(pickLeadStory(wire, HEAT, [])?.title).toBe(KILIFI);
+  });
+});

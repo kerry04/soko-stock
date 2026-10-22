@@ -1,5 +1,18 @@
 import { compileMatchers, stockKeywords, titleMatches } from "./matching";
-import { classifyHeadline } from "./events";
+import { classifyHeadline, type HeadlineEvent } from "./events";
+
+/**
+ * Event classes that can never carry a story to the lead on their own.
+ * Enforcement is the classifier's crime-and-blotter bucket — arrests,
+ * fines, lawsuits, fraud probes. Those stories stay on the wire as
+ * ordinary articles, and one still leads when it names a heat company
+ * (the company door), but on a stock product a crime story must not
+ * become the lead just for being classified and fresh: on 2026-10-22 a
+ * prison warder's murder arrest in Kilifi led /news exactly that way.
+ * The market classes — results, dividends, deals, rates, policy and
+ * the rest — stay eligible.
+ */
+const LEAD_EXCLUDED_EVENTS: ReadonlySet<HeadlineEvent> = new Set(["enforcement"]);
 
 /**
  * A world-merge story offered to the lead pick, tagged with the desk it
@@ -48,10 +61,12 @@ function pickWorldLead<W extends LeadWorldCandidate>(world: readonly W[]): W | n
  * filtered pipeline wire lives (the server). The lead is an editorial
  * pick, not just the newest story, and it comes in three tiers:
  *
- *  1. The first pipeline article that names a company the wire is
- *     tracking (the heat set, matched with the shared engine) or
- *     carries a classified market event. A qualifying pipeline story
- *     always leads — world items never beat it.
+ *  1. A pipeline article that names a company the wire is tracking
+ *     (the heat set, matched with the shared engine); failing that, a
+ *     pipeline article carrying a classified market event, with the
+ *     enforcement class excluded (see LEAD_EXCLUDED_EVENTS). A
+ *     qualifying pipeline story always leads — world items never
+ *     beat it.
  *  2. The pick from the world merge (see pickWorldLead). Reached only
  *     when no pipeline story qualifies. Pipeline stories pass a looser
  *     gate than the world feeds, so when nothing on the pipeline wire
@@ -67,10 +82,15 @@ export function pickLeadStory<T extends { title: string }, W extends LeadWorldCa
 ): T | W | null {
   if (articles.length > 0) {
     const matchers = heatNames.map((name) => compileMatchers(stockKeywords(name)));
-    const qualifies = (title: string) =>
-      matchers.some((m) => titleMatches(title, m)) || classifyHeadline(title) != null;
-    const hit = articles.find((a) => qualifies(a.title));
-    if (hit) return hit;
+    const companyHit = articles.find((a) =>
+      matchers.some((m) => titleMatches(a.title, m)),
+    );
+    if (companyHit) return companyHit;
+    const eventHit = articles.find((a) => {
+      const event = classifyHeadline(a.title);
+      return event != null && !LEAD_EXCLUDED_EVENTS.has(event);
+    });
+    if (eventHit) return eventHit;
   }
   return pickWorldLead(world) ?? articles[0] ?? null;
 }
