@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { TerminalShell } from "@/components/nav/TerminalShell";
 import { PageContainer } from "@/components/nav/PageContainer";
 import { PageHeader } from "@/components/nav/PageHeader";
@@ -8,13 +7,20 @@ import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
 import { StateBlock } from "@/components/common/states";
 import { PaperLoginForm } from "@/components/paper/auth";
 import { usePaperSession } from "@/components/paper/use-paper-session";
+import {
+  FRIENDLY,
+  placeOrder,
+  exchangeForTicker,
+  usePaperPortfolio,
+  PositionCard,
+  type PortfolioResponse,
+} from "@/components/paper/trade-panel";
 import { useStockDirectory, type DirectoryEntry } from "@/components/nav/use-directory";
 import { isStaleEod, START_CASH } from "@/lib/paper/fill";
-import { sharesForAmount, sellSharesForAmount } from "@/lib/paper/amount";
+import { sharesForAmount } from "@/lib/paper/amount";
 import { estimateRealCost } from "@/lib/stocks/real-cost";
-import { EXCHANGE_BY_ID, type Exchange } from "@/lib/stocks/exchanges";
+import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { fmtPrice as fmt } from "@/lib/stocks/format";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/trade")({
   head: () => ({
@@ -30,53 +36,6 @@ export const Route = createFileRoute("/trade")({
   component: TradePage,
 });
 
-/** The same plain words the paper ticket uses for engine errors. */
-const FRIENDLY: Record<string, string> = {
-  insufficient_cash: "Not enough practice cash for this order.",
-  insufficient_shares: "You don't hold that many shares.",
-  invalid_qty: "Enter a whole number of shares.",
-  quote_unavailable: "No price right now — try again shortly.",
-  stale_eod:
-    "This exchange has not published fresh prices in over 36 hours, so trading is paused until it does. Your practice money is safe.",
-  exchange_not_live: "This market isn't tradeable yet.",
-  login_required: "Your session expired — log in again.",
-  invalid_token: "Your session expired — log in again.",
-  network:
-    "Network error — order status unknown. Check your shares below before trying again.",
-};
-
-interface PositionRow {
-  ticker: string;
-  qty: number;
-  avg: number;
-  board: number | null;
-  asOf: string | null;
-  delayed: boolean;
-}
-
-interface PortfolioResponse {
-  ok: boolean;
-  cash: Record<string, number>;
-  positions: PositionRow[];
-}
-
-interface OrderResponse {
-  ok: boolean;
-  error?: string;
-  fill_price?: number;
-  cash?: number | null;
-  position?: { qty: number; avg: number };
-}
-
-/** What the orders API reports back after a sell: the account's new cash
- * in the sold currency and the position that remains (qty 0 = all sold). */
-interface SoldFill {
-  ticker: string;
-  currency: string;
-  cash: number | null;
-  position?: { qty: number; avg: number };
-}
-
 interface BoardRowLite {
   ticker: string;
   name: string;
@@ -85,93 +44,15 @@ interface BoardRowLite {
   asOf: string;
 }
 
-async function placeOrder(
-  ticker: string,
-  side: "BUY" | "SELL",
-  qty: number,
-): Promise<OrderResponse> {
-  try {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) return { ok: false, error: "login_required" };
-    const r = await fetch("/api/paper/orders", {
-      method: "POST",
-      headers: { "content-type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ ticker, side, qty, idempotencyKey: crypto.randomUUID() }),
-    });
-    return (await r.json()) as OrderResponse;
-  } catch {
-    return { ok: false, error: "network" };
-  }
-}
-
-/** Which exchange a ticker belongs to: directory first, then the pinned
- * JSE list (its tickers end .JO, not .JSE), then the suffix. */
-function exchangeForTicker(
-  ticker: string,
-  directory: DirectoryEntry[],
-): Exchange | undefined {
-  const fromDirectory = directory.find((e) => e.ticker === ticker);
-  if (fromDirectory) return EXCHANGE_BY_ID[fromDirectory.exchange];
-  const pinned = Object.values(EXCHANGE_BY_ID).find((e) => e.tickers.includes(ticker));
-  if (pinned) return pinned;
-  const m = ticker.match(/\.([A-Z]+)$/);
-  return m ? EXCHANGE_BY_ID[m[1]] : undefined;
-}
-
-function nameForTicker(ticker: string, directory: DirectoryEntry[]): string {
-  return directory.find((e) => e.ticker === ticker)?.name ?? ticker;
-}
-
 function TradePage() {
   const { user, loading: authLoading } = usePaperSession();
-  // Key the loader on the user id, not the user object. The session hook
-  // hands back a fresh user object on every auth event, and placing an
-  // order fires those events (placeOrder calls getSession) — keying on the
-  // object made the effect cancel the post-order reload mid-flight and
-  // throw its result away, leaving pre-trade figures on screen until a
-  // manual reload.
   const userId = user?.id ?? null;
-  const [data, setData] = useState<PortfolioResponse | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const { data, setData, failed, refresh } = usePaperPortfolio(userId);
   const [notice, setNotice] = useState<string | null>(null);
   // Bumped on every completed sell so the buy panel can drop a stale
   // "you now own…" confirmation for shares that may no longer be held.
   const [sellCount, setSellCount] = useState(0);
   const directory = useStockDirectory(!!user);
-
-  const refresh = useCallback(() => setRefreshKey((k) => k + 1), []);
-
-  useEffect(() => {
-    if (authLoading || !userId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data: s } = await supabase.auth.getSession();
-        const token = s.session?.access_token;
-        if (!token) {
-          if (!cancelled) setFailed(true);
-          return;
-        }
-        const r = await fetch("/api/paper/portfolio", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const j = (await r.json()) as PortfolioResponse;
-        if (!cancelled) {
-          if (j.ok) {
-            setData(j);
-            setFailed(false);
-          } else setFailed(true);
-        }
-      } catch {
-        if (!cancelled) setFailed(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, userId, refreshKey]);
 
   return (
     <TerminalShell>
@@ -392,214 +273,6 @@ function AccountHome({
             can&apos;t be lost, spent or taken out.
           </p>
         </>
-      )}
-    </Panel>
-  );
-}
-
-function PositionCard({
-  position: p,
-  directory,
-  onSold,
-}: {
-  position: PositionRow;
-  directory: DirectoryEntry[];
-  onSold: (msg: string, fill: SoldFill) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"all" | "shares" | "amount">("all");
-  const [sharesStr, setSharesStr] = useState("");
-  const [amountStr, setAmountStr] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const ex = exchangeForTicker(p.ticker, directory);
-  const sym = ex?.currencySymbol ?? "KSh";
-  const name = nameForTicker(p.ticker, directory);
-  const price = p.board;
-  const paid = p.avg * p.qty;
-  const worth = price != null ? price * p.qty : null;
-  const diff = worth != null ? worth - paid : null;
-
-  const amountNum = Number(amountStr.replace(/[^0-9.]/g, "")) || 0;
-  const sharesNum = Math.floor(Number(sharesStr.replace(/[^0-9]/g, "")) || 0);
-  const toSell =
-    price == null
-      ? 0
-      : mode === "all"
-        ? p.qty
-        : mode === "shares"
-          ? Math.min(sharesNum, p.qty)
-          : sellSharesForAmount(amountNum, price, p.qty);
-  const proceeds = price != null ? toSell * price : 0;
-  const fee =
-    ex?.currency === "KES" && proceeds > 0 ? estimateRealCost(proceeds).totalMid : null;
-
-  const sell = async () => {
-    setBusy(true);
-    setError(null);
-    const res = await placeOrder(p.ticker, "SELL", toSell);
-    setBusy(false);
-    if (!res.ok) {
-      setError(FRIENDLY[res.error ?? ""] ?? "That sale didn't go through — try again.");
-      return;
-    }
-    const got = (res.fill_price ?? price ?? 0) * toSell;
-    onSold(
-      `Sold ${toSell} ${toSell === 1 ? "share" : "shares"} of ${name} — ${fmt(got, sym)} is back in your practice cash.`,
-      {
-        ticker: p.ticker,
-        currency: ex?.currency ?? "KES",
-        cash: res.cash ?? null,
-        position: res.position,
-      },
-    );
-  };
-
-  return (
-    <Panel padding="md">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="font-display text-[17px] font-semibold leading-snug text-foreground">
-            {name}
-          </h3>
-          <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-            {p.ticker}
-            {p.delayed ? " · yesterday's close" : ""}
-          </p>
-        </div>
-        <p className="num font-mono text-base font-semibold text-foreground">
-          {p.qty} {p.qty === 1 ? "share" : "shares"}
-        </p>
-      </div>
-      <div className="mt-2 space-y-0.5 text-sm leading-relaxed text-muted-foreground">
-        <p>
-          You paid <span className="num font-mono text-foreground">{fmt(paid, sym)}</span>
-          {price != null && (
-            <>
-              {" "}· worth{" "}
-              <span className="num font-mono text-foreground">{fmt(worth ?? 0, sym)}</span> now
-            </>
-          )}
-        </p>
-        {diff != null && (
-          <p className={cn("font-medium", diff > 0 && "text-success", diff < 0 && "text-destructive")}>
-            {diff > 0
-              ? `Up ${fmt(diff, sym)} since you bought`
-              : diff < 0
-                ? `Down ${fmt(-diff, sym)} since you bought`
-                : "Same value as when you bought"}
-          </p>
-        )}
-        {price == null && <p>No price for this company right now, so selling is paused.</p>}
-      </div>
-      {price != null && !open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="mt-3 w-full rounded-lg bg-destructive/15 px-4 py-3 text-sm font-bold text-destructive"
-        >
-          Sell
-        </button>
-      )}
-      {price != null && open && (
-        <div className="mt-3 border-t border-border/50 pt-3">
-          <div className="grid grid-cols-3 gap-2" role="group" aria-label="How much to sell">
-            {(
-              [
-                ["all", "Sell all"],
-                ["shares", "Some shares"],
-                ["amount", "An amount"],
-              ] as const
-            ).map(([m, label]) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                className={cn(
-                  "rounded-lg border px-2 py-2.5 text-[13px] font-semibold",
-                  mode === m
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : "border-border/70 text-muted-foreground",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {mode === "shares" && (
-            <label className="mt-3 block">
-              <span className="text-sm text-muted-foreground">
-                How many shares? You have {p.qty}.
-              </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={sharesStr}
-                onChange={(e) => setSharesStr(e.target.value.replace(/[^0-9]/g, ""))}
-                placeholder="e.g. 10"
-                className="mt-1 w-full rounded-lg border border-border/70 bg-background px-3 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              />
-            </label>
-          )}
-          {mode === "amount" && (
-            <label className="mt-3 block">
-              <span className="text-sm text-muted-foreground">
-                How much money&apos;s worth, in {ex?.currency ?? "shillings"}?
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9.]/g, ""))}
-                placeholder="e.g. 1,000"
-                className="mt-1 w-full rounded-lg border border-border/70 bg-background px-3 py-3 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-              />
-            </label>
-          )}
-          {toSell > 0 ? (
-            <p className="mt-3 text-sm leading-relaxed">
-              Sell <span className="num font-mono font-semibold">{toSell}</span>{" "}
-              {toSell === 1 ? "share" : "shares"} for about{" "}
-              <span className="num font-mono font-semibold">{fmt(proceeds, sym)}</span> — the
-              money goes back into your practice cash.
-            </p>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              {mode === "all"
-                ? "Tap confirm to sell everything."
-                : "Type how much above, and the shares will be worked out for you."}
-            </p>
-          )}
-          {fee != null && (
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              A real broker would take about {fmt(fee, sym)} of that in fees. Practice
-              sales here are free.
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="mt-2 text-sm text-destructive">
-              {error}
-            </p>
-          )}
-          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-            <button
-              type="button"
-              disabled={busy || toSell <= 0}
-              onClick={sell}
-              className="rounded-lg bg-destructive/15 px-4 py-3 text-sm font-bold text-destructive disabled:opacity-40"
-            >
-              {busy ? "Selling…" : `Sell ${toSell > 0 ? toSell : ""} shares`}
-            </button>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="rounded-lg border border-border/70 px-4 py-3 text-sm font-semibold text-muted-foreground"
-            >
-              Keep them
-            </button>
-          </div>
-        </div>
       )}
     </Panel>
   );
