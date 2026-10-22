@@ -108,3 +108,20 @@ export function groupBySector(rows: DiscoveryRow[], limit = 6): SectorList[] {
 export function discoveryDate(now: Date = new Date()): string {
   return now.toISOString().slice(0, 10);
 }
+
+/**
+ * The date a list is stamped with: the newest price date among its own
+ * rows, so a board from yesterday is stamped yesterday, never today.
+ * Falls back to the given day when no row carries a usable date.
+ */
+export function newestRowDate(
+  rows: { asOf: string | null | undefined }[],
+  fallback: string,
+): string {
+  let newest = "";
+  for (const r of rows) {
+    const day = (r.asOf ?? "").slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(day) && day > newest) newest = day;
+  }
+  return newest || fallback;
+}

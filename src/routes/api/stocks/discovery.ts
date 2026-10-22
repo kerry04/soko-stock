@@ -6,6 +6,7 @@ import { getNewsWire, type HeatItem } from "@/lib/stocks/news-wire.server";
 import {
   discoveryDate,
   groupBySector,
+  newestRowDate,
   topMovers,
   type DiscoveryRow,
 } from "@/lib/stocks/discovery";
@@ -121,11 +122,13 @@ export async function getDiscovery(): Promise<DiscoveryPayload> {
     })
     .filter((r): r is TalkedRow => r != null);
 
+  // Each list is stamped with the newest price date among its own rows —
+  // a board from yesterday is stamped yesterday, never today.
   const result: DiscoveryPayload = {
     asOf: new Date().toISOString(),
-    movers: { date, gainers: movers.gainers, losers: movers.losers },
-    talked: { date, rows: talked },
-    sectors: { date, groups: groupBySector(daily, 6) },
+    movers: { date: newestRowDate(all, date), gainers: movers.gainers, losers: movers.losers },
+    talked: { date: newestRowDate(talked.length > 0 ? talked : all, date), rows: talked },
+    sectors: { date: newestRowDate(daily, date), groups: groupBySector(daily, 6) },
   };
   cache = { at: Date.now(), result };
   return result;

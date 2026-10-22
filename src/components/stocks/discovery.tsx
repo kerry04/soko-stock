@@ -114,7 +114,7 @@ export function Discovery({ className }: { className?: string }) {
         Discover
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Lists from today&apos;s boards and the news wire. Facts, not recommendations.
+        Lists from the latest boards and the news wire. Facts, not recommendations.
       </p>
 
       {failed ? (
@@ -138,7 +138,7 @@ export function Discovery({ className }: { className?: string }) {
                   Gainers
                 </p>
                 {data.movers.gainers.length === 0 ? (
-                  <p className="px-2 py-1 text-[12px] text-muted-foreground">No gainers today.</p>
+                  <p className="px-2 py-1 text-[12px] text-muted-foreground">No gainers at the last close.</p>
                 ) : (
                   data.movers.gainers.map((r) => <DiscoveryItem key={r.ticker} row={r} />)
                 )}
@@ -148,7 +148,7 @@ export function Discovery({ className }: { className?: string }) {
                   Losers
                 </p>
                 {data.movers.losers.length === 0 ? (
-                  <p className="px-2 py-1 text-[12px] text-muted-foreground">No losers today.</p>
+                  <p className="px-2 py-1 text-[12px] text-muted-foreground">No losers at the last close.</p>
                 ) : (
                   data.movers.losers.map((r) => <DiscoveryItem key={r.ticker} row={r} />)
                 )}

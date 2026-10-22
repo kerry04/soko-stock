@@ -4,7 +4,7 @@
 -- stored history of what an account was worth before this table existed.
 create table if not exists public.paper_portfolio_snapshots (
   user_id uuid not null references auth.users(id) on delete cascade,
-  currency text not null,
+  currency text not null check (currency in ('ZAR','KES','NGN','GHS')),
   captured_on date not null,
   total_value numeric not null check (total_value >= 0),
   cash numeric not null check (cash >= 0),

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   discoveryDate,
   groupBySector,
+  newestRowDate,
   sectorGroupFor,
   topMovers,
   type DiscoveryRow,
@@ -84,5 +85,23 @@ describe("groupBySector", () => {
 describe("discoveryDate", () => {
   it("is the UTC calendar day", () => {
     expect(discoveryDate(new Date("2026-10-22T23:30:00Z"))).toBe("2026-10-22");
+  });
+});
+
+describe("newestRowDate", () => {
+  it("stamps a list with the newest price date among its rows", () => {
+    expect(
+      newestRowDate(
+        [{ asOf: "2026-10-20T18:00:00Z" }, { asOf: "2026-10-21T07:30:00Z" }],
+        "2026-10-22",
+      ),
+    ).toBe("2026-10-21");
+  });
+
+  it("falls back when no row carries a usable date", () => {
+    expect(newestRowDate([{ asOf: null }, { asOf: "n/a" }], "2026-10-22")).toBe(
+      "2026-10-22",
+    );
+    expect(newestRowDate([], "2026-10-22")).toBe("2026-10-22");
   });
 });
