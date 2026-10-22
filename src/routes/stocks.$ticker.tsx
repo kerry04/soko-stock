@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/nav/PageHeader";
 import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { SkeletonBlock, SkeletonRows, StateBlock } from "@/components/common/states";
-import { TradeTicket } from "@/components/paper/TradeTicket";
+import { StockTradePanel } from "@/components/paper/trade-panel";
 import { EventBadge, LimitChip, SentimentDot, NewsSurgeChip } from "@/components/stocks/badges";
 import { ChangeCell } from "@/components/stocks/change";
 import { fmtPrice as fmt, timeAgo } from "@/lib/stocks/format";
@@ -424,8 +424,8 @@ function SignalWire({
           className="mt-3"
           title="No linked headlines in the last 7 days"
           action={
-            <Link to="/map" className="text-sm text-success hover:underline">
-              Check the signal map for the wider picture
+            <Link to="/" className="text-sm text-success hover:underline">
+              Check the globe for the wider picture
             </Link>
           }
         />
@@ -878,7 +878,7 @@ function StockDetail() {
           to="/"
           className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
         >
-          ← All stocks
+          ← Back to the globe
         </Link>
 
         {loading && (
@@ -1080,14 +1080,13 @@ function StockDetail() {
               </div>
 
               <aside className="lg:sticky lg:top-4">
-                <TradeTicket
+                <StockTradePanel
                   ticker={ticker}
+                  name={quote.name}
                   price={quote.price}
                   currencySymbol={sym}
-                  eod={!hasHistory}
+                  exchangeId={quote.exchange}
                   asOf={quote.asOf}
-                  eodLabel={quote.extras?.updated ?? null}
-                  timeNote={quote.timeNote}
                 />
                 {exchange?.id === "NSE" && <RealCostPanel />}
               </aside>
@@ -1096,6 +1095,59 @@ function StockDetail() {
                 <SignalWire signal={news} updatedAt={newsAt} name={quote.name} />
               </div>
             </div>
+
+            {/* The Start page, condensed to three short answers + the
+                one line that hands off to a real broker. */}
+            <section aria-label="New to shares" className="mt-10">
+              <FolioHeader title="New to this? Three short answers" />
+              <div className="grid gap-3 md:grid-cols-3">
+                <Panel padding="md">
+                  <h3 className="font-display text-[17px] font-semibold leading-snug tracking-tight text-foreground">
+                    A share is a piece of a company
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Buy one share and you own a tiny slice of the company — its
+                    business, its profits and its risks. If it pays a dividend,
+                    you get your slice of that too. A share is part-ownership
+                    of a real business, not a bet on a chart.
+                  </p>
+                </Panel>
+                <Panel padding="md">
+                  <h3 className="font-display text-[17px] font-semibold leading-snug tracking-tight text-foreground">
+                    You can buy one share
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Since August 2025 the Nairobi exchange lets you buy a
+                    single share — the old minimum of 100 shares per trade is
+                    gone. The smallest way in is one share&apos;s price, plus
+                    fees. One share is a fine way to start and to learn.
+                  </p>
+                </Panel>
+                <Panel padding="md">
+                  <h3 className="font-display text-[17px] font-semibold leading-snug tracking-tight text-foreground">
+                    What a real trade costs
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                    Every real trade pays fixed market levies of 0.34%, plus
+                    the broker&apos;s cut of roughly 1.5–2.1%, plus stamp duty
+                    of KSh 2 per KSh 10,000 traded. On KSh 10,000 of shares
+                    that comes to about KSh 186–246 in charges. Practice
+                    trades here are free.
+                  </p>
+                </Panel>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed">
+                Ready for a real account? A licensed broker opens your CDS
+                account —{" "}
+                <Link
+                  to="/brokers"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  see the brokers
+                </Link>
+                .
+              </p>
+            </section>
           </>
         )}
       </PageContainer>

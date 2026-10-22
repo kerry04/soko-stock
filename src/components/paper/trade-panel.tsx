@@ -1,12 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/ui/card";
-import { isStaleEod } from "@/lib/paper/fill";
+import { StateBlock } from "@/components/common/states";
+import { PaperLoginForm } from "@/components/paper/auth";
+import { usePaperSession } from "@/components/paper/use-paper-session";
+import { isStaleEod, START_CASH } from "@/lib/paper/fill";
 import { sharesForAmount, sellSharesForAmount } from "@/lib/paper/amount";
 import { estimateRealCost } from "@/lib/stocks/real-cost";
 import { EXCHANGE_BY_ID, type Exchange } from "@/lib/stocks/exchanges";
 import { fmtPrice as fmt } from "@/lib/stocks/format";
-import type { DirectoryEntry } from "@/components/nav/use-directory";
+import {
+  useStockDirectory,
+  type DirectoryEntry,
+} from "@/components/nav/use-directory";
 import { cn } from "@/lib/utils";
 
 /** The same plain words the trade flows use for engine errors. */
@@ -349,6 +355,131 @@ export function PositionCard({
         </div>
       )}
     </Panel>
+  );
+}
+
+/**
+ * The stock page's whole trading surface: the login form when signed
+ * out; when signed in, your position in this company (with the sell
+ * flow) above the amount-first buy panel. One account, the same paper
+ * engine as everywhere else.
+ */
+export function StockTradePanel({
+  ticker,
+  name,
+  price,
+  currencySymbol,
+  exchangeId,
+  asOf,
+}: {
+  ticker: string;
+  name: string;
+  price: number | null;
+  currencySymbol: string;
+  exchangeId: string;
+  asOf: string | null;
+}) {
+  const { user, loading } = usePaperSession();
+  const userId = user?.id ?? null;
+  const { data, setData, failed, refresh } = usePaperPortfolio(userId);
+  const directory = useStockDirectory(!!user);
+  const [notice, setNotice] = useState<string | null>(null);
+  // Bumped on every completed sell so the buy panel can drop a stale
+  // "you now own…" confirmation for shares that may no longer be held.
+  const [sellCount, setSellCount] = useState(0);
+
+  if (loading) {
+    return <div className="mt-3 h-24 animate-pulse rounded-lg bg-muted/40" />;
+  }
+  if (!user) {
+    return (
+      <div className="mt-3">
+        <PaperLoginForm compact />
+      </div>
+    );
+  }
+
+  const exchange = EXCHANGE_BY_ID[exchangeId];
+  const eod = exchange?.source === "africanfinancials";
+  const currency = exchange?.currency ?? "KES";
+  const position = data?.positions.find((p) => p.ticker === ticker) ?? null;
+  const cashAvail = data ? (data.cash[currency] ?? START_CASH) : START_CASH;
+
+  return (
+    <div className="mt-3 space-y-3">
+      {failed ? (
+        <StateBlock
+          tone="error"
+          message="Your practice account is unavailable right now — check back shortly."
+        />
+      ) : !data ? (
+        <StateBlock tone="loading" message="Loading your practice account…" />
+      ) : (
+        <>
+          {notice && (
+            <p
+              role="status"
+              className="rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm font-medium text-success"
+            >
+              {notice}
+            </p>
+          )}
+          {position && (
+            <PositionCard
+              position={position}
+              directory={directory}
+              onSold={(msg, fill) => {
+                setNotice(msg);
+                setSellCount((n) => n + 1);
+                // Put the fill the API returned (new cash, remaining
+                // position) on screen straight away, then reload in
+                // full to reconcile.
+                const pos = fill.position;
+                setData((prev) => {
+                  if (!prev) return prev;
+                  const positions =
+                    pos == null
+                      ? prev.positions
+                      : pos.qty <= 0
+                        ? prev.positions.filter((row) => row.ticker !== fill.ticker)
+                        : prev.positions.map((row) =>
+                            row.ticker === fill.ticker
+                              ? { ...row, qty: pos.qty, avg: pos.avg }
+                              : row,
+                          );
+                  return {
+                    ...prev,
+                    cash:
+                      fill.cash != null
+                        ? { ...prev.cash, [fill.currency]: fill.cash }
+                        : prev.cash,
+                    positions,
+                  };
+                });
+                refresh();
+              }}
+            />
+          )}
+          <FixedBuyPanel
+            ticker={ticker}
+            name={name}
+            price={price}
+            currencySymbol={currencySymbol}
+            currency={currency}
+            asOf={asOf}
+            eod={eod}
+            cashAvail={cashAvail}
+            firstBuy={!position}
+            sellCount={sellCount}
+            onBought={() => {
+              // A fresh buy makes any earlier sell notice stale.
+              setNotice(null);
+              refresh();
+            }}
+          />
+        </>
+      )}
+    </div>
   );
 }
 
