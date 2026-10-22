@@ -29,6 +29,39 @@ const GENERIC = new Set([
   "tobacco", "platinum", "gold", "equity", "securities", "express",
 ]);
 
+/**
+ * Words that can never identify a company when they appear ALONE in a
+ * headline, however they reach the matcher — as the whole stored name,
+ * as the one token left after cleanup, or as a long word inside a
+ * longer name. Two families:
+ *
+ *  - Ordinary English words. The African Financials boards store short
+ *    display names, so real rows arrive as bare "SET" (NSLTEC.NGX) and
+ *    "FAMILY" (FMLY.NSE) — and on 2026-10-22 "First Ebola contacts set
+ *    to return home Sunday" led the news wire because "set" matched.
+ *    "access", "total", "press", "seed" and friends are the same trap:
+ *    they saturate ordinary headlines.
+ *  - Generic corporate vocabulary and suffixes. A phrase built from
+ *    them ("standard bank", "family bank") still identifies a company;
+ *    the bare word never does.
+ *
+ * Coined one-word brands — "safaricom", "britam", "sanlam", "sasol" —
+ * are not here and still match on their own.
+ */
+const COMMON = new Set([
+  "set", "family", "access", "art", "bat", "delta", "diamond", "far",
+  "initiates", "press", "seed", "total",
+  "group", "bank", "holdings", "holding", "trust", "fund", "capital",
+  "global", "united", "national", "first", "standard", "royal",
+  "crown", "union", "general", "premier", "sterling",
+  "plc", "ltd", "limited", "inc", "co", "company",
+]);
+
+/** Can this word identify a company when it appears alone in a title? */
+function matchableAlone(word: string): boolean {
+  return word.length >= 3 && !GENERIC.has(word) && !COMMON.has(word);
+}
+
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -39,9 +72,12 @@ function phraseRegex(tokens: string[]): RegExp {
 }
 
 /**
- * Distinctive match phrases for a company name. Never returns a bare
- * generic word: "Standard Bank Group Limited" → ["standard bank"],
- * "Clicks Group Limited" → ["clicks group"], "Sasol Limited" → ["sasol"].
+ * Distinctive match phrases for a company name. A name matches either
+ * as a phrase of 2+ words ("Standard Bank Group Limited" →
+ * ["standard bank"], "Clicks Group Limited" → ["clicks group"]) or as
+ * one distinctive word ("Sasol Limited" → ["sasol"]). It NEVER matches
+ * as one common word: a name that reduces to a lone COMMON/GENERIC
+ * word ("SET", "FAMILY", "Enterprise") yields no matchers at all.
  */
 export function stockKeywords(name: string): string[] {
   const cleaned = name
@@ -50,16 +86,12 @@ export function stockKeywords(name: string): string[] {
     .split(/\s+/)
     .filter(Boolean);
   // Keep 1-char tokens inside phrases ("pick n pay"); only the
-  // standalone shortcut requires length ≥ 3.
+  // standalone shortcut requires a distinctive word (see matchableAlone).
   const tokens = cleaned.filter((w) => !STOP.has(w));
   if (tokens.length === 0) return [];
 
   // One distinctive token: use it alone ("sasol", "vodacom", "naspers").
-  if (
-    tokens.length === 1 &&
-    tokens[0].length >= 3 &&
-    !GENERIC.has(tokens[0])
-  ) {
+  if (tokens.length === 1 && matchableAlone(tokens[0])) {
     return [tokens[0]];
   }
 
@@ -68,12 +100,20 @@ export function stockKeywords(name: string): string[] {
     tokens.length === 1
       ? cleaned.filter((w) => w.length > 1).slice(0, 2) // "equity group"
       : tokens;
+  // The fallback above can still collapse to a single word when the
+  // stored name IS a single word ("SET", "Enterprise", "Access"). If
+  // that word is not distinctive, the name identifies nothing — return
+  // no matchers instead of a bare common word.
+  if (phraseTokens.length === 1 && !matchableAlone(phraseTokens[0])) {
+    return [];
+  }
   const phrases = [phraseTokens.join(" ")];
 
-  // Plus any long, non-generic single token for recall
-  // ("sibanye stillwater" also matches bare "sibanye").
+  // Plus any long, distinctive single token for recall
+  // ("sibanye stillwater" also matches bare "sibanye"; "sterling bank"
+  // does NOT gain a bare "sterling").
   for (const t of tokens) {
-    if (t.length >= 7 && !GENERIC.has(t) && !phrases.includes(t)) {
+    if (t.length >= 7 && matchableAlone(t) && !phrases.includes(t)) {
       phrases.push(t);
     }
   }
