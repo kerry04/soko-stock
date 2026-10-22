@@ -1,8 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
-import { getQuote } from "@/lib/stocks/yahoo.server";
-import { getDBQuote } from "@/lib/stocks/boards-db.server";
 import { paperUserId, paperAdmin } from "@/lib/paper/server";
+import {
+  readPaperLedger,
+  readPortfolioHistory,
+} from "@/lib/paper/valuation.server";
+import {
+  dayKey,
+  valueByCurrency,
+  type PortfolioHistoryPoint,
+} from "@/lib/paper/valuation";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -11,31 +17,14 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-async function mapParallel<T, R>(
-  items: T[],
-  limit: number,
-  fn: (t: T) => Promise<R>,
-): Promise<R[]> {
-  const out: R[] = new Array(items.length);
-  let i = 0;
-  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (i < items.length) {
-      const idx = i++;
-      try {
-        out[idx] = await fn(items[idx]);
-      } catch {
-        out[idx] = undefined as R;
-      }
-    }
-  });
-  await Promise.all(workers);
-  return out;
-}
-
 /**
  * GET /api/paper/portfolio — cash per currency, positions revalued at the
- * same source used for fills (Yahoo for JSE, stock_boards for EOD), and
- * the 50 most recent orders. EOD rows carry delayed:true.
+ * same source used for fills (Yahoo for JSE, stock_boards for EOD), the 50
+ * most recent orders, and history: stored daily snapshots plus today's
+ * current point per currency, marked `current: true`.
+ *
+ * A missing snapshots table (migration not yet applied) degrades to empty
+ * history; the account itself still works.
  */
 export const Route = createFileRoute("/api/paper/portfolio")({
   server: {
@@ -50,63 +39,39 @@ export const Route = createFileRoute("/api/paper/portfolio")({
             throw e;
           }
           const sb = paperAdmin();
-          const [{ data: pfs }, { data: poss }, { data: ords }] = await Promise.all([
-            sb.from("paper_portfolios").select("currency, cash").eq("user_id", userId),
-            sb
-              .from("paper_positions")
-              .select("ticker, qty, avg_cost")
-              .eq("user_id", userId)
-              .order("ticker"),
-            sb
-              .from("paper_orders")
-              .select("ticker, exchange, side, qty, fill_price, as_of, created_at")
-              .eq("user_id", userId)
-              .order("created_at", { ascending: false })
-              .limit(50),
-          ]);
+          const ledger = await readPaperLedger(sb, userId);
+          const stored = await readPortfolioHistory(sb, userId);
+          const values = valueByCurrency(ledger.cash, ledger.positions);
+          const date = dayKey();
 
-          const list = ((poss ?? []) as { ticker: string; qty: number; avg_cost: number }[]).map(
-            (p) => ({ ticker: p.ticker, qty: Number(p.qty), avg: Number(p.avg_cost) }),
-          );
-          const boards = await mapParallel(list, 6, async (p) => {
-            const m = p.ticker.match(/\.([A-Z]+)$/);
-            const ex = m ? EXCHANGE_BY_ID[m[1]] : undefined;
-            const jse =
-              ex?.source === "yahoo" ||
-              Object.values(EXCHANGE_BY_ID).some((e) => e.tickers.includes(p.ticker));
-            try {
-              if (jse) {
-                const div = ex?.divisor ?? 100;
-                const q = await getQuote(p.ticker, "5d", "1d");
-                if (!q || q.price == null)
-                  return { board: null, asOf: null as string | null, delayed: false };
-                return { board: q.price / div, asOf: q.asOf, delayed: false };
-              }
-              const row = await getDBQuote(p.ticker);
-              if (!row) return { board: null, asOf: null as string | null, delayed: true };
-              return { board: Number(row.price), asOf: row.fetched_at, delayed: true };
-            } catch {
-              return { board: null, asOf: null as string | null, delayed: !jse };
-            }
-          });
+          const history: PortfolioHistoryPoint[] = stored.map((r) => ({
+            currency: r.currency,
+            date: r.captured_on,
+            total: r.total_value,
+            cash: r.cash,
+            shares: r.shares_value,
+            current: false,
+          }));
+          for (const [currency, v] of Object.entries(values)) {
+            history.push({
+              currency,
+              date,
+              total: v.total,
+              cash: v.cash,
+              shares: v.shares,
+              current: true,
+            });
+          }
 
           return json({
             ok: true,
-            cash: Object.fromEntries(
-              ((pfs ?? []) as { currency: string; cash: number }[]).map((r) => [
-                r.currency,
-                Number(r.cash),
-              ]),
-            ),
-            positions: list.map((p, i) => ({
-              ...p,
-              board: boards[i]?.board ?? null,
-              asOf: boards[i]?.asOf ?? null,
-              delayed: boards[i]?.delayed ?? true,
-            })),
-            orders: ords ?? [],
+            cash: ledger.cash,
+            positions: ledger.positions,
+            orders: ledger.orders,
+            history,
           });
-        } catch {
+        } catch (e) {
+          if (e instanceof Response) return e;
           return json({ ok: false, error: "portfolio_failed" }, 500);
         }
       },

@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import type { User } from "@supabase/supabase-js";
 import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
 import { StateBlock } from "@/components/common/states";
 import { PaperLoginForm } from "@/components/paper/auth";
+import { PortfolioHistory } from "@/components/paper/portfolio-history";
+import { PriceAsOf } from "@/components/stocks/PriceAsOf";
 import {
   exchangeForTicker,
   nameForTicker,
@@ -10,7 +14,8 @@ import {
 } from "@/components/paper/trade-panel";
 import { EXCHANGE_BY_ID } from "@/lib/stocks/exchanges";
 import { START_CASH } from "@/lib/paper/fill";
-import { fmtPrice as fmt } from "@/lib/stocks/format";
+import { seriesForCurrency } from "@/lib/paper/history";
+import { fmtPrice as fmt, timeAgo } from "@/lib/stocks/format";
 import type { DirectoryEntry } from "@/components/nav/use-directory";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +35,7 @@ function worthByCcy(
   const out = new Map<string, number>();
   for (const p of data.positions) {
     const ex = exchangeForTicker(p.ticker, directory);
-    const ccy = ex?.currency ?? "KES";
+    const ccy = p.currency ?? ex?.currency ?? "KES";
     out.set(ccy, (out.get(ccy) ?? 0) + (p.board ?? p.avg) * p.qty);
   }
   return out;
@@ -45,11 +50,12 @@ function symbolFor(ccy: string): string {
 
 /**
  * The practice account strip at the top of the globe home. Signed out it
- * is one plain line and the login form; signed in it is the money: cash
- * per currency and what the shares are worth.
+ * is one plain line and the login form; signed in it is the money: one
+ * currency at a time, the value chart, and the chips to switch currency.
  */
 export function AccountStrip({ state }: { state: AccountState }) {
   const { user, authLoading, data, failed, directory } = state;
+  const [ccy, setCcy] = useState("KES");
 
   if (authLoading) {
     return (
@@ -106,24 +112,36 @@ export function AccountStrip({ state }: { state: AccountState }) {
 
   const fresh = Object.keys(data.cash).length === 0 && data.positions.length === 0;
   const worth = worthByCcy(data, directory);
-  const kesCash = data.cash["KES"] ?? START_CASH;
-  const kesWorth = worth.get("KES") ?? 0;
-  const otherLines: string[] = [];
-  const ccys = new Set([...Object.keys(data.cash), ...worth.keys()]);
-  for (const ccy of ccys) {
-    if (ccy === "KES") continue;
-    const sym = symbolFor(ccy);
-    const bits: string[] = [];
-    if (data.cash[ccy] != null) bits.push(`${fmt(data.cash[ccy], sym)} in cash`);
-    if ((worth.get(ccy) ?? 0) > 0)
-      bits.push(`${fmt(worth.get(ccy) ?? 0, sym)} in shares`);
-    if (bits.length) otherLines.push(`You also have ${bits.join(" and ")} (${ccy}).`);
-  }
+  const ccys = [...new Set([...Object.keys(data.cash), ...worth.keys()])].sort((a, b) => {
+    if (a === "KES") return -1;
+    if (b === "KES") return 1;
+    return a.localeCompare(b);
+  });
+  const activeCcy = ccys.includes(ccy) ? ccy : ccys.includes("KES") ? "KES" : ccys[0];
+  const activeSymbol = symbolFor(activeCcy ?? "KES");
+  const activeCash = data.cash[activeCcy ?? "KES"] ?? 0;
+  const activeWorth = worth.get(activeCcy ?? "KES") ?? 0;
+  const points = activeCcy ? seriesForCurrency(data.history ?? [], activeCcy) : [];
 
   return (
     <Panel variant="folio" padding="lg" className="mb-5" aria-label="Your practice account">
       <PanelHeader>
         <PanelTitle>Your practice account</PanelTitle>
+        {ccys.length > 1 && (
+          <div className="flex flex-wrap items-center gap-1.5" aria-label="Currency">
+            {ccys.map((c) => (
+              <Chip
+                key={c}
+                active={activeCcy === c}
+                size="sm"
+                onClick={() => setCcy(c)}
+                aria-label={`Show ${c} practice value`}
+              >
+                {c}
+              </Chip>
+            ))}
+          </div>
+        )}
       </PanelHeader>
       {fresh ? (
         <p className="text-sm leading-relaxed text-muted-foreground">
@@ -138,29 +156,17 @@ export function AccountStrip({ state }: { state: AccountState }) {
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Cash you can spend
-              </p>
-              <p className="num mt-1 font-mono text-xl font-semibold text-foreground">
-                {fmt(kesCash, "KSh")}
-              </p>
-            </div>
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-                Your shares are worth
-              </p>
-              <p className="num mt-1 font-mono text-xl font-semibold text-foreground">
-                {fmt(kesWorth, "KSh")}
-              </p>
-            </div>
-          </div>
-          {otherLines.map((l) => (
-            <p key={l} className="mt-2 text-[13px] text-muted-foreground">
-              {l}
+          <PortfolioHistory
+            points={points}
+            symbol={activeSymbol}
+            cash={activeCash}
+            worth={activeWorth}
+          />
+          {ccys.length > 1 && (
+            <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Showing {activeCcy} · switch currency above
             </p>
-          ))}
+          )}
           <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
             This is practice money at real prices. Nothing here is real money —
             it can&apos;t be lost, spent or taken out.
@@ -212,8 +218,12 @@ export function YourShares({ state }: { state: AccountState }) {
                     </h3>
                     <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                       {p.ticker}
-                      {p.delayed ? " · yesterday's close" : ""}
                     </p>
+                    <PriceAsOf
+                      exchange={ex?.id}
+                      asOf={p.asOf}
+                      className="mt-0.5 normal-case tracking-normal"
+                    />
                   </div>
                   <p className="num font-mono text-base font-semibold text-foreground">
                     {p.qty} {p.qty === 1 ? "share" : "shares"}
@@ -254,6 +264,75 @@ export function YourShares({ state }: { state: AccountState }) {
           );
         })}
       </div>
+    </section>
+  );
+}
+
+/**
+ * "Activity" — the signed-in account's most recent eight orders in plain
+ * words. Every row opens the company page it belongs to.
+ */
+export function RecentActivity({ state }: { state: AccountState }) {
+  const { user, data, directory } = state;
+  if (!user || !data) return null;
+  const orders = (data.orders ?? []).slice(0, 8);
+
+  return (
+    <section aria-label="Activity" className="mt-6">
+      <h2 className="font-display text-[22px] font-semibold tracking-tight text-foreground">
+        Activity
+      </h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Your most recent practice orders, newest first.
+      </p>
+      {orders.length === 0 ? (
+        <StateBlock
+          tone="empty"
+          className="mt-3"
+          title="No orders yet"
+          message="Your buys and sells will appear here."
+        />
+      ) : (
+        <div className="mt-3 space-y-1.5">
+          {orders.map((o) => {
+            const ex = EXCHANGE_BY_ID[o.exchange];
+            const sym = ex?.currencySymbol ?? "";
+            const name = nameForTicker(o.ticker, directory);
+            const qty = Number(o.qty);
+            const price = Number(o.fill_price);
+            return (
+              <Link
+                key={`${o.ticker}-${o.created_at}-${o.side}`}
+                to="/stocks/$ticker"
+                params={{ ticker: o.ticker }}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-card/40 px-3 py-2.5 transition-colors hover:border-primary/40"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm text-foreground">
+                    <span className="font-semibold">
+                      {o.side === "BUY" ? "Bought" : "Sold"}
+                    </span>{" "}
+                    {qty} {qty === 1 ? "share" : "shares"} of {name}
+                  </p>
+                  <p className="num mt-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground">
+                    {fmt(price, sym)} each · {timeAgo(o.created_at)}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 rounded px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.1em]",
+                    o.side === "BUY"
+                      ? "bg-success/15 text-success"
+                      : "bg-destructive/15 text-destructive",
+                  )}
+                >
+                  {o.side === "BUY" ? "Buy" : "Sell"}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

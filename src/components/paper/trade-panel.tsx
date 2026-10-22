@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Panel } from "@/components/ui/card";
 import { StateBlock } from "@/components/common/states";
 import { PaperLoginForm } from "@/components/paper/auth";
+import { PriceAsOf } from "@/components/stocks/PriceAsOf";
+import type { PortfolioHistoryPoint } from "@/lib/paper/valuation";
 import { usePaperSession } from "@/components/paper/use-paper-session";
 import { isStaleEod, START_CASH } from "@/lib/paper/fill";
 import { sharesForAmount, sellSharesForAmount } from "@/lib/paper/amount";
@@ -37,12 +39,28 @@ export interface PositionRow {
   board: number | null;
   asOf: string | null;
   delayed: boolean;
+  /** ISO currency of the listing, provided by the portfolio endpoint. */
+  currency?: string;
+}
+
+export interface PaperOrder {
+  ticker: string;
+  exchange: string;
+  side: "BUY" | "SELL";
+  qty: number;
+  fill_price: number;
+  as_of: string;
+  created_at: string;
 }
 
 export interface PortfolioResponse {
   ok: boolean;
   cash: Record<string, number>;
   positions: PositionRow[];
+  /** The 50 newest practice orders, already returned by the endpoint. */
+  orders?: PaperOrder[];
+  /** Stored points per currency per day, plus today's current point. */
+  history?: PortfolioHistoryPoint[];
 }
 
 export interface OrderResponse {
@@ -153,10 +171,13 @@ export function usePaperPortfolio(userId: string | null) {
 export function PositionCard({
   position: p,
   directory,
+  cash,
   onSold,
 }: {
   position: PositionRow;
   directory: DirectoryEntry[];
+  /** Practice cash in this listing's currency, before the sale. */
+  cash: number;
   onSold: (msg: string, fill: SoldFill) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -218,8 +239,12 @@ export function PositionCard({
           </h3>
           <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
             {p.ticker}
-            {p.delayed ? " · yesterday's close" : ""}
           </p>
+          <PriceAsOf
+            exchange={ex?.id}
+            asOf={p.asOf}
+            className="mt-0.5 normal-case tracking-normal"
+          />
         </div>
         <p className="num font-mono text-base font-semibold text-foreground">
           {p.qty} {p.qty === 1 ? "share" : "shares"}
@@ -311,23 +336,40 @@ export function PositionCard({
             </label>
           )}
           {toSell > 0 ? (
-            <p className="mt-3 text-sm leading-relaxed">
-              Sell <span className="num font-mono font-semibold">{toSell}</span>{" "}
-              {toSell === 1 ? "share" : "shares"} for about{" "}
-              <span className="num font-mono font-semibold">{fmt(proceeds, sym)}</span> — the
-              money goes back into your practice cash.
-            </p>
+            <div className="mt-3 rounded-lg bg-muted/40 px-4 py-3 text-sm leading-relaxed">
+              <p>
+                You are selling{" "}
+                <span className="num font-mono font-semibold text-foreground">{toSell}</span>{" "}
+                {toSell === 1 ? "share" : "shares"} of {name} at {fmt(price ?? 0, sym)} each.
+              </p>
+              <p className="mt-1">
+                You get{" "}
+                <span className="num font-mono font-semibold text-foreground">
+                  {fmt(proceeds, sym)}
+                </span>{" "}
+                back. Cash left after the sale:{" "}
+                <span className="num font-mono font-semibold text-foreground">
+                  {fmt(cash + proceeds, sym)}
+                </span>
+                .
+              </p>
+              <PriceAsOf
+                exchange={ex?.id}
+                asOf={p.asOf}
+                className="mt-1.5 normal-case tracking-normal"
+              />
+              {fee != null && (
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  A real broker would take about {fmt(fee, sym)} of that in fees. Practice
+                  sales here are free.
+                </p>
+              )}
+            </div>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">
               {mode === "all"
                 ? "Tap confirm to sell everything."
                 : "Type how much above, and the shares will be worked out for you."}
-            </p>
-          )}
-          {fee != null && (
-            <p className="mt-1 text-[13px] text-muted-foreground">
-              A real broker would take about {fmt(fee, sym)} of that in fees. Practice
-              sales here are free.
             </p>
           )}
           {error && (
@@ -371,6 +413,7 @@ export function StockTradePanel({
   currencySymbol,
   exchangeId,
   asOf,
+  updated,
 }: {
   ticker: string;
   name: string;
@@ -378,6 +421,7 @@ export function StockTradePanel({
   currencySymbol: string;
   exchangeId: string;
   asOf: string | null;
+  updated?: string | null;
 }) {
   const { user, loading } = usePaperSession();
   const userId = user?.id ?? null;
@@ -428,6 +472,7 @@ export function StockTradePanel({
             <PositionCard
               position={position}
               directory={directory}
+              cash={data.cash[currency] ?? START_CASH}
               onSold={(msg, fill) => {
                 setNotice(msg);
                 setSellCount((n) => n + 1);
@@ -467,6 +512,8 @@ export function StockTradePanel({
             currencySymbol={currencySymbol}
             currency={currency}
             asOf={asOf}
+            updated={updated ?? null}
+            exchangeId={exchangeId}
             eod={eod}
             cashAvail={cashAvail}
             firstBuy={!position}
@@ -497,6 +544,8 @@ export function FixedBuyPanel({
   currencySymbol: sym,
   currency,
   asOf,
+  updated,
+  exchangeId,
   eod,
   cashAvail,
   firstBuy,
@@ -510,6 +559,8 @@ export function FixedBuyPanel({
   /** ISO currency code of the listing (KES, ZAR, …) — drives the fee line. */
   currency: string;
   asOf: string | null;
+  updated: string | null;
+  exchangeId: string;
   /** True for end-of-day listings (African Financials boards). */
   eod: boolean;
   cashAvail: number;
@@ -523,6 +574,7 @@ export function FixedBuyPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ owned: number; cost: number } | null>(null);
+  const [reviewing, setReviewing] = useState(false);
 
   useEffect(() => {
     setDone(null);
@@ -558,6 +610,7 @@ export function FixedBuyPanel({
     setAmountStr("");
     setDone(null);
     setError(null);
+    setReviewing(false);
   };
 
   return (
@@ -604,6 +657,14 @@ export function FixedBuyPanel({
               ? " — that's the last closing price, and your practice trade uses it."
               : " — prices move through the day, about 15 minutes behind the market."}
           </p>
+          <PriceAsOf
+            exchange={exchangeId}
+            updated={updated}
+            asOf={asOf}
+            className="mt-1 normal-case tracking-normal"
+          />
+          {!reviewing && (
+            <>
           <label className="mt-4 block">
             <span className="text-sm font-medium text-foreground">
               How much do you want to spend?
@@ -614,7 +675,10 @@ export function FixedBuyPanel({
                 type="text"
                 inputMode="decimal"
                 value={amountStr}
-                onChange={(e) => setAmountStr(e.target.value.replace(/[^0-9.]/g, ""))}
+                onChange={(e) => {
+                  setAmountStr(e.target.value.replace(/[^0-9.]/g, ""));
+                  setReviewing(false);
+                }}
                 placeholder="1,000"
                 aria-label="Amount to spend"
                 className="w-full bg-transparent py-3 text-base focus-visible:outline-none"
@@ -626,7 +690,10 @@ export function FixedBuyPanel({
               <button
                 key={v}
                 type="button"
-                onClick={() => setAmountStr(String(v))}
+                onClick={() => {
+                  setAmountStr(String(v));
+                  setReviewing(false);
+                }}
                 className="rounded-full border border-border/70 px-3 py-2 font-mono text-[13px] text-muted-foreground"
               >
                 {sym} {v.toLocaleString("en-ZA")}
@@ -681,15 +748,82 @@ export function FixedBuyPanel({
           <button
             type="button"
             disabled={!canConfirm}
-            onClick={confirm}
+            onClick={() => setReviewing(true)}
             className="mt-4 w-full rounded-lg bg-success/15 px-4 py-3.5 text-base font-bold text-success disabled:opacity-40"
           >
-            {busy
-              ? "Buying…"
-              : plan.shares > 0
-                ? `Buy ${plan.shares} shares · ${fmt(plan.cost, sym)}`
-                : "Buy shares"}
+            Review buy
           </button>
+            </>
+          )}
+          {reviewing && (
+            <div className="mt-4 rounded-lg border border-border bg-muted/30 px-4 py-4">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                Review your buy
+              </p>
+              <p className="mt-2 text-sm leading-relaxed">
+                You are buying{" "}
+                <span className="num font-mono font-semibold text-foreground">
+                  {plan.shares} {plan.shares === 1 ? "share" : "shares"}
+                </span>{" "}
+                of {name} at {fmt(price ?? 0, sym)} each.
+              </p>
+              <p className="mt-1 text-sm leading-relaxed">
+                Total:{" "}
+                <span className="num font-mono font-semibold text-foreground">
+                  {fmt(plan.cost, sym)}
+                </span>
+                .
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                {fmt(plan.leftover, sym)} stays behind as cash from the{" "}
+                {fmt(amountNum, sym)} you entered.
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Cash left after the buy:{" "}
+                <span className="num font-mono text-foreground">
+                  {fmt(cashAvail - plan.cost, sym)}
+                </span>{" "}
+                of {fmt(cashAvail, sym)}.
+              </p>
+              <PriceAsOf
+                exchange={exchangeId}
+                updated={updated}
+                asOf={asOf}
+                className="mt-2 normal-case tracking-normal"
+              />
+              {fee != null && (
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  With a real broker this buy would cost about {fmt(fee, sym)} in
+                  fees. Practice trades here are free.
+                </p>
+              )}
+              {error && (
+                <p role="alert" className="mt-2 text-sm text-destructive">
+                  {error}
+                </p>
+              )}
+              <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={confirm}
+                  className="rounded-lg bg-success/15 px-4 py-3 text-sm font-bold text-success disabled:opacity-40"
+                >
+                  {busy ? "Buying…" : "Confirm buy"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewing(false)}
+                  className="rounded-lg border border-border/70 px-4 py-3 text-sm font-semibold text-muted-foreground"
+                >
+                  Back
+                </button>
+              </div>
+              <p className="mt-2 font-mono text-[10px] leading-relaxed text-muted-foreground">
+                The server re-reads the price and re-checks your cash when you confirm.
+              </p>
+            </div>
+          )}
         </>
       )}
     </Panel>

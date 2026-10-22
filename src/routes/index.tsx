@@ -6,7 +6,13 @@ import { PageHeader } from "@/components/nav/PageHeader";
 import { StateBlock } from "@/components/common/states";
 import { SignalMap } from "@/components/signals/SignalMap";
 import { SessionRing } from "@/components/signals/SessionRing";
-import { AccountStrip, YourShares } from "@/components/paper/AccountStrip";
+import {
+  AccountStrip,
+  RecentActivity,
+  YourShares,
+} from "@/components/paper/AccountStrip";
+import { Following } from "@/components/paper/following";
+import { Discovery } from "@/components/stocks/discovery";
 import { usePaperSession } from "@/components/paper/use-paper-session";
 import { usePaperPortfolio } from "@/components/paper/trade-panel";
 import { useStockDirectory } from "@/components/nav/use-directory";
@@ -73,6 +79,9 @@ function GlobePage() {
           </MapErrorBoundary>
         </div>
         <YourShares state={account} />
+        <RecentActivity state={account} />
+        <Following />
+        <Discovery />
       </PageContainer>
     </TerminalShell>
   );

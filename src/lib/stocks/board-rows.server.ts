@@ -19,6 +19,8 @@ export interface BoardRow {
   volume: number | null;
   /** Value traded in display currency (EOD table for AF, price×volume for JSE). */
   value: number | null;
+  /** The daily board's own "Updated" label, when the source publishes one. */
+  updated: string | null;
   wk52High: number | null;
   wk52Low: number | null;
   rsi: number | null;
@@ -47,6 +49,8 @@ export interface ExchangeBoard {
   exchange: string;
   currencySymbol: string;
   timeNote: string;
+  /** The board-wide "Updated" label, when the source publishes one. */
+  updated: string | null;
   rows: BoardRow[];
 }
 
@@ -112,6 +116,7 @@ export async function getExchangeBoardRows(exchangeId: string): Promise<Exchange
         volume: q.volume != null ? Number(q.volume) : null,
         // Value traded comes straight from the EOD table.
         value: q.value_traded != null ? Number(q.value_traded) : null,
+        updated: q.updated,
         // No price history yet for EOD listings — 52wk arrives with
         // accumulated daily snapshots.
         wk52High: null,
@@ -157,6 +162,7 @@ export async function getExchangeBoardRows(exchangeId: string): Promise<Exchange
             volume: vol,
             // Approximation: last price × latest daily share volume.
             value: vol != null ? price * vol : null,
+            updated: null,
             wk52High: w?.high != null ? w.high / d : null,
             wk52Low: w?.low != null ? w.low / d : null,
             rsi: t?.rsi ?? null,
@@ -218,6 +224,7 @@ export async function getExchangeBoardRows(exchangeId: string): Promise<Exchange
     exchange: exchange.id,
     currencySymbol: exchange.currencySymbol,
     timeNote: exchange.timeNote,
+    updated: rows.find((r) => r.updated)?.updated ?? null,
     rows,
   };
 }

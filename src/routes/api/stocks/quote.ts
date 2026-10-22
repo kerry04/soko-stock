@@ -4,14 +4,27 @@ import { getDBQuote } from "@/lib/stocks/boards-db.server";
 import { getExchangeBoardRows } from "@/lib/stocks/board-rows.server";
 import { getQuote, getTechnicals } from "@/lib/stocks/yahoo.server";
 
-/** Board-relative context for one ticker (liquidity tier, speculation, limit) — best-effort. */
+/** Board-relative context for one ticker (liquidity tier, speculation, limit,
+ *  and the exchange board's average move for the same day) — best-effort. */
 async function boardContext(exchangeId: string, ticker: string) {
   try {
     const board = await getExchangeBoardRows(exchangeId);
     const row = board.rows.find((r) => r.ticker === ticker);
-    return row
-      ? { liquidity: row.liquidity, speculation: row.speculation, limitHit: row.limitHit }
-      : null;
+    if (!row) return null;
+    const moved = board.rows.filter(
+      (r) => r.changePercent != null && Number.isFinite(r.changePercent),
+    );
+    const averageChangePercent =
+      moved.length > 0
+        ? moved.reduce((sum, r) => sum + (r.changePercent as number), 0) / moved.length
+        : null;
+    return {
+      liquidity: row.liquidity,
+      speculation: row.speculation,
+      limitHit: row.limitHit,
+      averageChangePercent,
+      counted: moved.length,
+    };
   } catch {
     return null;
   }

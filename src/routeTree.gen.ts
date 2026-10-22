@@ -27,6 +27,7 @@ import { Route as ApiPaperOrdersRouteImport } from './routes/api/paper/orders'
 import { Route as ApiPaperPortfolioRouteImport } from './routes/api/paper/portfolio'
 import { Route as ApiStocksBoardRouteImport } from './routes/api/stocks/board'
 import { Route as ApiStocksDirectoryRouteImport } from './routes/api/stocks/directory'
+import { Route as ApiStocksDiscoveryRouteImport } from './routes/api/stocks/discovery'
 import { Route as ApiStocksNewsSignalsRouteImport } from './routes/api/stocks/news-signals'
 import { Route as ApiStocksNewsWireRouteImport } from './routes/api/stocks/news-wire'
 import { Route as ApiStocksQuoteRouteImport } from './routes/api/stocks/quote'
@@ -36,6 +37,7 @@ import { Route as ApiPublicHooksComputeTrendsRouteImport } from './routes/api/pu
 import { Route as ApiPublicHooksIngestMacroRouteImport } from './routes/api/public/hooks/ingest-macro'
 import { Route as ApiPublicHooksScrapeNewsRouteImport } from './routes/api/public/hooks/scrape-news'
 import { Route as ApiPublicHooksSignalsRouteImport } from './routes/api/public/hooks/signals'
+import { Route as ApiPublicHooksSnapshotPaperPortfoliosRouteImport } from './routes/api/public/hooks/snapshot-paper-portfolios'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -127,6 +129,11 @@ const ApiStocksDirectoryRoute = ApiStocksDirectoryRouteImport.update({
   path: '/api/stocks/directory',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStocksDiscoveryRoute = ApiStocksDiscoveryRouteImport.update({
+  id: '/api/stocks/discovery',
+  path: '/api/stocks/discovery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStocksNewsSignalsRoute = ApiStocksNewsSignalsRouteImport.update({
   id: '/api/stocks/news-signals',
   path: '/api/stocks/news-signals',
@@ -176,6 +183,12 @@ const ApiPublicHooksSignalsRoute = ApiPublicHooksSignalsRouteImport.update({
   path: '/api/public/hooks/signals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksSnapshotPaperPortfoliosRoute =
+  ApiPublicHooksSnapshotPaperPortfoliosRouteImport.update({
+    id: '/api/public/hooks/snapshot-paper-portfolios',
+    path: '/api/public/hooks/snapshot-paper-portfolios',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -196,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
   '/api/stocks/directory': typeof ApiStocksDirectoryRoute
+  '/api/stocks/discovery': typeof ApiStocksDiscoveryRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
@@ -205,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/ingest-macro': typeof ApiPublicHooksIngestMacroRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
+  '/api/public/hooks/snapshot-paper-portfolios': typeof ApiPublicHooksSnapshotPaperPortfoliosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -225,6 +240,7 @@ export interface FileRoutesByTo {
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
   '/api/stocks/directory': typeof ApiStocksDirectoryRoute
+  '/api/stocks/discovery': typeof ApiStocksDiscoveryRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
@@ -234,6 +250,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/ingest-macro': typeof ApiPublicHooksIngestMacroRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
+  '/api/public/hooks/snapshot-paper-portfolios': typeof ApiPublicHooksSnapshotPaperPortfoliosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -255,6 +272,7 @@ export interface FileRoutesById {
   '/api/paper/portfolio': typeof ApiPaperPortfolioRoute
   '/api/stocks/board': typeof ApiStocksBoardRoute
   '/api/stocks/directory': typeof ApiStocksDirectoryRoute
+  '/api/stocks/discovery': typeof ApiStocksDiscoveryRoute
   '/api/stocks/news-signals': typeof ApiStocksNewsSignalsRoute
   '/api/stocks/news-wire': typeof ApiStocksNewsWireRoute
   '/api/stocks/quote': typeof ApiStocksQuoteRoute
@@ -264,6 +282,7 @@ export interface FileRoutesById {
   '/api/public/hooks/ingest-macro': typeof ApiPublicHooksIngestMacroRoute
   '/api/public/hooks/scrape-news': typeof ApiPublicHooksScrapeNewsRoute
   '/api/public/hooks/signals': typeof ApiPublicHooksSignalsRoute
+  '/api/public/hooks/snapshot-paper-portfolios': typeof ApiPublicHooksSnapshotPaperPortfoliosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -286,6 +305,7 @@ export interface FileRouteTypes {
     | '/api/paper/portfolio'
     | '/api/stocks/board'
     | '/api/stocks/directory'
+    | '/api/stocks/discovery'
     | '/api/stocks/news-signals'
     | '/api/stocks/news-wire'
     | '/api/stocks/quote'
@@ -295,6 +315,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/ingest-macro'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
+    | '/api/public/hooks/snapshot-paper-portfolios'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -315,6 +336,7 @@ export interface FileRouteTypes {
     | '/api/paper/portfolio'
     | '/api/stocks/board'
     | '/api/stocks/directory'
+    | '/api/stocks/discovery'
     | '/api/stocks/news-signals'
     | '/api/stocks/news-wire'
     | '/api/stocks/quote'
@@ -324,6 +346,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/ingest-macro'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
+    | '/api/public/hooks/snapshot-paper-portfolios'
   id:
     | '__root__'
     | '/'
@@ -344,6 +367,7 @@ export interface FileRouteTypes {
     | '/api/paper/portfolio'
     | '/api/stocks/board'
     | '/api/stocks/directory'
+    | '/api/stocks/discovery'
     | '/api/stocks/news-signals'
     | '/api/stocks/news-wire'
     | '/api/stocks/quote'
@@ -353,6 +377,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/ingest-macro'
     | '/api/public/hooks/scrape-news'
     | '/api/public/hooks/signals'
+    | '/api/public/hooks/snapshot-paper-portfolios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -374,6 +399,7 @@ export interface RootRouteChildren {
   ApiPaperPortfolioRoute: typeof ApiPaperPortfolioRoute
   ApiStocksBoardRoute: typeof ApiStocksBoardRoute
   ApiStocksDirectoryRoute: typeof ApiStocksDirectoryRoute
+  ApiStocksDiscoveryRoute: typeof ApiStocksDiscoveryRoute
   ApiStocksNewsSignalsRoute: typeof ApiStocksNewsSignalsRoute
   ApiStocksNewsWireRoute: typeof ApiStocksNewsWireRoute
   ApiStocksQuoteRoute: typeof ApiStocksQuoteRoute
@@ -383,6 +409,7 @@ export interface RootRouteChildren {
   ApiPublicHooksIngestMacroRoute: typeof ApiPublicHooksIngestMacroRoute
   ApiPublicHooksScrapeNewsRoute: typeof ApiPublicHooksScrapeNewsRoute
   ApiPublicHooksSignalsRoute: typeof ApiPublicHooksSignalsRoute
+  ApiPublicHooksSnapshotPaperPortfoliosRoute: typeof ApiPublicHooksSnapshotPaperPortfoliosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -513,6 +540,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStocksDirectoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stocks/discovery': {
+      id: '/api/stocks/discovery'
+      path: '/api/stocks/discovery'
+      fullPath: '/api/stocks/discovery'
+      preLoaderRoute: typeof ApiStocksDiscoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stocks/news-signals': {
       id: '/api/stocks/news-signals'
       path: '/api/stocks/news-signals'
@@ -576,6 +610,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksSignalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/snapshot-paper-portfolios': {
+      id: '/api/public/hooks/snapshot-paper-portfolios'
+      path: '/api/public/hooks/snapshot-paper-portfolios'
+      fullPath: '/api/public/hooks/snapshot-paper-portfolios'
+      preLoaderRoute: typeof ApiPublicHooksSnapshotPaperPortfoliosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -598,6 +639,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPaperPortfolioRoute: ApiPaperPortfolioRoute,
   ApiStocksBoardRoute: ApiStocksBoardRoute,
   ApiStocksDirectoryRoute: ApiStocksDirectoryRoute,
+  ApiStocksDiscoveryRoute: ApiStocksDiscoveryRoute,
   ApiStocksNewsSignalsRoute: ApiStocksNewsSignalsRoute,
   ApiStocksNewsWireRoute: ApiStocksNewsWireRoute,
   ApiStocksQuoteRoute: ApiStocksQuoteRoute,
@@ -607,6 +649,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksIngestMacroRoute: ApiPublicHooksIngestMacroRoute,
   ApiPublicHooksScrapeNewsRoute: ApiPublicHooksScrapeNewsRoute,
   ApiPublicHooksSignalsRoute: ApiPublicHooksSignalsRoute,
+  ApiPublicHooksSnapshotPaperPortfoliosRoute:
+    ApiPublicHooksSnapshotPaperPortfoliosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

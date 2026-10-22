@@ -1,1 +1,9 @@
-{"crons":[{"path":"/api/public/hooks/ingest-macro","schedule":"0 4 * * *"}]}
+{
+  "crons": [
+    { "path": "/api/public/hooks/ingest-macro", "schedule": "0 4 * * *" },
+    {
+      "path": "/api/public/hooks/snapshot-paper-portfolios",
+      "schedule": "15 18 * * *"
+    }
+  ]
+}

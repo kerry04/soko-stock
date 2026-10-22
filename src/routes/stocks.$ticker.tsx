@@ -10,6 +10,8 @@ import { SkeletonBlock, SkeletonRows, StateBlock } from "@/components/common/sta
 import { StockTradePanel } from "@/components/paper/trade-panel";
 import { EventBadge, LimitChip, SentimentDot, NewsSurgeChip } from "@/components/stocks/badges";
 import { ChangeCell } from "@/components/stocks/change";
+import { MovePanel } from "@/components/stocks/move-panel";
+import { PriceAsOf } from "@/components/stocks/PriceAsOf";
 import { fmtPrice as fmt, timeAgo } from "@/lib/stocks/format";
 import {
   classifyHeadline,
@@ -78,6 +80,9 @@ interface QuoteResponse {
     liquidity: "liquid" | "active" | "thin";
     speculation: boolean;
     limitHit: "up" | "down" | null;
+    /** Average day change across every row on the board, when known. */
+    averageChangePercent?: number | null;
+    counted?: number;
   } | null;
   asOf: string;
   timeNote: string;
@@ -870,6 +875,9 @@ function StockDetail() {
         year: "numeric",
       })
     : "";
+  // A daily board's slug date is the board's own Updated label, never
+  // today's date. Johannesburg has no daily label; it states its delay.
+  const slugDate = !hasHistory && quote?.extras?.updated ? quote.extras.updated : asOfLabel;
 
   return (
     <TerminalShell>
@@ -904,28 +912,28 @@ function StockDetail() {
                 "STK",
                 quote.ticker,
                 exchange?.name ?? quote.exchange,
-                hasHistory ? "Delayed live" : "End of day",
-                `As of ${asOfLabel}`,
+                hasHistory ? "About 15 minutes behind" : "End of day",
+                `As of ${slugDate}`,
               ].join(" · ")}
               title={quote.name}
               actions={
                 <>
                   <button
                     onClick={() => toggle(ticker)}
-                    aria-label={watched.includes(ticker) ? "Unwatch" : "Watch"}
                     aria-pressed={watched.includes(ticker)}
                     className={cn(
-                      "rounded p-1",
+                      "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[12px] font-semibold transition-colors",
                       watched.includes(ticker)
-                        ? "text-primary"
-                        : "text-muted-foreground/50 hover:text-primary",
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/40 hover:text-primary",
                     )}
                   >
                     <Star
-                      className="h-5 w-5"
+                      className="h-3.5 w-3.5"
                       fill={watched.includes(ticker) ? "currentColor" : "none"}
                       aria-hidden
                     />
+                    {watched.includes(ticker) ? "Following" : "Follow"}
                   </button>
                   <div className="text-right">
                     <p className="num font-mono text-3xl font-bold">
@@ -940,9 +948,12 @@ function StockDetail() {
                       )}
                       <ChangeCell value={pct} className="text-sm" />
                     </p>
-                    <p className="mt-1 font-mono text-[10px] text-muted-foreground">
-                      {quote.timeNote}
-                    </p>
+                    <PriceAsOf
+                      exchange={quote.exchange}
+                      updated={quote.extras?.updated}
+                      asOf={quote.asOf}
+                      className="mt-1 justify-end normal-case tracking-normal"
+                    />
                   </div>
                 </>
               }
@@ -965,6 +976,19 @@ function StockDetail() {
                 single order, so treat a big move with care.
               </p>
             ) : null}
+
+            {/* End-of-day listings have no chart; the move panel sits
+                directly under the header instead. */}
+            {!hasHistory && (
+              <MovePanel
+                name={quote.name}
+                bars={quote.bars}
+                lastChangePercent={quote.changePercent}
+                boardAveragePercent={quote.board?.averageChangePercent ?? null}
+                boardName={exchange?.name ?? null}
+                articles={news?.articles ?? []}
+              />
+            )}
 
             <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="min-w-0 space-y-4">
@@ -989,6 +1013,15 @@ function StockDetail() {
                         <PriceChart bars={quote.bars} sym={sym} events={chartEvents} />
                       </Panel>
                     </section>
+
+                    <MovePanel
+                      name={quote.name}
+                      bars={quote.bars}
+                      lastChangePercent={quote.changePercent}
+                      boardAveragePercent={quote.board?.averageChangePercent ?? null}
+                      boardName={exchange?.name ?? null}
+                      articles={news?.articles ?? []}
+                    />
 
                     {/* 52-week position — only meaningful on the 1Y view */}
                     {range === "1y" && quote.price != null && (
@@ -1087,6 +1120,7 @@ function StockDetail() {
                   currencySymbol={sym}
                   exchangeId={quote.exchange}
                   asOf={quote.asOf}
+                  updated={quote.extras?.updated ?? null}
                 />
                 {exchange?.id === "NSE" && <RealCostPanel />}
               </aside>

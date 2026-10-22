@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/nav/PageHeader";
 import { SkeletonRows, StateBlock } from "@/components/common/states";
 import { BoardRowBadge, EventBadge, SentimentDot } from "@/components/stocks/badges";
 import { ChangeCell } from "@/components/stocks/change";
+import { PriceAsOf } from "@/components/stocks/PriceAsOf";
 import { Chip } from "@/components/ui/chip";
 import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -58,6 +59,7 @@ interface BoardRow {
   liquidity: "liquid" | "active" | "thin";
   /** ≥5% move on a thin counter with no news surge behind it. */
   speculation: boolean;
+  updated: string | null;
   asOf: string;
 }
 
@@ -66,6 +68,7 @@ interface BoardResponse {
   exchange: string;
   currencySymbol: string;
   timeNote: string;
+  updated: string | null;
   rows: BoardRow[];
 }
 
@@ -322,7 +325,7 @@ function StocksBoard() {
 
   const slugParts = [
     `STK · ${today}`,
-    `${EXCHANGES.length} exchanges · JSE live, the rest end of day`,
+    `${EXCHANGES.length} exchanges · JSE about 15 minutes behind, the rest end of day`,
   ];
   if (board && breadth.counted > 0) {
     slugParts.push(
@@ -592,7 +595,7 @@ function StocksBoard() {
             >
               {e.shortName}
               <span className="text-[9px] opacity-70">
-                {e.status === "soon" ? "Soon" : e.source === "yahoo" ? "Live" : "End of day"}
+                {e.status === "soon" ? "Soon" : e.source === "yahoo" ? "Delayed" : "End of day"}
               </span>
             </Chip>
           ))}
@@ -614,9 +617,15 @@ function StocksBoard() {
               </h2>
               <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                 {exchange.country} ·{" "}
-                {exchange.source === "yahoo" ? "Live · delayed" : "End of day"} ·{" "}
+                {exchange.source === "yahoo" ? "About 15 minutes behind" : "End of day"} ·{" "}
                 {board ? `${board.rows.length} listed · ${board.timeNote}` : exchange.timeNote}
               </span>
+              <PriceAsOf
+                exchange={exchange.id}
+                updated={board?.updated}
+                asOf={board?.rows[0]?.asOf}
+                className="normal-case tracking-normal"
+              />
               <div className="relative ml-auto w-full sm:w-64">
                 <Search
                   className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
