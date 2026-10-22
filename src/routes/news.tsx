@@ -11,7 +11,7 @@ import { Chip } from "@/components/ui/chip";
 import { Panel, PanelHeader, PanelTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DataTable, type DataTableColumn } from "@/components/ui/table";
-import { EXCHANGES, LIVE_EXCHANGES, type Exchange } from "@/lib/stocks/exchanges";
+import { EXCHANGES, type Exchange } from "@/lib/stocks/exchanges";
 import { fmtCompactValue, fmtPrice, timeAgo } from "@/lib/stocks/format";
 import { compileMatchers, stockKeywords, titleMatches } from "@/lib/news/matching";
 import { classifyHeadline } from "@/lib/news/events";
@@ -322,7 +322,7 @@ function StocksBoard() {
 
   const slugParts = [
     `STK · ${today}`,
-    `${LIVE_EXCHANGES.length} exchanges live`,
+    `${EXCHANGES.length} exchanges · JSE live, the rest end of day`,
   ];
   if (board && breadth.counted > 0) {
     slugParts.push(
