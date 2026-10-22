@@ -18,10 +18,13 @@ import { fmtPrice, timeAgo } from "@/lib/stocks/format";
 export function CountryBroadcast({
   signal,
   stocks,
+  companies,
   onClose,
 }: {
   signal: CountrySignal;
   stocks: StockLink[];
+  /** Every company listed on the country's exchange (full board). */
+  companies: StockLink[];
   onClose: () => void;
 }) {
   const { country, articles, instability, converging } = signal;
@@ -266,6 +269,43 @@ export function CountryBroadcast({
               </p>
             )}
           </div>
+
+          {/* Companies listed in this country — the full board for the
+              country's exchange, each row through to its stock page.
+              This is the route from "a country in the news" to "its
+              companies" that the broadcast used to lack. */}
+          {companies.length > 0 && (
+            <div className="border-t border-border px-4 py-3 sm:px-5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-primary">
+                Companies listed in {country.name}
+              </p>
+              <ul className="mt-1 divide-y divide-border/60">
+                {companies.map((s) => (
+                  <li key={s.ticker}>
+                    <Link
+                      to="/stocks/$ticker"
+                      params={{ ticker: s.ticker }}
+                      onClick={onClose}
+                      className="flex items-baseline gap-2 py-2"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium text-popover-foreground hover:underline">
+                        {s.name}
+                      </span>
+                      <span className="num shrink-0 font-mono text-[10px] uppercase tracking-[0.08em] text-muted-foreground">
+                        {s.ticker}
+                      </span>
+                      <span className="num shrink-0 font-mono text-[12px] text-popover-foreground">
+                        {fmtPrice(s.price, s.currencySymbol)}
+                      </span>
+                      {s.changePercent != null && (
+                        <ChangeCell value={s.changePercent} className="shrink-0 text-[11px]" />
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* ── Headline ticker ───────────────────────────────────────── */}

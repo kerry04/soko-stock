@@ -136,6 +136,9 @@ export function SignalMap() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [signals, setSignals] = useState<CountrySignal[]>([]);
   const [stocks, setStocks] = useState<StockLink[]>([]);
+  /** Every company listed on the selected country's exchange (the full
+   *  board, not just the movers) — the broadcast's companies section. */
+  const [companies, setCompanies] = useState<StockLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [asOf, setAsOf] = useState<Date | null>(null);
   const [selected, setSelected] = useState<CountrySignal | null>(null);
@@ -340,6 +343,7 @@ export function SignalMap() {
   useEffect(() => {
     if (!selected) {
       setStocks([]);
+      setCompanies([]);
       return;
     }
     let cancelled = false;
@@ -350,7 +354,10 @@ export function SignalMap() {
           (e) => e.countryAlpha2 === selected.country.alpha2 && e.status === "live",
         );
         if (!ex) {
-          if (!cancelled) setStocks([]);
+          if (!cancelled) {
+            setStocks([]);
+            setCompanies([]);
+          }
           return;
         }
         const res = await fetch(`/api/stocks/board?exchange=${ex.id}`);
@@ -362,15 +369,24 @@ export function SignalMap() {
           price: number;
           changePercent: number | null;
         }[];
-        const top = [...rows]
+        const all = rows.map((r) => ({
+          ...r,
+          currencySymbol: json.currencySymbol as string,
+        }));
+        const top = [...all]
           .sort(
             (a, b) => Math.abs(b.changePercent ?? 0) - Math.abs(a.changePercent ?? 0),
           )
-          .slice(0, 3)
-          .map((r) => ({ ...r, currencySymbol: json.currencySymbol as string }));
-        if (!cancelled) setStocks(top);
+          .slice(0, 3);
+        if (!cancelled) {
+          setStocks(top);
+          setCompanies(all);
+        }
       } catch {
-        if (!cancelled) setStocks([]);
+        if (!cancelled) {
+          setStocks([]);
+          setCompanies([]);
+        }
       }
     })();
     return () => {
@@ -515,7 +531,12 @@ export function SignalMap() {
 
       {/* Country broadcast pop-up (click a lit country, either view) */}
       {selected && (
-        <CountryBroadcast signal={selected} stocks={stocks} onClose={() => setSelected(null)} />
+        <CountryBroadcast
+          signal={selected}
+          stocks={stocks}
+          companies={companies}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   );
