@@ -161,15 +161,8 @@ function BrokersPage() {
           </p>
           <p>
             Opening a CDS account is free. You need a national ID or
-            passport, a KRA PIN certificate, and passport photos (the full
-            list is in{" "}
-            <Link
-              to="/start"
-              className="font-medium text-primary underline-offset-4 hover:underline"
-            >
-              step 2 of Start trading
-            </Link>
-            ). Brokers charge roughly 1.1–2.1% brokerage per trade — the
+            passport, a KRA PIN certificate, passport photos, and a form
+            called CDS 1, which the broker gives you to fill in. Brokers charge roughly 1.1–2.1% brokerage per trade — the
             rate is negotiable — on top of fixed market levies of 0.34%.
             Many brokers now open the account fully online, and funding is
             commonly by M-PESA. Compare those three things on the
