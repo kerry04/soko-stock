@@ -141,9 +141,10 @@ export interface HeatItem {
 export interface NewsWireResult {
   /** Newest first, last 48 hours — pipeline + world feeds (cap 300). */
   articles: NewsArticle[];
-  /** The lead story, picked server-side from the filtered pipeline
-   *  wire alone (see lib/news/lead). Null only when the pipeline wire
-   *  is empty — world items never lead while a pipeline story exists. */
+  /** The lead story, picked server-side in tiers (see lib/news/lead):
+   *  a qualifying pipeline story first, then a market-relevant story
+   *  from the world merge, then the newest pipeline story. Null only
+   *  when both wires are empty. */
   lead: NewsArticle | null;
   desks: DeskResult[];
   /** Most-covered listed companies in the last 24h (top 8). */
@@ -273,19 +274,34 @@ export async function getNewsWire(): Promise<NewsWireResult> {
     world = [];
   }
 
-  // The pipeline slice of the wire, and the lead picked from it alone —
-  // never from the merged list, so a just-landed world item (or a
-  // borderline pipeline story riding the newest-first fallback) cannot
-  // take the crown while a qualifying pipeline story exists.
   const pipelineSlice = all.filter((a) => a.published_at >= wireSince).slice(0, 150);
-  const lead = pickLeadStory(
-    pipelineSlice,
-    heat.map((h) => h.name),
-  );
 
   // Region desks are counted over the merged wire itself, not the raw
   // feed fetch — a desk count must never exceed the wire it belongs to.
   const merged = mergeWireArticlesTagged(pipelineSlice, world, wireSince);
+
+  // The lead, in tiers (lib/news/lead): a qualifying pipeline story
+  // always wins; failing that, a market-relevant story from this same
+  // merged wire (tagged with its desk here, tag stripped before the
+  // payload); failing that, the newest pipeline story. World items are
+  // candidates only — they never enter the tier-1 matching.
+  const worldCandidates = merged
+    .filter((a) => a.region != null)
+    .map(({ region, ...a }) => ({
+      ...a,
+      desk: (region === "world" ? "world" : "africa") as "africa" | "world",
+    }));
+  const leadPick = pickLeadStory(
+    pipelineSlice,
+    heat.map((h) => h.name),
+    worldCandidates,
+  );
+  const lead: NewsArticle | null =
+    leadPick == null
+      ? null
+      : "desk" in leadPick
+        ? (({ desk: _desk, ...a }) => a)(leadPick)
+        : leadPick;
 
   const result: NewsWireResult = {
     articles: merged.map(({ region: _region, ...a }) => a),
