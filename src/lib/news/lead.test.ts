@@ -166,6 +166,19 @@ describe("pickLeadStory enforcement door", () => {
     );
   });
 
+  it("a crash story does not lead via a false 'university' company match", () => {
+    // Regression, live wire 2026-10-22: with University Press in the
+    // heat set, the bus-crash story led through the company door
+    // because bare "university" used to match the publisher's name.
+    const wire = [
+      art("Bus Driver Faces 12 Charges Over Fatal Crash Involving University Students"),
+      art("Safaricom expands M-Pesa services into Ethiopia"),
+    ];
+    expect(pickLeadStory(wire, [...HEAT, "University Press"])?.title).toBe(
+      "Safaricom expands M-Pesa services into Ethiopia",
+    );
+  });
+
   it("a crime story still leads as the last resort when nothing else qualifies", () => {
     const wire = [art(KILIFI), art("County launches a new bursary programme for students")];
     expect(pickLeadStory(wire, HEAT, [])?.title).toBe(KILIFI);

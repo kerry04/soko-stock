@@ -79,6 +79,66 @@ describe("stockKeywords — a heat match never rests on one common word", () => 
     expect(kw).not.toContain("sterling");
   });
 
+  it("a long generic word inside a name gains no bare recall matcher (University)", () => {
+    const kw = stockKeywords("University Press");
+    expect(kw).toContain("university press");
+    expect(kw).not.toContain("university");
+  });
+
+  it("the bus-crash headline does not heat-qualify via 'university'", () => {
+    // Regression, live wire 2026-10-22: this story LED /news as a
+    // University Press story — bare "university" matched, which also
+    // inflated the publisher into the heat set the lead pick reads.
+    expect(
+      heatQualifies(
+        "Bus Driver Faces 12 Charges Over Fatal Crash Involving University Students",
+        ["University Press"],
+      ),
+    ).toBe(false);
+  });
+
+  it("a real University Press story still matches as a phrase", () => {
+    expect(
+      heatQualifies("University Press declares dividend after a strong year", [
+        "University Press",
+      ]),
+    ).toBe(true);
+  });
+
+  it("place and sector words inside names gain no bare recall matcher", () => {
+    // From the 2026-10-22 audit of every bare matcher the boards
+    // produce: these words saturate headlines on their own.
+    expect(stockKeywords("Kenya Airways")).not.toContain("airways");
+    expect(stockKeywords("Housing Finance")).not.toContain("housing");
+    expect(stockKeywords("MTN Nigeria")).not.toContain("nigeria");
+    expect(stockKeywords("Tanzania Breweries")).not.toContain("tanzania");
+    expect(stockKeywords("Republic Bank")).not.toContain("republic");
+    expect(stockKeywords("Sovereign Trust")).not.toContain("sovereign");
+    expect(stockKeywords("Royal Exchange")).not.toContain("exchange");
+  });
+
+  it("saturated headlines do not heat-qualify via those words", () => {
+    expect(
+      heatQualifies("Nigeria's central bank holds its benchmark rate", [
+        "MTN Nigeria",
+      ]),
+    ).toBe(false);
+    expect(
+      heatQualifies("Treasury issues a new sovereign bond", ["Sovereign Trust"]),
+    ).toBe(false);
+    expect(
+      heatQualifies("Housing prices rise in Nairobi suburbs", ["Housing Finance"]),
+    ).toBe(false);
+  });
+
+  it("one-word names that are plain English yield no matchers (audit additions)", () => {
+    expect(stockKeywords("Champion")).toEqual([]);
+    expect(stockKeywords("Jubilee")).toEqual([]);
+    expect(stockKeywords("Livestock")).toEqual([]);
+    expect(stockKeywords("Liberty")).toEqual([]);
+    expect(stockKeywords("Legend")).toEqual([]);
+  });
+
   it("the lead pick skips the Ebola story for a real heat-company story", () => {
     const wire = [
       { title: "First Ebola contacts set to return home Sunday" },

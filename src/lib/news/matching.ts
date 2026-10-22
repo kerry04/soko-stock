@@ -55,6 +55,20 @@ const COMMON = new Set([
   "global", "united", "national", "first", "standard", "royal",
   "crown", "union", "general", "premier", "sterling",
   "plc", "ltd", "limited", "inc", "co", "company",
+  // Added 2026-10-22 after auditing every bare matcher the boards
+  // produce (467 names): ordinary words and place names that saturate
+  // headlines on their own. "university" is the one that bit — a bus
+  // crash story led the wire as a University Press story. Each company
+  // keeps its full-name phrase ("university press", "kenya airways",
+  // "mt nigeria"); names stored as one such word alone ("Champion",
+  // "Jubilee", "Livestock") yield no matchers, same as "SET" above.
+  "academy", "airways", "alliance", "associated", "atlantic",
+  "benefits", "breweries", "champion", "chemical", "cigarette",
+  "cornerstone", "custodian", "depository", "eastern", "exchange",
+  "hippo", "housing", "icon", "infinity", "jubilee", "leasing",
+  "legend", "liberty", "livestock", "mwalimu", "nigeria", "nigerian",
+  "precision", "prestige", "rainbow", "republic", "sovereign",
+  "tanzania", "thomas", "universal", "university", "warehouse",
 ]);
 
 /** Can this word identify a company when it appears alone in a title? */
